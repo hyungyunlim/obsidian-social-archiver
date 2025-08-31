@@ -33,3 +33,26 @@ yarn-error.log*
 # Obsidian plugin development
 main.js
 styles.css
+
+logs
+dev-debug.log
+# Dependency directories
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# OS specific
+
+# Task files
+# tasks.json
+# tasks/ 
+
+# Cloudflare Workers
+.wrangler/
+workers/dist/
+workers/.wrangler/
+workers/.dev.vars

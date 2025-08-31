@@ -1,0 +1,56 @@
+name = "social-archiver-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Worker configuration
+workers_dev = true
+minify = true
+
+# Custom domain route
+[[routes]]
+pattern = "social-archiver-api.junlim.org"
+custom_domain = true
+
+# Environment variables (will be added via dashboard or CLI)
+[vars]
+ENVIRONMENT = "production"
+
+# KV Namespace bindings
+[[kv_namespaces]]
+binding = "ARCHIVE_CACHE"
+id = "1e9245a691714dfeaddf00f2d7f2e654"
+preview_id = "8820a3c251964dbb9552bc3ebd3e8be2"
+
+[[kv_namespaces]]
+binding = "LICENSE_KEYS"
+id = "75c0239b9f0849488c5a4c2caf7c38a2"
+preview_id = "6e7a53c8f48d4b769af5663ab8f820bc"
+
+[[kv_namespaces]]
+binding = "SHARE_LINKS"
+id = "bbb1768a9f6c45fc91a98eda7a99f2ea"
+preview_id = "73ead9ebdd9f40acb0cd97ce59aab4a5"
+
+# Development settings
+[env.development]
+name = "social-archiver-api-dev"
+vars = { ENVIRONMENT = "development" }
+
+# Staging environment
+[env.staging]
+name = "social-archiver-api-staging"
+vars = { ENVIRONMENT = "staging" }
+
+# Observability
+[observability]
+enabled = true
+
+# Build configuration
+[build]
+command = "npm run build"
+# watch_paths = ["src/**/*.ts"]
+
+# Triggers (cron jobs if needed)
+# [triggers]
+# crons = ["0 0 * * *"]

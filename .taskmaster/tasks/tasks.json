@@ -1,0 +1,1089 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Initialize Obsidian Plugin Project Structure",
+        "description": "Setup the foundational Obsidian plugin project with TypeScript 5.0+, Svelte 5 with Runes API, and Vite bundler configuration with strict typing and modern toolchain",
+        "details": "Create the plugin boilerplate with manifest.json (version 1.0.0, minAppVersion 1.5.0), main.ts entry point extending Plugin class, and styles.css. Configure TypeScript with strict mode in tsconfig.json with compilerOptions: { strict: true, noImplicitAny: true, strictNullChecks: true, target: 'ES2022', module: 'ESNext' }. Setup Vite 5+ with @codewithcheese/vite-plugin-obsidian for bundling, configure Svelte 5 preprocessor with TypeScript support. Install core dependencies: obsidian@latest, svelte@5.x with Runes API support, @sveltejs/vite-plugin-svelte@3.x, typescript@5.0+, vite@5.x. Initialize package.json with build scripts: 'dev': 'vite build --watch', 'build': 'vite build'. Create src/ folder structure with components/, services/, utils/, types/ subdirectories following Single Responsibility Principle",
+        "testStrategy": "Verify successful plugin loading in Obsidian developer console, ensure TypeScript strict mode compilation without errors, validate Svelte 5 component rendering with $state rune, confirm hot module replacement works during development, test that built main.js loads without runtime errors",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Node.js project with package.json",
+            "description": "Create package.json with proper metadata, scripts, and install core development dependencies for the Obsidian plugin project",
+            "dependencies": [],
+            "details": "Run npm init to create package.json with name 'obsidian-social-archiver', version '1.0.0', main 'main.js', and author details. Add scripts object with 'dev': 'vite build --watch', 'build': 'vite build', 'version': 'node version-bump.mjs && git add manifest.json versions.json'. Install base dev dependencies: npm install -D typescript@5.0+ vite@5.x esbuild@0.19.x. Set type: 'module' in package.json for ESM support. Configure npm scripts for development workflow including watch mode and production builds.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create Obsidian plugin manifest and metadata files",
+            "description": "Setup manifest.json with plugin metadata, versions.json for update tracking, and create initial plugin structure files",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Create manifest.json with: id: 'social-archiver', name: 'Social Archiver', version: '1.0.0', minAppVersion: '1.5.0', description: 'Archive social media posts to your vault', author: 'Your Name', authorUrl: 'https://github.com/yourusername', isDesktopOnly: false. Create versions.json with initial version mapping. Create .gitignore with node_modules/, main.js, .DS_Store, dist/. Create README.md with basic plugin description. Setup .editorconfig for consistent code formatting.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Configure TypeScript with strict mode and path mappings",
+            "description": "Setup tsconfig.json with strict TypeScript configuration, proper compiler options, and path aliases for clean imports",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Create tsconfig.json with compilerOptions: { strict: true, noImplicitAny: true, strictNullChecks: true, strictFunctionTypes: true, target: 'ES2022', module: 'ESNext', moduleResolution: 'node', lib: ['ES2022', 'DOM'], skipLibCheck: true, resolveJsonModule: true, esModuleInterop: true, allowSyntheticDefaultImports: true, paths: { '@/*': ['./src/*'], '@components/*': ['./src/components/*'], '@services/*': ['./src/services/*'], '@utils/*': ['./src/utils/*'], '@types/*': ['./src/types/*'] }}. Include: ['src/**/*.ts', 'src/**/*.svelte']. Install @types/node as dev dependency.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Setup Vite bundler with Obsidian plugin configuration",
+            "description": "Configure Vite 5+ with @codewithcheese/vite-plugin-obsidian for proper bundling and development experience",
+            "dependencies": [
+              "1.1",
+              "1.3"
+            ],
+            "details": "Install vite-plugin-obsidian: npm install -D @codewithcheese/vite-plugin-obsidian. Create vite.config.ts with: import { defineConfig } from 'vite'; import obsidian from '@codewithcheese/vite-plugin-obsidian'; export default defineConfig({ plugins: [obsidian({ manifest: './manifest.json' })], build: { lib: { entry: 'src/main.ts', formats: ['cjs'], fileName: 'main' }, rollupOptions: { external: ['obsidian'], output: { globals: { obsidian: 'obsidian' } } }, minify: false, sourcemap: 'inline' }}). Configure development server settings for hot reload.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate Svelte 5 with Runes API preprocessing",
+            "description": "Setup Svelte 5 with TypeScript support, configure preprocessing for Runes API, and integrate with Vite build pipeline",
+            "dependencies": [
+              "1.4"
+            ],
+            "details": "Install Svelte 5 dependencies: npm install -D svelte@5.x @sveltejs/vite-plugin-svelte@3.x svelte-preprocess@5.x. Update vite.config.ts to import { svelte } from '@sveltejs/vite-plugin-svelte' and add to plugins array before obsidian plugin. Create svelte.config.js with: import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'; export default { preprocess: vitePreprocess(), compilerOptions: { runes: true }}. Install svelte-check for type checking: npm install -D svelte-check. Add 'check': 'svelte-check --tsconfig ./tsconfig.json' to package.json scripts.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Create main plugin entry point with Plugin class",
+            "description": "Implement main.ts extending Obsidian Plugin class with lifecycle methods and initial plugin setup",
+            "dependencies": [
+              "1.2",
+              "1.3"
+            ],
+            "details": "Create src/main.ts with: import { Plugin, Notice } from 'obsidian'; export default class SocialArchiverPlugin extends Plugin { async onload() { console.log('Social Archiver plugin loaded'); this.addCommand({ id: 'open-archive-modal', name: 'Archive social media post', callback: () => { new Notice('Archive modal will open here'); } }); } async onunload() { console.log('Social Archiver plugin unloaded'); } }. Create styles.css in root with basic styles using Obsidian CSS variables. Import types from obsidian module. Setup plugin settings interface.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Create source folder structure following SRP principles",
+            "description": "Setup organized src/ directory with proper separation of concerns following Single Responsibility Principle",
+            "dependencies": [
+              "1.6"
+            ],
+            "details": "Create src/ directory structure: src/components/ for Svelte UI components, src/services/ for business logic (ArchiveService.ts, MarkdownConverter.ts, MediaHandler.ts, VaultManager.ts), src/utils/ for helper functions, src/types/ for TypeScript interfaces and types, src/hooks/ for reusable Svelte composition functions, src/constants/ for configuration constants. Create index.ts files in each folder for clean exports. Create src/types/index.ts with core interfaces: PostData, ArchiveOptions, YamlFrontmatter. Add .gitkeep files to empty directories.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Configure development scripts and hot-reload setup",
+            "description": "Setup development environment with hot module replacement, automated builds, and developer experience optimizations",
+            "dependencies": [
+              "1.1",
+              "1.4",
+              "1.5",
+              "1.6",
+              "1.7"
+            ],
+            "details": "Create dev-vault symlink script for testing: add 'link': 'ln -sf $(pwd) /path/to/obsidian/vault/.obsidian/plugins/social-archiver' to scripts. Setup npm run dev to watch and rebuild on changes with source maps. Configure Vite HMR for Svelte components. Create .env.example with placeholder for OBSIDIAN_VAULT_PATH. Add version-bump.mjs script to auto-increment version in manifest.json and versions.json. Setup pre-commit hook with husky for linting. Install concurrently for running multiple watch processes. Test hot-reload works with both TypeScript and Svelte file changes.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement Tailwind CSS Configuration",
+        "description": "Configure Tailwind CSS v3 without preflight mode to ensure compatibility with Obsidian's existing styles and CSS variables",
+        "details": "Install tailwindcss@3.x, postcss@8.x, autoprefixer@10.x as dev dependencies. Create tailwind.config.js with content paths for .ts, .svelte files, disable preflight with corePlugins: { preflight: false }. Configure to use Obsidian CSS variables for theming: extend theme with colors using var(--background-primary), var(--text-normal), etc. Setup postcss.config.js for Tailwind processing. Create custom utility classes for mobile-first design with min-width: 44px for touch targets. Configure @layer directives to prevent style conflicts. Add Tailwind directives to styles.css: @tailwind base (without preflight), @tailwind components, @tailwind utilities. Create responsive breakpoints aligned with mobile devices: 'xs': '375px', 'sm': '640px', 'md': '768px', 'lg': '1024px'",
+        "testStrategy": "Verify Tailwind classes apply correctly without breaking Obsidian native styles, test responsive utilities work at different viewport sizes, ensure touch targets meet 44px minimum on mobile, validate CSS variables integration with theme switching, confirm no style conflicts with Obsidian's modal and settings UI",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Tailwind CSS Dependencies",
+            "description": "Install Tailwind CSS v3, PostCSS 8, and Autoprefixer 10 as development dependencies using npm",
+            "dependencies": [],
+            "details": "Run npm install -D tailwindcss@3.x postcss@8.x autoprefixer@10.x to add the required dependencies. Verify installation by checking package.json devDependencies section. Ensure versions are compatible with the current Node.js version and Vite build system. Document the exact versions installed for team consistency.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Configure tailwind.config.js with Obsidian Integration",
+            "description": "Create and configure Tailwind configuration file with preflight disabled and Obsidian CSS variable integration",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Create tailwind.config.js in project root. Set content paths to ['./src/**/*.{ts,svelte}', './src/**/*.{html,js}']. Disable preflight using corePlugins: { preflight: false } to prevent conflicts with Obsidian styles. Extend theme colors to use Obsidian CSS variables: --background-primary, --text-normal, --text-muted, --text-accent, --interactive-normal, --interactive-hover, --interactive-accent. Map these to semantic color names like 'obsidian-bg', 'obsidian-text', etc. for easier usage in components.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Setup PostCSS Configuration",
+            "description": "Configure PostCSS to process Tailwind CSS directives during the build pipeline",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Create postcss.config.js in project root with plugins configuration for tailwindcss and autoprefixer. Ensure PostCSS is integrated with Vite build process through vite.config.ts. Configure source maps for development debugging. Add PostCSS processing to the CSS build pipeline. Test that PostCSS correctly processes @tailwind directives and @apply statements.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Mobile-First Utilities and Breakpoints",
+            "description": "Define custom utility classes for mobile touch targets and responsive breakpoints optimized for mobile devices",
+            "dependencies": [
+              "2.2"
+            ],
+            "details": "In tailwind.config.js, create custom utilities for mobile touch targets with min-width: 44px and min-height: 44px. Define responsive breakpoints: 'xs': '375px' (iPhone SE), 'sm': '640px' (large phones), 'md': '768px' (tablets), 'lg': '1024px' (desktop). Create utility classes for common mobile patterns: .touch-target for minimum 44px touch areas, .safe-area-inset for iOS safe areas. Add utilities for Obsidian-specific mobile needs like .mobile-modal and .mobile-dropdown.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate Tailwind Directives into styles.css",
+            "description": "Add Tailwind directives to the main stylesheet with proper layering to prevent conflicts with Obsidian styles",
+            "dependencies": [
+              "2.2",
+              "2.3",
+              "2.4"
+            ],
+            "details": "Update src/styles.css or create if not exists. Add @tailwind base (without preflight effects), @tailwind components, and @tailwind utilities directives. Use @layer directives to properly scope custom styles: @layer base for foundational resets, @layer components for reusable component styles, @layer utilities for single-purpose classes. Add comments documenting the layering strategy. Create example component styles using @apply directive to demonstrate proper Tailwind usage with Obsidian. Test that all Tailwind utilities work without breaking Obsidian's native modal, button, and input styles.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Setup Cloudflare Workers Infrastructure",
+        "description": "Create serverless backend using Cloudflare Workers with TypeScript, KV Store for data persistence, and proper CORS configuration for the Obsidian plugin",
+        "details": "Initialize Cloudflare Workers project with wrangler@3.x CLI. Create wrangler.toml with name='social-archiver-api', compatibility_date='2024-01-01', node_compat=true. Setup KV namespaces for: ARCHIVE_CACHE (temporary post data), LICENSE_KEYS (user licenses), SHARE_LINKS (shared content). Configure CORS headers to allow Obsidian app origins. Implement request router using itty-router@4.x or Hono@3.x for cleaner API design. Create TypeScript interfaces for API request/response schemas. Setup environment bindings for KV stores and secrets (API keys). Implement rate limiting using Cloudflare's built-in rate limiter or custom KV-based solution. Add request logging and error tracking. Configure custom domain or use workers.dev subdomain. Implement HMAC signature verification for webhook endpoints. Setup development environment with miniflare@3.x for local testing",
+        "testStrategy": "Test Worker deployment with wrangler publish, verify KV Store read/write operations, validate CORS headers allow Obsidian requests, test rate limiting triggers correctly, ensure error responses follow consistent schema, verify webhook signature validation, load test with 100 concurrent requests",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Wrangler CLI and Project Structure",
+            "description": "Set up Cloudflare Workers project with Wrangler CLI, create base directory structure, and initialize TypeScript configuration",
+            "dependencies": [],
+            "details": "Install wrangler@3.x globally or as dev dependency. Run 'wrangler init social-archiver-api' with TypeScript template. Create src/ directory structure with folders: handlers/, middleware/, utils/, types/. Initialize package.json with necessary scripts: dev, build, deploy, test. Setup .gitignore for dist/, node_modules/, .wrangler/. Create initial worker entry point in src/index.ts with basic request handler. Configure npm scripts for local development and deployment workflows.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Configure wrangler.toml with KV Namespaces",
+            "description": "Create and configure wrangler.toml file with KV namespace bindings, environment settings, and compatibility configurations",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Create wrangler.toml with name='social-archiver-api', compatibility_date='2024-01-01', node_compat=true. Define KV namespace bindings: [[kv_namespaces]] with binding='ARCHIVE_CACHE' for temporary post data, binding='LICENSE_KEYS' for user license storage, binding='SHARE_LINKS' for shared content URLs. Configure environment-specific settings for development and production. Add route patterns and custom domain configuration. Setup vars for non-sensitive configuration values. Configure usage model and limits.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Setup TypeScript for Workers Environment",
+            "description": "Configure TypeScript with proper types for Cloudflare Workers runtime, KV Store, and custom API schemas",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Install @cloudflare/workers-types@4.x for Workers runtime types. Create tsconfig.json with target='ES2022', module='ESNext', lib including webworker. Configure types to include @cloudflare/workers-types. Create src/types/index.ts with interfaces for PostData, ArchiveRequest, ArchiveResponse, ShareRequest, LicenseValidation. Define environment interface extending Env with KV namespace bindings and secret bindings. Setup path aliases for cleaner imports. Configure strict type checking with noImplicitAny and strictNullChecks.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement API Router with Hono Framework",
+            "description": "Set up Hono router for clean API endpoint management with middleware support and type-safe routing",
+            "dependencies": [
+              "3.3"
+            ],
+            "details": "Install hono@3.x for Workers-optimized routing. Create src/router.ts with Hono app instance configured for Workers. Define routes: POST /api/archive for content archiving, POST /api/share for creating share links, GET /share/:id for accessing shared content, POST /api/verify-license for license validation, GET /api/credits/balance for credit checking. Implement route grouping for /api/* with common middleware. Setup type-safe route handlers using Hono's Context types. Create modular route handlers in src/handlers/ directory.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create KV Store Service Layer",
+            "description": "Build abstraction layer for KV Store operations with proper typing, error handling, and TTL management",
+            "dependencies": [
+              "3.2",
+              "3.3"
+            ],
+            "details": "Create src/services/KVService.ts with methods for each namespace. Implement ArchiveCache service: set() with 24-hour TTL, get() with JSON parsing, delete() for cleanup. Build LicenseStore service: store encrypted license data, retrieve with decryption, implement expiry checking. Create ShareLinks service: generate unique share IDs, store with optional expiry (30 days free, permanent pro), implement password protection option. Add error handling for KV failures with retry logic. Implement batch operations where applicable.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Configure CORS Middleware for Obsidian",
+            "description": "Implement CORS headers configuration to allow requests from Obsidian desktop and mobile applications",
+            "dependencies": [
+              "3.4"
+            ],
+            "details": "Create src/middleware/cors.ts with dynamic origin validation. Configure allowed origins: app://obsidian.md for desktop, capacitor://localhost for mobile, http://localhost:* for development. Set Access-Control-Allow-Methods for GET, POST, OPTIONS. Configure Access-Control-Allow-Headers including Content-Type, Authorization, X-License-Key. Implement preflight request handling for OPTIONS. Add Access-Control-Max-Age for caching preflight responses. Create origin whitelist with regex patterns for flexibility.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Implement Rate Limiting and Request Validation",
+            "description": "Build rate limiting system using KV Store and implement comprehensive request validation middleware",
+            "dependencies": [
+              "3.5",
+              "3.6"
+            ],
+            "details": "Create src/middleware/rateLimiter.ts using KV Store for tracking. Implement sliding window rate limiting: 10 requests/minute for free users, 100 requests/minute for pro users. Store request counts with key pattern 'rate:userId:timestamp'. Build request validation middleware: check required headers, validate JSON payloads against schemas, sanitize URL inputs, verify content-type headers. Implement IP-based fallback rate limiting for anonymous requests. Add custom rate limit headers in responses. Create bypass mechanism for whitelisted origins.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Setup Local Development with Miniflare",
+            "description": "Configure Miniflare for local Worker development with KV Store emulation and hot reloading",
+            "dependencies": [
+              "3.1",
+              "3.2"
+            ],
+            "details": "Install miniflare@3.x as dev dependency. Create .dev.vars file for local environment variables and API keys. Configure miniflare in wrangler.toml for local KV persistence. Setup local KV namespaces matching production structure. Implement seed data scripts for testing: sample licenses, cached posts, share links. Configure local HTTPS with self-signed certificates for testing CORS. Create npm script 'dev:local' for miniflare with --live-reload flag. Setup debugging configuration for VS Code.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Create Error Handling and Logging System",
+            "description": "Implement comprehensive error handling, structured logging, and monitoring integration",
+            "dependencies": [
+              "3.4",
+              "3.7"
+            ],
+            "details": "Create src/middleware/errorHandler.ts with global error boundary. Implement error classes: ValidationError, RateLimitError, AuthenticationError, ExternalAPIError. Build structured logging with log levels: debug, info, warn, error. Use console.log with JSON formatting for Cloudflare Logpush compatibility. Add request ID generation and propagation for tracing. Implement error response standardization with consistent schema. Create dead letter queue for failed operations using KV Store. Setup alerts for critical errors using Workers Analytics.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Deploy Workers and Configure Domain",
+            "description": "Deploy Workers to Cloudflare, configure custom domain or workers.dev subdomain, and verify production setup",
+            "dependencies": [
+              "3.1",
+              "3.2",
+              "3.3",
+              "3.4",
+              "3.5",
+              "3.6",
+              "3.7",
+              "3.8",
+              "3.9"
+            ],
+            "details": "Run 'wrangler publish' for initial deployment to workers.dev. Configure custom domain in Cloudflare dashboard if available, or use social-archiver-api.workers.dev. Create production KV namespaces using wrangler commands. Set production secrets using 'wrangler secret put' for API keys. Configure environment variables for production settings. Setup Cloudflare Access for admin endpoints if needed. Verify CORS headers work with test requests from Obsidian. Implement health check endpoint at /health. Create deployment script with pre-deploy validation.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Build Core Service Architecture",
+        "description": "Implement SRP-compliant service classes for archive operations, markdown conversion, vault management, and service orchestration following clean architecture principles",
+        "details": "Create ArchiveService class responsible only for API communication with methods: archivePost(url: string, options: ArchiveOptions): Promise<PostData>. Implement MarkdownConverter class for markdown transformation: convert(postData: PostData): string, with template engine supporting variables like {{author}}, {{content}}, {{date}}. Build VaultManager class for Obsidian Vault operations: saveNote(content: string, path: string): Promise<TFile>, createFolderIfNotExists(path: string), using app.vault API. Design MediaHandler service for media processing: downloadMedia(url: string): Promise<ArrayBuffer>, saveMedia(data: ArrayBuffer, path: string), with default path 'attachments/social-archives/{platform}/{postId}/'. Create ArchiveOrchestrator to coordinate services: orchestrate(url: string): Promise<void>, handling the complete flow. Implement dependency injection pattern for testability. Add comprehensive error handling with custom ArchiveError class. Use TypeScript generics for type-safe service responses",
+        "testStrategy": "Unit test each service class in isolation with mocked dependencies, integration test the orchestrator with all services, verify error propagation and handling, test markdown template variable substitution, validate vault file creation and folder structure, ensure media files save to correct paths",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create base service interfaces and dependency injection container",
+            "description": "Design and implement base service interfaces with TypeScript generics and create a lightweight dependency injection container for managing service instances and their lifecycles",
+            "dependencies": [],
+            "details": "Define IService<T> base interface with common service methods. Create ServiceContainer class with register<T>(token: Symbol, factory: () => T) and resolve<T>(token: Symbol): T methods. Implement singleton pattern for service instances with lazy initialization. Define service tokens as Symbols for type-safe injection. Create ServiceConfig interface for configuration injection. Add dispose() lifecycle method for cleanup. Implement circular dependency detection. Create unit tests for container registration, resolution, and lifecycle management",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement ArchiveService for API orchestration",
+            "description": "Build ArchiveService class responsible solely for API communication, implementing retry logic, request/response transformation, and maintaining clean separation of concerns",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Create ArchiveService implementing IService<PostData>. Define ArchiveOptions interface with platform, aiFeatures, mediaOptions properties. Implement archivePost(url: string, options: ArchiveOptions): Promise<PostData> method. Add request interceptors for authentication and headers. Implement response transformation to PostData format. Create RequestBuilder for constructing platform-specific requests. Add request validation before API calls. Implement proper error wrapping with context. Create comprehensive unit tests with mocked API responses",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build MarkdownConverter with template engine",
+            "description": "Create MarkdownConverter service for transforming PostData into markdown format with customizable templates supporting variable substitution and conditional rendering",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Implement MarkdownConverter extending IService<string>. Create TemplateEngine with variable substitution: {{author}}, {{content}}, {{date}}, {{platform}}. Add support for nested properties like {{author.name}}, {{metadata.likes}}. Implement conditional blocks: {{#if media}}...{{/if}}. Create default templates for each platform stored in templates/ directory. Add convert(postData: PostData, template?: string): string method. Implement markdown escaping for special characters. Add YAML frontmatter generation. Support custom date formatting. Write unit tests for all template features and edge cases",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create VaultManager for Obsidian file operations",
+            "description": "Implement VaultManager service to handle all Obsidian Vault operations including file creation, folder management, and metadata handling with proper error recovery",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Create VaultManager implementing IService<TFile>. Implement saveNote(content: string, path: string): Promise<TFile> using app.vault.create(). Add createFolderIfNotExists(path: string): Promise<void> with recursive folder creation. Implement fileExists(path: string): Promise<boolean> check. Add updateNote(file: TFile, content: string): Promise<void> for modifications. Create generateUniquePath(basePath: string): string for conflict resolution. Implement atomic write operations with temporary files. Add metadata caching for performance. Handle vault permission errors gracefully. Test with various file paths and edge cases",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement MediaHandler for attachment processing",
+            "description": "Build MediaHandler service for downloading, processing, and storing media files with support for various formats, compression, and organized folder structure",
+            "dependencies": [
+              "4.1",
+              "4.4"
+            ],
+            "details": "Create MediaHandler implementing IService<MediaResult>. Implement downloadMedia(url: string): Promise<ArrayBuffer> with streaming support for large files. Add saveMedia(data: ArrayBuffer, path: string): Promise<string> returning saved path. Create generateMediaPath(platform: string, postId: string, filename: string): string for consistent paths. Implement media type detection and validation. Add image optimization with max dimensions 2048x2048. Support video thumbnail extraction. Implement concurrent download queue with p-limit. Add progress tracking with callbacks. Create cleanup for orphaned media. Test with various media types and sizes",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Build ArchiveOrchestrator to coordinate all services",
+            "description": "Create ArchiveOrchestrator as the main coordinator that manages the complete archive workflow, orchestrating all services in the correct sequence with proper transaction handling",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3",
+              "4.4",
+              "4.5"
+            ],
+            "details": "Implement ArchiveOrchestrator with constructor injection of all services. Create orchestrate(url: string, options?: OrchestratorOptions): Promise<ArchiveResult> as main entry point. Implement workflow steps: validate URL, detect platform, fetch post data, download media, convert to markdown, save to vault. Add transaction-like behavior with rollback on failure. Implement progress reporting with event emitter pattern. Create cancellation support with AbortController. Add retry logic for transient failures. Implement caching layer for duplicate requests. Create comprehensive integration tests covering full workflow. Test error scenarios and rollback behavior",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Add comprehensive error handling with custom error classes",
+            "description": "Design and implement a complete error handling system with custom error classes, error codes, user-friendly messages, and proper error propagation throughout the service architecture",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3",
+              "4.4",
+              "4.5",
+              "4.6"
+            ],
+            "details": "Create base ArchiveError class extending Error with code, userMessage, context properties. Implement specific error classes: NetworkError, ValidationError, VaultError, MediaError, RateLimitError, AuthenticationError. Add error codes enum for categorization. Create ErrorHandler service for centralized error processing. Implement error recovery strategies for each error type. Add error logging with structured format. Create user-friendly error messages with actionable suggestions. Implement error boundary pattern in orchestrator. Add telemetry for error tracking. Write unit tests for all error scenarios and recovery paths",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement Platform Detection and URL Validation",
+        "description": "Create robust platform detection system with URL pattern matching for all supported social media platforms and implement URL canonicalization",
+        "details": "Create PlatformDetector service with detectPlatform(url: string): Platform | null. Implement URL pattern regexes: Facebook (/posts/\\d+/, /watch/, /share/, /permalink/), LinkedIn (/posts/, /feed/update/, /pulse/), Instagram (/p/[A-Za-z0-9_-]+/, /reel/, /tv/), TikTok (/@[^/]+/video/\\d+/, /video/\\d+), X.com (/status/\\d+/, /[^/]+/status/\\d+), Threads (/@[^/]+/post/[A-Za-z0-9]+/, /t/[A-Za-z0-9]+). Implement URL expansion for shortened links (t.co, bit.ly, tinyurl) with 3-hop redirect limit. Create URL canonicalization to remove tracking parameters (?utm_*, ?fbclid, etc). Build platform-specific service interfaces: FacebookService, LinkedInService, InstagramService, TikTokService, XService, ThreadsService, all implementing IArchiveService. Add URL validation with Zod schemas for each platform. Implement canonical URL generation for deduplication. Handle mobile vs desktop URL formats. Create getPlatformConfig(platform: Platform) for platform-specific settings",
+        "testStrategy": "Test URL pattern matching with 50+ real URLs per platform, verify shortened URL expansion works correctly, test canonicalization removes all tracking parameters, validate platform detection accuracy is 100%, ensure mobile URLs are correctly handled, test edge cases like private posts and stories",
+        "priority": "high",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create PlatformDetector Service Core",
+            "description": "Implement the main PlatformDetector service class with URL pattern matching logic for all supported social media platforms",
+            "dependencies": [],
+            "details": "Create src/services/PlatformDetector.ts with detectPlatform(url: string): Platform | null method. Define Platform enum with values: FACEBOOK, LINKEDIN, INSTAGRAM, TIKTOK, X, THREADS. Implement comprehensive regex patterns for each platform: Facebook patterns for /posts/\\d+/, /watch/, /share/, /permalink/; LinkedIn for /posts/, /feed/update/, /pulse/; Instagram for /p/[A-Za-z0-9_-]+/, /reel/, /tv/; TikTok for /@[^/]+/video/\\d+/, /video/\\d+; X.com for /status/\\d+/, /[^/]+/status/\\d+; Threads for /@[^/]+/post/[A-Za-z0-9]+/, /t/[A-Za-z0-9]+. Handle both mobile and desktop URL formats. Return null for unrecognized URLs.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement URL Canonicalization System",
+            "description": "Build URL canonicalization functionality to standardize URLs and remove tracking parameters for accurate deduplication",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Create canonicalizeUrl(url: string, platform: Platform): string method in PlatformDetector. Remove tracking parameters: utm_source, utm_medium, utm_campaign, utm_term, utm_content, fbclid, gclid, ref, si, feature, etc. Normalize URL structure by removing www prefix where appropriate, converting to lowercase for case-insensitive parts, removing trailing slashes. Handle platform-specific canonicalization rules: Facebook mobile.facebook.com to facebook.com, Instagram removing query parameters except necessary ones, X.com handling both twitter.com and x.com domains. Preserve essential parameters like post IDs and timestamps.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build URL Expansion Service",
+            "description": "Implement shortened URL expansion with redirect following capability and safety limits",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Create URLExpander service with expandUrl(shortUrl: string): Promise<string> method. Support common shorteners: t.co, bit.ly, tinyurl.com, ow.ly, buff.ly, short.link, rebrand.ly. Implement recursive redirect following with maximum 3-hop limit to prevent infinite loops. Handle HTTP/HTTPS redirects (301, 302, 307, 308 status codes). Add timeout of 5 seconds per redirect hop. Cache expanded URLs in memory to avoid repeated expansions. Handle errors gracefully returning original URL if expansion fails. Detect and handle meta refresh redirects in HTML responses.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Platform-Specific Service Interfaces",
+            "description": "Define and implement service interfaces for each supported platform following consistent architecture patterns",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Create IArchiveService interface in src/interfaces/IArchiveService.ts with methods: validateUrl(url: string): boolean, normalizeUrl(url: string): string, extractPostId(url: string): string | null, getCanonicalUrl(postId: string): string. Implement platform-specific services: FacebookService, LinkedInService, InstagramService, TikTokService, XService, ThreadsService, all implementing IArchiveService. Each service should handle platform-specific URL quirks, extract post IDs accurately, generate canonical URLs for deduplication, validate URL structure beyond basic pattern matching.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Zod Validation Schemas",
+            "description": "Create comprehensive Zod validation schemas for URL validation and platform-specific data structures",
+            "dependencies": [
+              "5.4"
+            ],
+            "details": "Install zod@3.x dependency. Create src/schemas/platforms/ directory with schema files for each platform. Define URL validation schemas: FacebookURLSchema, LinkedInURLSchema, InstagramURLSchema, TikTokURLSchema, XURLSchema, ThreadsURLSchema. Include pattern validation using regex, optional parameter validation, domain validation (including alternate domains). Create PostIDSchema for each platform to validate extracted IDs. Implement getPlatformSchema(platform: Platform): ZodSchema helper function. Add custom error messages for validation failures. Create composite schema for any social media URL validation.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Add Comprehensive Unit Tests",
+            "description": "Create extensive test suite covering all URL patterns, edge cases, and platform-specific scenarios",
+            "dependencies": [
+              "5.1",
+              "5.2",
+              "5.3",
+              "5.4",
+              "5.5"
+            ],
+            "details": "Create test files: PlatformDetector.test.ts, URLExpander.test.ts, and tests for each platform service. Test 50+ real URLs per platform including: standard post URLs, mobile URLs, shortened URLs, URLs with tracking parameters, private/restricted content URLs, story/reel URLs, live video URLs. Test canonicalization removes all tracking parameters correctly. Verify URL expansion handles redirect chains properly and respects 3-hop limit. Test Zod schema validation for valid and invalid URLs. Include edge cases: malformed URLs, non-social media URLs, deprecated URL formats, international domains. Ensure 100% platform detection accuracy. Test getPlatformConfig returns correct settings for each platform.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Create BrightData Integration Service",
+        "description": "Implement robust BrightData API client for content scraping with circuit breaker pattern, exponential backoff, and comprehensive error handling",
+        "details": "Create BrightDataClient class with methods for each platform: scrapeFacebook(), scrapeLinkedIn(), etc. Implement circuit breaker pattern using opossum@8.x or custom implementation with states: CLOSED, OPEN, HALF_OPEN. Add exponential backoff with jitter for rate limit handling: baseDelay * Math.pow(2, attempt) + Math.random() * 1000. Configure request timeout of 30 seconds with AbortController. Implement request queuing with p-queue@7.x for concurrent request management (max 5 concurrent). Add comprehensive error mapping: rate limits -> 429, invalid URL -> 400, platform errors -> 502. Create response validation with Zod schemas for each platform's data structure. Implement cost tracking per request for credit management. Add request/response logging for debugging. Cache successful responses in KV Store for 24-48 hours to avoid duplicate charges. Handle pagination for comments and multi-image posts. Implement retry logic with max 3 attempts for transient failures",
+        "testStrategy": "Test circuit breaker opens after 5 consecutive failures, verify exponential backoff delays are correct, test request timeout at 30 seconds, validate response schemas for each platform, ensure caching prevents duplicate API calls, test error handling for all error codes, verify cost tracking accuracy",
+        "priority": "high",
+        "dependencies": [
+          3,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Base HTTP Client with Interceptors",
+            "description": "Implement foundational HTTP client class with axios or fetch API, including request/response interceptors for authentication, logging, and error transformation",
+            "dependencies": [],
+            "details": "Create BrightDataHttpClient class extending a base HTTP client. Implement request interceptor to add API key headers, correlation IDs, and request timestamps. Add response interceptor to log response times, extract rate limit headers (X-RateLimit-Remaining, X-RateLimit-Reset), and transform error responses into standardized format. Configure default timeout of 30 seconds using AbortController. Add support for custom headers per request. Implement request ID generation for tracing. Setup axios instance with baseURL pointing to BrightData API endpoint. Add request/response type definitions for type safety.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Circuit Breaker Pattern",
+            "description": "Build circuit breaker mechanism with three states (CLOSED, OPEN, HALF_OPEN) to prevent cascading failures and protect against repeated failures",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Create CircuitBreaker class with state management for CLOSED (normal operation), OPEN (failing, reject requests), and HALF_OPEN (testing recovery). Configure failure threshold of 5 consecutive failures to open circuit. Set timeout period of 60 seconds before attempting half-open state. Implement success threshold of 3 consecutive successes to close circuit from half-open. Add event emitters for state changes. Create metrics tracking for failure rate, success rate, and state transitions. Integrate with BrightDataHttpClient to wrap all API calls. Add configuration options for customizing thresholds and timeouts per endpoint.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add Exponential Backoff with Jitter",
+            "description": "Implement retry mechanism with exponential backoff and jitter to handle rate limits and transient failures gracefully",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Create ExponentialBackoff class with configurable base delay (1000ms default), max delay (32000ms), and max retry attempts (3). Implement backoff calculation: delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay) + Math.random() * jitterRange. Add jitter range of 0-1000ms to prevent thundering herd problem. Create retry predicate to determine which errors are retryable (network errors, 429, 502, 503, 504). Implement abort capability using AbortController. Add logging for each retry attempt with remaining attempts count. Integrate with circuit breaker to skip retries when circuit is open.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Platform-Specific Scraping Methods",
+            "description": "Implement dedicated scraping methods for each supported social media platform with platform-specific error handling and data extraction",
+            "dependencies": [
+              "6.1",
+              "6.2",
+              "6.3"
+            ],
+            "details": "Create BrightDataClient class with methods: scrapeFacebook(url, options), scrapeLinkedIn(url, options), scrapeInstagram(url, options), scrapeTikTok(url, options), scrapeX(url, options), scrapeThreads(url, options). Each method should construct platform-specific request payloads with required parameters. Implement platform-specific error handling (e.g., Facebook login required, Instagram rate limits). Add support for platform-specific features like Facebook reactions, LinkedIn post insights, Instagram carousel posts. Handle platform-specific URL formats and canonicalization. Add options for selective data extraction (comments, media, metadata).",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Request Queue with Concurrency Control",
+            "description": "Build request queuing system using p-queue to manage concurrent API calls and prevent overwhelming BrightData API",
+            "dependencies": [
+              "6.4"
+            ],
+            "details": "Install and configure p-queue@7.x with concurrency limit of 5 concurrent requests. Create RequestQueueManager class wrapping p-queue functionality. Implement priority levels for different request types (immediate, normal, low). Add queue size monitoring and overflow handling (max 100 queued requests). Implement request deduplication to prevent duplicate requests in queue. Add timeout for queued requests (5 minutes max wait). Create event handlers for queue events (active, idle, add, next). Implement graceful shutdown to process remaining queue items. Add metrics for queue depth, processing time, and throughput.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Add Response Validation with Zod Schemas",
+            "description": "Create comprehensive Zod schemas for validating API responses from each platform ensuring data integrity and type safety",
+            "dependencies": [
+              "6.4"
+            ],
+            "details": "Define Zod schemas for each platform's response structure: FacebookPostSchema, LinkedInPostSchema, InstagramPostSchema, TikTokPostSchema, XPostSchema, ThreadsPostSchema. Include nested schemas for Author, Media, Metadata, Comments. Add optional fields handling with .optional() and default values. Implement schema versioning for API changes. Create validation middleware that throws structured errors on validation failure. Add schema transformation for data normalization (date strings to Date objects, number strings to numbers). Implement partial schema validation for incremental data updates. Add schema documentation generation for API reference.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Create Caching Layer with KV Store Integration",
+            "description": "Implement caching mechanism using Cloudflare KV Store to reduce API costs and improve response times for duplicate requests",
+            "dependencies": [
+              "6.6"
+            ],
+            "details": "Create CacheManager class with get(key), set(key, value, ttl), delete(key) methods. Implement cache key generation based on URL hash and request options. Set TTL of 24 hours for successful responses, 48 hours for permanent content. Add cache invalidation strategy for updated content. Implement cache warming for frequently accessed content. Create cache statistics tracking (hit rate, miss rate, evictions). Add cache bypass option for force refresh. Implement stale-while-revalidate pattern for expired cache entries. Add compression for cached responses to reduce KV storage costs. Create cache migration strategy for schema updates.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Implement Cost Tracking and Credit Management",
+            "description": "Build comprehensive cost tracking system to monitor BrightData API usage and manage user credit consumption",
+            "dependencies": [
+              "6.4",
+              "6.7"
+            ],
+            "details": "Create CostTracker class with methods for tracking request costs per platform. Define cost matrix: Facebook (2 credits), LinkedIn (3 credits), Instagram (2 credits), TikTok (2 credits), X (1 credit), Threads (1 credit). Implement credit deduction before API calls with rollback on failure. Add daily/monthly usage aggregation for billing reports. Create credit threshold alerts (20%, 10%, 0% remaining). Implement credit reservation system for queued requests. Add cost estimation for batch operations. Create usage analytics dashboard data structure. Implement cost optimization suggestions based on usage patterns. Add credit refund mechanism for failed requests.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Add Comprehensive Error Mapping and Handling",
+            "description": "Create sophisticated error handling system with detailed error mapping, user-friendly messages, and recovery strategies",
+            "dependencies": [
+              "6.1",
+              "6.2"
+            ],
+            "details": "Create BrightDataError base class extending Error with code, statusCode, retryable properties. Implement error mappers for HTTP status codes: 400 (InvalidURLError), 401 (AuthenticationError), 429 (RateLimitError), 502/503/504 (ServiceUnavailableError). Add platform-specific error handling: FacebookLoginRequired, InstagramPrivateProfile, LinkedInPremiumContent. Create user-friendly error messages with actionable suggestions. Implement error recovery strategies per error type. Add error correlation for debugging distributed requests. Create error reporting mechanism for monitoring. Implement graceful degradation for non-critical errors.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Create Request/Response Logging Infrastructure",
+            "description": "Implement comprehensive logging system for debugging, monitoring, and audit purposes with structured logging format",
+            "dependencies": [
+              "6.1",
+              "6.9"
+            ],
+            "details": "Create Logger class with log levels (DEBUG, INFO, WARN, ERROR). Implement structured logging with JSON format including timestamp, correlationId, platform, url, duration, status. Add request logging with sanitized headers (remove API keys), payload size, queue position. Implement response logging with status code, response time, cache hit/miss, credits consumed. Create log rotation strategy for long-running sessions. Add log aggregation for pattern detection. Implement sensitive data masking in logs. Create debug mode with verbose logging. Add performance metrics logging (p50, p95, p99 latencies). Implement log shipping to external service for production monitoring.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 11,
+            "title": "Build Unit and Integration Tests for Reliability Patterns",
+            "description": "Create comprehensive test suite covering all reliability patterns, error scenarios, and edge cases with high code coverage",
+            "dependencies": [
+              "6.1",
+              "6.2",
+              "6.3",
+              "6.4",
+              "6.5",
+              "6.6",
+              "6.7",
+              "6.8",
+              "6.9",
+              "6.10"
+            ],
+            "details": "Write unit tests for CircuitBreaker state transitions using Jest or Vitest. Test exponential backoff delay calculations with deterministic jitter. Create integration tests with mock BrightData API responses. Test rate limit handling with 429 responses triggering backoff. Verify circuit breaker opens after 5 consecutive failures. Test request queue overflow handling and priority ordering. Validate all Zod schemas with valid and invalid payloads. Test cache hit/miss scenarios and TTL expiration. Verify cost tracking accuracy with various request combinations. Test error mapping for all HTTP status codes. Create end-to-end tests simulating real scraping scenarios. Add performance tests for queue throughput and response times.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Build Licensing and Credit System",
+        "description": "Implement Gumroad-based licensing system with credit management, usage tracking, and freemium model enforcement following Obsidian plugin guidelines",
+        "details": "Create LicenseValidator service with validateLicense(key: string): Promise<LicenseInfo>. Integrate Gumroad API for license verification using their License API v2. Implement credit system: free users get 10 credits/month, pro users get 500 credits/month. Create CreditManager with deductCredits(amount: number), getBalance(): number, resetMonthlyCredits(). Track credit consumption: basic archive = 1 credit, with AI = 3 credits, deep research = 5 credits. Store encrypted license keys locally using Obsidian's loadData/saveData with AES encryption. Implement Gumroad webhook handler for purchase events with HMAC signature verification. Create license status UI component showing current plan, credits remaining, upgrade button. Add 'Buy Pro' button linking to external Gumroad page (no in-app purchase per Obsidian policy). Implement grace period for expired licenses (3 days). Add promotional code support with validatePromoCode(). Create bulk license support for teams. Implement credit rollover for unused credits (max 100)",
+        "testStrategy": "Test license validation with valid/invalid/expired keys, verify credit deduction logic for all operations, test monthly reset functionality, ensure webhook signature verification works, validate encryption/decryption of stored keys, test promotional codes apply correct benefits, verify freemium limits are enforced",
+        "priority": "high",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Gumroad API integration",
+            "description": "Configure Gumroad API client with authentication and implement basic connection testing",
+            "dependencies": [],
+            "details": "Create GumroadClient class with API key configuration. Implement base HTTP client with proper headers (Authorization: Bearer {api_key}). Set up API endpoints for License API v2 (https://api.gumroad.com/v2/licenses/verify). Create error handling for common Gumroad API errors (401, 404, 429). Implement response type definitions for LicenseResponse interface. Add retry logic with exponential backoff for API failures. Create test method to verify API connectivity",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement LicenseValidator service",
+            "description": "Build core license validation service with validateLicense method and license info management",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Create LicenseValidator class with validateLicense(key: string): Promise<LicenseInfo>. Define LicenseInfo interface with fields: isValid, plan (free/pro), expiresAt, email, purchaseDate. Implement license verification logic using Gumroad's verify endpoint. Add caching layer to avoid excessive API calls (cache valid licenses for 1 hour). Handle different license states: valid, expired, refunded, disputed. Create method to check if license is in grace period. Implement license type detection (single, team, promotional)",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create secure local license storage",
+            "description": "Implement encrypted storage for license keys using Obsidian's data persistence API",
+            "dependencies": [
+              "7.2"
+            ],
+            "details": "Create LicenseStorage class using Obsidian's loadData/saveData methods. Implement AES-256-GCM encryption for license key storage using Web Crypto API. Generate and securely store encryption key derived from device-specific identifier. Create methods: storeLicense(key: string, info: LicenseInfo), retrieveLicense(): Promise<StoredLicense>, clearLicense(). Implement migration logic for unencrypted licenses from older versions. Add integrity checks to detect tampered license data. Create backup/restore functionality for license data",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Build CreditManager system",
+            "description": "Implement credit tracking and management system with usage deduction and balance tracking",
+            "dependencies": [
+              "7.3"
+            ],
+            "details": "Create CreditManager class with core methods: deductCredits(amount: number): boolean, getBalance(): number, resetMonthlyCredits(). Define credit costs: basic_archive = 1, with_ai = 3, deep_research = 5. Implement credit balance storage with timestamp of last reset. Create credit transaction log for audit trail. Add methods: canAffordOperation(type: OperationType): boolean, getMonthlyAllowance(): number. Implement credit rollover logic with max 100 credits carryover for pro users. Create credit usage analytics tracking",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement monthly credit reset mechanism",
+            "description": "Create automated system for resetting credits based on billing cycle",
+            "dependencies": [
+              "7.4"
+            ],
+            "details": "Create CreditResetScheduler with monthly reset logic. Store last reset date and next reset date in plugin data. Implement checkAndResetCredits() method called on plugin load and periodically. Calculate reset date based on initial activation date or first of each month. Handle timezone considerations for consistent reset timing. Create notification system to alert users when credits reset. Implement partial month proration for new subscriptions. Add manual reset capability for admin/debugging purposes",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Develop Gumroad webhook handler",
+            "description": "Build secure webhook endpoint for handling purchase events and license updates",
+            "dependencies": [
+              "7.2",
+              "7.3"
+            ],
+            "details": "Create webhook handler for Cloudflare Worker endpoint POST /webhook/gumroad. Implement HMAC signature verification using Gumroad's webhook secret. Handle webhook events: sale, refund, dispute, subscription_updated, subscription_cancelled. Create webhook event queue for processing with retry logic. Implement idempotency using event IDs to prevent duplicate processing. Update local license cache on webhook events. Add webhook event logging for debugging. Create fallback polling mechanism if webhooks fail",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Create license status UI component",
+            "description": "Build Svelte 5 component for displaying license status and upgrade options",
+            "dependencies": [
+              "7.4",
+              "7.5"
+            ],
+            "details": "Create LicenseStatus.svelte component using Svelte 5 runes. Display current plan (Free/Pro) with visual indicator. Show credits remaining as progress bar: {used}/{total}. Add 'Buy Pro' button linking to Gumroad page (external link per Obsidian policy). Implement countdown timer to next credit reset. Create expandable section showing detailed usage statistics. Add promotional banner for free users approaching credit limit. Design mobile-responsive layout with 44px touch targets",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Implement promotional code system",
+            "description": "Create promotional code validation and application system with various discount types",
+            "dependencies": [
+              "7.2",
+              "7.4"
+            ],
+            "details": "Create PromoCodeValidator with validatePromoCode(code: string): Promise<PromoInfo>. Define promo types: percentage discount, fixed discount, extended trial, bonus credits. Implement code validation against Gumroad's coupon API. Store applied promo codes to prevent reuse. Create special handling for partner/influencer codes with tracking. Implement time-limited promotional campaigns support. Add bulk code generation for marketing campaigns. Create analytics for promotional code usage and conversion",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Add grace period and team license support",
+            "description": "Implement grace period for expired licenses and support for bulk team licensing",
+            "dependencies": [
+              "7.2",
+              "7.3",
+              "7.6"
+            ],
+            "details": "Implement 3-day grace period after license expiration with reduced functionality. Create notifications at 7 days, 3 days, and 1 day before expiration. Build team license support with seat management and admin controls. Implement license transfer mechanism for team members. Create bulk activation UI for multiple license keys. Add license sharing detection and prevention logic. Implement gradual feature degradation during grace period. Create comprehensive test suite for all licensing edge cases",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Develop Archive Modal UI Components",
+        "description": "Create intuitive Svelte 5 components for the archive modal interface with mobile-first design and accessibility features",
+        "details": "Build ArchiveModal.svelte as main container using Obsidian's Modal class. Create URLInput.svelte with auto-detection of platform, paste handling, and validation feedback using $state rune. Implement AdvancedOptions.svelte with expandable sections for AI features, media handling, using $derived for computed states. Add Disclaimer.svelte component with legal warning: 'Archive only content you have permission to save'. Create ActionButtons.svelte with Archive/Cancel actions, loading state with progress indicator. Implement useArchiveState() hook using Svelte 5 Runes: let isArchiving = $state(false), let progress = $state(0). Add platform-specific icons and color themes (Facebook #1877f2, LinkedIn #0077b5, etc). Create PostPreview.svelte for showing fetched content before saving. Implement error display with retry options. Add keyboard shortcuts (Cmd/Ctrl+Enter to archive). Ensure all touch targets are minimum 44px for mobile. Implement focus trap for accessibility. Add ARIA labels and role attributes. Create smooth animations with Svelte transitions",
+        "testStrategy": "Test modal opens/closes correctly from command palette, verify URL validation provides instant feedback, test platform auto-detection accuracy, ensure mobile touch targets are 44px minimum, verify keyboard navigation works, test screen reader compatibility, validate error states display correctly",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ArchiveModal Base Component",
+            "description": "Build the main modal container component that integrates with Obsidian's Modal class and provides the foundation for all archive UI elements",
+            "dependencies": [],
+            "details": "Create ArchiveModal.svelte extending Obsidian's Modal class. Implement modal lifecycle methods (onOpen, onClose). Set up base structure with header, content area, and footer sections. Configure modal dimensions for desktop (600px width) and mobile (full-screen). Add close button with X icon and ESC key handler. Implement focus trap to keep tab navigation within modal. Set up props for passing archive configuration. Create slots for injecting child components. Add backdrop click to close functionality. Ensure proper z-index stacking with Obsidian's UI layers.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement URLInput Component with Platform Detection",
+            "description": "Create the URL input field with auto-detection of social media platforms, paste handling, and real-time validation feedback",
+            "dependencies": [],
+            "details": "Build URLInput.svelte with text input using Svelte 5 $state rune for reactive value. Implement paste event handler to auto-process URLs. Add platform detection logic calling PlatformDetector service. Display platform icon next to input when detected (Facebook, LinkedIn, Instagram, etc). Create validation states: empty, validating, valid, invalid with corresponding UI feedback. Add clear button when input has content. Implement debounced validation (300ms delay). Show validation messages below input. Add loading spinner during validation. Style with platform-specific accent colors when detected. Ensure 44px minimum touch target for mobile.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build AdvancedOptions Expandable Component",
+            "description": "Create collapsible advanced options section with AI features toggle, media handling preferences, and archive settings",
+            "dependencies": [],
+            "details": "Create AdvancedOptions.svelte with expandable/collapsible container using $state for open/closed. Add chevron icon that rotates on expand/collapse with smooth transition. Implement AI options section: enable AI analysis checkbox, fact-checking toggle, sentiment analysis option. Add media handling options: download images/videos toggles, quality selection (original/compressed), storage path customization. Create folder structure options with template variables. Use $derived for computed option states based on user tier. Add tooltips explaining each option's credit usage. Implement smooth height animation on expand/collapse. Style with subtle background to differentiate from main content.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Disclaimer Component with Legal Warning",
+            "description": "Build a prominent disclaimer component that displays legal warnings about content archiving permissions",
+            "dependencies": [],
+            "details": "Create Disclaimer.svelte with warning icon (⚠️) and legal text. Display message: 'Archive only content you have permission to save'. Style with warning colors (amber background, dark text for contrast). Add expandable 'Learn More' section with detailed legal information. Include checkbox for user acknowledgment (required before archiving). Store acknowledgment state in plugin settings to reduce repetition. Implement 'Don't show again' option for experienced users. Ensure high contrast for accessibility (WCAG AA compliance). Position prominently but not obstructively in modal. Add link to terms of service if applicable.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement ActionButtons with Loading States",
+            "description": "Create action button component with Archive and Cancel buttons, including loading states and progress indicators",
+            "dependencies": [
+              "8.1",
+              "8.2",
+              "8.4"
+            ],
+            "details": "Build ActionButtons.svelte with primary Archive button and secondary Cancel button. Implement loading state using $state rune for isArchiving flag. Add circular progress indicator replacing button content during archive. Display progress percentage text (0-100%) during operation. Disable buttons during archiving to prevent double-submission. Add keyboard shortcut support (Cmd/Ctrl+Enter for Archive, ESC for Cancel). Style Archive button with gradient background and platform color when detected. Implement button hover and active states with appropriate feedback. Ensure 44px minimum height for mobile touch targets. Add success checkmark animation on completion. Handle error state with red styling and retry option.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Create useArchiveState Composable Hook",
+            "description": "Implement a reusable Svelte 5 Runes-based composable for managing archive state across components",
+            "dependencies": [],
+            "details": "Create useArchiveState.ts with Svelte 5 Runes API. Define reactive state: let isArchiving = $state(false), let error = $state<Error | null>(null), let progress = $state(0), let currentPlatform = $state<Platform | null>(null). Implement archive method accepting URL parameter. Add progress tracking with callback updates. Create error handling with retry logic. Implement cancellation support with AbortController. Add success/failure callbacks for UI updates. Export getters for readonly access to state. Create reset method to clear all state. Add platform-specific configuration loading. Ensure proper TypeScript typing for all return values.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Build PostPreview Component for Content Display",
+            "description": "Create a preview component that displays fetched social media content before archiving, allowing users to verify content",
+            "dependencies": [
+              "8.6"
+            ],
+            "details": "Create PostPreview.svelte for displaying fetched post data. Show author information: name, avatar (lazy loaded), profile link. Display post content with proper formatting, preserving line breaks and links. Render media thumbnails in grid layout (max 4 visible with 'show more'). Show engagement metrics: likes, comments, shares if available. Add timestamp with relative time display (e.g., '2 hours ago'). Implement platform-specific styling matching original platform's design. Create loading skeleton while content is being fetched. Add error state with retry button if fetch fails. Include edit capability for content before saving. Ensure all images have alt text for accessibility.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Implement Accessibility and Mobile Optimization",
+            "description": "Add comprehensive accessibility features and ensure all components are optimized for mobile devices",
+            "dependencies": [
+              "8.1",
+              "8.2",
+              "8.3",
+              "8.4",
+              "8.5",
+              "8.7"
+            ],
+            "details": "Add ARIA labels to all interactive elements (buttons, inputs, toggles). Implement proper heading hierarchy (h1 for modal title, h2 for sections). Ensure keyboard navigation works with Tab, Shift+Tab, Arrow keys. Add focus visible indicators meeting WCAG standards. Implement screen reader announcements for state changes. Test with VoiceOver (iOS/Mac) and NVDA (Windows). Ensure all touch targets are minimum 44px on mobile. Add appropriate spacing between interactive elements (8px minimum). Implement responsive layouts with CSS Grid and Flexbox. Test on various screen sizes (320px to 1920px width). Add high contrast mode support. Implement reduced motion preferences respect.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Implement AI Enhancement Features",
+        "description": "Integrate Perplexity API for content summarization, sentiment analysis, fact-checking, and deep research capabilities with proper credit consumption tracking",
+        "details": "Create PerplexityClient service with chat completions API integration using sonar-large model for research. Implement AIEnhancer service with methods: summarizeContent(text: string): Promise<string>, analyzeSentiment(text: string): Promise<SentimentResult>, extractKeyPoints(text: string): Promise<string[]>, suggestTags(content: PostData): Promise<string[]>. Build DeepResearchService for pro users: factCheck(claims: string[]): Promise<FactCheckResult[]>, findRelatedSources(topic: string): Promise<Source[]>, generateCommentary(post: PostData): Promise<string>. Create AIYamlGenerator for smart frontmatter generation with tags, categories, sentiment scores. Implement streaming responses for better UX using Server-Sent Events or WebSocket. Add context window management (128k tokens for sonar model). Create prompt templates for each AI operation optimized for accuracy. Implement fallback to simpler models if primary fails. Track AI credit usage: basic AI = 3 credits, deep research = 5 credits. Cache AI results for 7 days to avoid redundant API calls. Add AI result confidence scores. Implement content moderation to filter inappropriate results",
+        "testStrategy": "Test AI summarization quality with diverse content types, verify sentiment analysis accuracy against known samples, test fact-checking with verifiable claims, ensure credit deduction is accurate for AI operations, validate caching prevents duplicate AI calls, test fallback behavior when API fails",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create PerplexityClient Service",
+            "description": "Implement the core Perplexity API client with authentication, request handling, and error management",
+            "dependencies": [],
+            "details": "Create PerplexityClient class with constructor accepting API key from plugin settings. Implement base request method with proper headers (Authorization: Bearer, Content-Type: application/json). Add chat completions endpoint integration using /chat/completions with model 'llama-3.1-sonar-large-128k-online'. Implement retry logic with exponential backoff for rate limiting (max 3 retries). Add request/response logging for debugging. Create error handling for API failures with specific error types (AuthError, RateLimitError, NetworkError). Implement connection pooling and timeout management (30s default). Add method signatures: complete(messages: Message[]): Promise<CompletionResponse>, streamComplete(messages: Message[]): AsyncGenerator<string>",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement AIEnhancer Service",
+            "description": "Build the main AI enhancement service with summarization, sentiment analysis, and content extraction methods",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Create AIEnhancer class that uses PerplexityClient internally. Implement summarizeContent(text: string, maxLength?: number): Promise<string> with smart chunking for long content. Build analyzeSentiment(text: string): Promise<SentimentResult> returning {sentiment: 'positive'|'neutral'|'negative', score: number, confidence: number}. Create extractKeyPoints(text: string, limit?: number): Promise<string[]> for bullet point extraction. Implement suggestTags(content: PostData): Promise<string[]> analyzing content and metadata. Add context window management to split content over 128k tokens. Implement prompt optimization for each operation with system prompts and few-shot examples. Create response parsing and validation for structured outputs",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build DeepResearchService for Pro Users",
+            "description": "Develop advanced research features including fact-checking, source finding, and commentary generation",
+            "dependencies": [
+              "9.1",
+              "9.2"
+            ],
+            "details": "Create DeepResearchService with license validation check before operations. Implement factCheck(claims: string[]): Promise<FactCheckResult[]> with FactCheckResult: {claim: string, verdict: 'true'|'false'|'unverified', sources: Source[], confidence: number}. Build findRelatedSources(topic: string, limit?: number): Promise<Source[]> with Source: {title: string, url: string, snippet: string, relevance: number}. Create generateCommentary(post: PostData): Promise<string> for contextual analysis. Implement web search integration within Perplexity for real-time fact verification. Add claim extraction from post content for automatic fact-checking. Build source credibility scoring algorithm. Create parallel processing for multiple claims to optimize performance",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Prompt Template System",
+            "description": "Design and implement optimized prompt templates for each AI operation to ensure consistent quality",
+            "dependencies": [
+              "9.2",
+              "9.3"
+            ],
+            "details": "Create PromptTemplates directory with templates for each operation. Build summarization prompts with different styles (brief, detailed, bullet-points). Design sentiment analysis prompts with nuanced emotion detection. Create fact-checking prompts with claim extraction and verification instructions. Implement tag generation prompts considering platform-specific hashtag conventions. Build commentary prompts for insightful analysis without bias. Add variable substitution system for dynamic prompt generation: {{content}}, {{platform}}, {{author}}. Create prompt versioning system for A/B testing and optimization. Implement prompt validation to ensure token limits aren't exceeded",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Streaming Response Handler",
+            "description": "Build streaming response system for better UX with real-time AI response display",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Create StreamingHandler class for Server-Sent Events implementation. Build EventSource client for browser-side streaming reception. Implement stream parsing for Perplexity's SSE format with proper error handling. Create UI components for displaying streaming text with typewriter effect. Add stream cancellation mechanism for user interruption. Build buffer management for partial token handling. Implement reconnection logic for dropped connections. Create progress indicators for long-running AI operations. Add fallback to non-streaming mode for compatibility",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Build AI Result Caching System",
+            "description": "Implement intelligent caching to reduce API calls and improve response times",
+            "dependencies": [
+              "9.2",
+              "9.3"
+            ],
+            "details": "Create CacheManager with IndexedDB storage for browser persistence. Implement cache key generation using content hash + operation type. Build TTL management with 7-day default expiration for AI results. Create cache invalidation rules for updated content. Implement size-based eviction when cache exceeds 50MB. Add cache statistics tracking (hits, misses, evictions). Build cache warming for frequently accessed content. Create selective caching based on operation cost (prioritize expensive operations). Implement cache export/import for backup purposes",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Implement Credit Consumption Tracking",
+            "description": "Build comprehensive credit tracking system for AI operations with usage analytics",
+            "dependencies": [
+              "9.2",
+              "9.3"
+            ],
+            "details": "Create CreditManager service with usage tracking per operation type. Implement credit deduction: basic summarization = 1, sentiment = 1, tag generation = 1, fact-checking = 3, deep research = 5. Build pre-flight credit check before AI operations. Create usage history storage with timestamp, operation, credits used. Implement monthly credit reset logic for subscription tiers. Add credit balance display in UI with visual indicators. Build usage analytics dashboard showing consumption patterns. Create credit alert system for low balance warnings. Implement credit reservation for long-running operations",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Add Content Moderation and Safety",
+            "description": "Implement content filtering and safety measures for AI-generated content",
+            "dependencies": [
+              "9.2",
+              "9.3"
+            ],
+            "details": "Create ContentModerator service for filtering inappropriate AI responses. Implement profanity filter with customizable word list. Build hate speech detection using sentiment analysis. Create NSFW content detection for media descriptions. Implement PII (Personal Identifiable Information) redaction in AI outputs. Add medical/legal disclaimer for fact-checking results. Create user-configurable safety levels (strict, moderate, minimal). Build audit log for moderated content with reasons. Implement appeal mechanism for false positives",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Create AI Integration Tests",
+            "description": "Build comprehensive test suite for AI features including mocking and quality validation",
+            "dependencies": [
+              "9.1",
+              "9.2",
+              "9.3",
+              "9.4",
+              "9.5",
+              "9.6",
+              "9.7",
+              "9.8"
+            ],
+            "details": "Create mock PerplexityClient for testing without API calls. Build test fixtures with diverse content samples from each platform. Implement quality tests for summarization (coherence, length, key point retention). Create sentiment analysis accuracy tests with labeled dataset. Build fact-checking tests with known true/false claims. Implement streaming response tests with simulated latency. Create cache behavior tests (hits, misses, expiration). Build credit consumption tests for all operation types. Add integration tests with real API in CI/CD pipeline. Create performance benchmarks for response times",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Build Share System and Public Pages",
+        "description": "Implement secure sharing system with time-based expiration, password protection, and public page generation on Cloudflare Workers",
+        "details": "Create ShareManager service with generateShareLink(note: TFile): Promise<ShareInfo>. Implement share data structure: { id: string, content: string, password?: string, expiresAt: Date, viewCount: number }. Store share data in KV Store with TTL: 30 days for free users, permanent for pro (using R2 Storage for pro). Build share toggle UI component integrated with note properties panel similar to Share Note plugin. Create public share page on Workers with route GET /share/:id, rendering clean HTML with Obsidian styles. Implement password protection with bcrypt hashing for secure shares. Add view tracking with increment on each access, storing in KV. Generate static HTML with syntax highlighting using Prism.js. Implement og:meta tags for social media previews. Add copy button for code blocks, table of contents for long notes. Create share management dashboard showing all active shares with revoke capability. Implement DMCA/delete request handling with DELETE /share/:id endpoint. Add robots.txt and X-Robots-Tag: noindex to prevent search indexing. Sanitize HTML output to prevent XSS attacks. Implement share analytics for pro users",
+        "testStrategy": "Test share link generation and expiration logic, verify password protection works correctly, test view counter increments accurately, ensure free tier shares expire after 30 days, validate HTML sanitization prevents XSS, test DMCA deletion endpoint, verify search engines don't index shared pages",
+        "priority": "low",
+        "dependencies": [
+          3,
+          4,
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ShareManager Service Core",
+            "description": "Implement the ShareManager service class with unique ID generation using nanoid/uuid and core share link creation logic following SRP principles",
+            "dependencies": [],
+            "details": "Create ShareManager class with methods: generateShareId(): string using nanoid or crypto.randomUUID(), createShareInfo(note: TFile, options: ShareOptions): ShareInfo, validateShareAccess(id: string, password?: string): boolean. Implement share data structure interface: { id: string, noteId: string, content: string, password?: string, expiresAt: Date, viewCount: number, tier: 'free' | 'pro', createdAt: Date }. Add share options interface supporting password protection, custom expiry, and tier selection. Ensure proper error handling with custom ShareError class",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement KV Store Integration",
+            "description": "Set up Cloudflare KV Store persistence layer with TTL management for free tier (30 days) and R2 Storage integration for pro tier permanent storage",
+            "dependencies": [],
+            "details": "Create KVStorageAdapter class with methods: saveShare(shareInfo: ShareInfo): Promise<void>, getShare(id: string): Promise<ShareInfo | null>, deleteShare(id: string): Promise<void>. Implement TTL logic: KV.put(key, value, { expirationTtl: 30 * 24 * 60 * 60 }) for free tier. Setup R2 bucket for pro tier with permanent storage: R2.put(key, value) with no expiration. Create migration logic to move shares between tiers when user upgrades. Implement batch operations for cleanup of expired shares. Add retry logic with exponential backoff for network failures",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build Password Protection System",
+            "description": "Implement secure password protection using bcrypt hashing with proper salt rounds and password validation logic for protected shares",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "Install and configure bcrypt library for password hashing with salt rounds of 10. Create PasswordManager class with methods: hashPassword(plaintext: string): Promise<string>, verifyPassword(plaintext: string, hash: string): Promise<boolean>. Implement password validation on share creation: minimum 8 characters, optional complexity requirements. Add password protection UI in share dialog with show/hide toggle and strength indicator. Store hashed passwords in share data structure, never plain text. Implement rate limiting for password attempts: max 5 attempts per IP per hour using KV Store counter",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Public Share Page Server",
+            "description": "Build Cloudflare Workers endpoint for serving public share pages with server-side HTML rendering, Obsidian-style CSS, and proper meta tags",
+            "dependencies": [
+              "10.2"
+            ],
+            "details": "Create Workers route GET /share/:id with HTML response generation. Implement server-side markdown rendering using marked or markdown-it library. Apply Obsidian-compatible styles with CSS extraction from plugin styles.css. Add Prism.js for syntax highlighting with appropriate language detection. Generate Open Graph meta tags: og:title, og:description, og:image for social media previews. Implement responsive design with mobile-first approach. Add copy button functionality for code blocks using JavaScript. Create table of contents for notes with multiple headings using heading extraction",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Develop Share Toggle UI Component",
+            "description": "Build Svelte 5 component for share toggle interface integrated with Obsidian's note properties panel using Runes API and proper state management",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "Create ShareToggle.svelte component with $state rune for reactive share status. Implement toggle switch UI similar to Share Note plugin design. Add share link display with copy button when note is shared. Create password field with optional protection toggle. Display expiration date picker for custom expiry (pro feature). Show share statistics: view count, creation date, last accessed. Integrate with Obsidian workspace events: workspace.on('file-open', updateShareStatus). Add loading states and error handling with user-friendly messages. Style with Tailwind CSS respecting Obsidian's theme variables",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Analytics and View Tracking",
+            "description": "Create view tracking system with counter increments, analytics dashboard for pro users, and basic statistics for all shared content",
+            "dependencies": [
+              "10.4"
+            ],
+            "details": "Implement view counter in Workers: increment on each GET /share/:id request using KV atomic operations. Create ViewTracker class with methods: recordView(shareId: string, metadata: ViewMetadata): Promise<void>. Store view metadata: timestamp, IP hash (privacy-compliant), referrer, user agent. Build analytics aggregation for pro users: daily/weekly/monthly views, geographic distribution (using CF-IPCountry header), referrer sources. Create ShareAnalytics component showing charts using Chart.js or lightweight alternative. Implement view history with pagination for recent accesses. Add export functionality for analytics data in CSV format",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Build Share Management Dashboard",
+            "description": "Create comprehensive dashboard for managing all active shares with bulk operations, search, filtering, and revoke capabilities",
+            "dependencies": [
+              "10.5",
+              "10.6"
+            ],
+            "details": "Create ShareDashboard.svelte component with list view of all user's shares. Implement DataTable with columns: note title, share date, expiry, password protected, view count, actions. Add search functionality by note title or content with debounced input. Create filters: active/expired, password protected/public, date range. Implement bulk operations: select all, bulk delete, bulk extend expiry (pro). Add individual actions: copy link, change password, revoke share, view analytics. Create confirmation dialogs for destructive actions using Obsidian's Modal API. Implement pagination for large share lists with virtual scrolling",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Implement Security and Compliance Features",
+            "description": "Add comprehensive security measures including XSS prevention, DMCA handling, robots.txt configuration, and rate limiting for shared content",
+            "dependencies": [
+              "10.4",
+              "10.7"
+            ],
+            "details": "Implement HTML sanitization using DOMPurify or similar library to prevent XSS attacks in shared content. Create DELETE /share/:id endpoint for DMCA takedown requests with verification token. Add robots.txt at Workers root with Disallow: /share/* directive. Set X-Robots-Tag: noindex, nofollow headers on all share pages. Implement Content Security Policy (CSP) headers for share pages. Add rate limiting: max 100 requests per minute per IP using Cloudflare's rate limiting. Create abuse reporting system with email notifications to admin. Implement share content validation to prevent malicious JavaScript injection. Add CORS headers configuration for API endpoints with strict origin validation",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-26T14:09:53.710Z",
+      "updated": "2025-08-29T22:01:57.810Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

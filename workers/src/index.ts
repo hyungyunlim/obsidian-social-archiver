@@ -1,0 +1,66 @@
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { timing } from 'hono/timing';
+import type { Env } from './types/bindings';
+import { 
+  errorHandler, 
+  requestIdMiddleware, 
+  loggingMiddleware 
+} from './middleware/errorHandler';
+import { rateLimiter } from './middleware/rateLimiter';
+import { archiveRouter } from './handlers/archive';
+import { shareRouter } from './handlers/share';
+import { licenseRouter } from './handlers/license';
+import { healthRouter } from './handlers/health';
+
+const app = new Hono<Env>();
+
+// Global middleware
+app.use('*', requestIdMiddleware);
+app.use('*', timing());
+app.use('*', loggingMiddleware);
+
+// CORS configuration for Obsidian
+app.use('*', cors({
+  origin: [
+    'app://obsidian.md',
+    'obsidian://',
+    'capacitor://localhost',
+    'http://localhost',
+    'http://localhost:*',
+    'https://localhost',
+    'https://localhost:*'
+  ],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-License-Key'],
+  exposeHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+  maxAge: 86400,
+  credentials: true
+}));
+
+// Rate limiting
+app.use('/api/*', rateLimiter());
+
+// Error handling
+app.onError(errorHandler);
+
+// Health check
+app.route('/', healthRouter);
+
+// API routes
+app.route('/api/archive', archiveRouter);
+app.route('/api/share', shareRouter);
+app.route('/api/license', licenseRouter);
+
+// 404 handler
+app.notFound((c) => {
+  return c.json({
+    success: false,
+    error: {
+      code: 'NOT_FOUND',
+      message: 'Endpoint not found'
+    }
+  }, 404);
+});
+
+export default app;

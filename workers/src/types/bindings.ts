@@ -1,0 +1,30 @@
+import type { Variables } from './context';
+
+export interface Bindings {
+  // KV Namespaces
+  ARCHIVE_CACHE: KVNamespace;
+  LICENSE_KEYS: KVNamespace;
+  SHARE_LINKS: KVNamespace;
+  
+  // Environment variables
+  ENVIRONMENT: 'development' | 'staging' | 'production';
+  BRIGHTDATA_API_KEY?: string;
+  PERPLEXITY_API_KEY?: string;
+  GUMROAD_API_KEY?: string;
+  HMAC_SECRET?: string;
+  
+  // Rate limiter
+  RATE_LIMITER?: RateLimiter;
+  
+  // Index signature for Hono compatibility
+  [key: string]: unknown;
+}
+
+export interface RateLimiter {
+  limit: (key: string) => Promise<{ success: boolean }>;
+}
+
+export interface Env {
+  Bindings: Bindings;
+  Variables: Variables;
+}

@@ -1,0 +1,542 @@
+PRODUCT REQUIREMENTS DOCUMENT
+Social Archiver for Obsidian Plugin
+Version 1.0
+
+==================================================
+EXECUTIVE SUMMARY
+==================================================
+
+Project: Social Archiver - Obsidian Plugin for archiving social media posts
+Mission: Enable one-click archiving of social media posts into Obsidian notes with complete user data ownership
+Target: 1M+ Obsidian users, researchers, content creators, PKM practitioners
+
+==================================================
+CORE FEATURES TO IMPLEMENT
+==================================================
+
+PHASE 1 - MVP FOUNDATION (Week 1)
+--------------------------------------------------
+Task: Setup Obsidian plugin boilerplate with TypeScript 5.0+ and strict mode
+Task: Configure Svelte 5 with Runes API for UI components
+Task: Setup Vite bundler with @codewithcheese/vite-plugin-obsidian
+Task: Configure Tailwind CSS v3 without preflight for Obsidian compatibility
+Task: Create Cloudflare Worker project with TypeScript
+Task: Setup Cloudflare KV Store for data persistence
+Task: Implement BrightData API client for content scraping
+Task: Create ArchiveService class (API communication only)
+Task: Create MarkdownConverter class (conversion only)
+Task: Design markdown template with AI-enhanced sections
+Task: Implement markdown template engine with variable substitution
+Task: Create VaultManager class (Vault operations only)
+Task: Implement note file structure (Social Archives/{platform}/{year}/{month}/)
+Task: Create note naming convention ([YYYY-MM-DD] {platform}-{slug}-{shortId}.md)
+Task: Setup automatic folder creation if not exists
+Task: Implement duplicate note detection and handling
+Task: Create LicenseValidator class (license validation only)
+Task: Create ArchiveOrchestrator class for service coordination
+Task: Implement platform detection service
+Task: Create platform-specific service interfaces (FacebookService, LinkedInService, etc)
+Task: Create basic markdown converter service with SRP pattern
+Task: Setup default media path as 'assets/social/{platform}/{postId}/'
+Task: Implement disclaimer component with legal warning text
+Task: Implement URL validation for Facebook and LinkedIn
+Task: Create simple archive modal UI component
+Task: Add command palette integration for quick archiving
+Task: Implement unified error schema { code, message, details?, retryAfter? }
+Task: Create common error codes enum (INVALID_URL, PLATFORM_NOT_SUPPORTED, etc)
+Task: Setup Zod schemas for PostData with schemaVersion field
+Task: Create versioned markdown frontmatter standard (x-spec-version: 1.0.0)
+Task: Implement async job flow architecture (POST /archive?mode=async)
+Task: Create job status endpoints (GET /jobs/{jobId})
+Task: Implement URL canonicalization and dedup caching
+Task: Setup SSRF protection with URL allowlist and redirect limits
+
+PHASE 2 - LICENSING & PAYMENT (Week 2) [External Payment Model]
+--------------------------------------------------
+Task: Design credit-based licensing system architecture
+Task: Implement Gumroad API integration for payments
+Task: Create license key validation service
+Task: Build usage tracking system with credit deduction
+Task: Implement credit consumption logic (basic: 1, AI: 3, deep research: 5)
+Task: Create credit refill system for paid users
+Task: Implement free trial with 10 credits limit
+Task: Create license status UI component
+Task: Add donation/support links in plugin settings
+Task: Implement 'Buy Pro' button linking to Gumroad
+Task: Create freemium model notification system
+Task: Add API rate limiting protection
+Task: Implement exponential backoff with jitter for rate limits
+Task: Create API quota management system
+Task: Add per-platform rate limit tracking
+Task: Implement request queuing system
+Task: Create rate limit notification to users
+Task: Setup license verification on Cloudflare Workers
+Task: Implement Gumroad webhook HMAC signature verification
+Task: Create automatic license key generation after purchase
+Task: Implement credit balance checking
+Task: Create low credit warning notifications
+Task: Build credit usage history tracking
+Task: Implement license stacking for credit packages
+Task: Create free trial to paid conversion flow
+Task: Add refund handling and credit adjustment
+Task: Implement promotional code system
+Task: Create bulk license purchase handling
+Task: Store license keys with local encryption/obfuscation
+Task: Implement idempotency key persistence for webhook handling
+Task: Create circuit breaker pattern for BrightData API
+
+PHASE 3 - FULL PLATFORM SUPPORT (Week 3-4)
+--------------------------------------------------
+Task: Add Instagram URL pattern support and scraping
+Task: Add TikTok URL pattern support and scraping
+Task: Add X.com/Twitter URL pattern support and scraping
+Task: Add Threads URL pattern support and scraping
+Task: Implement platform-specific content extractors
+Task: Create MediaHandler service with SRP
+Task: Implement image download and local storage
+Task: Setup default media path structure (assets/social/{platform}/{postId}/)
+Task: Implement video thumbnail extraction
+Task: Create media naming convention with content hash deduplication
+Task: Add media compression for mobile optimization
+Task: Implement image format conversion (WebP for modern browsers)
+Task: Create responsive image sizing (multiple resolutions)
+Task: Setup lazy loading for media files
+Task: Implement progressive image loading
+Task: Create media strategy config (SAVE_MEDIA=link|thumb|full)
+Task: Implement MAX_MEDIA_MB and CONCURRENCY settings
+Task: Add content hash-based deduplication for media files
+Task: Preserve alt text and captions for accessibility
+Task: Implement fallback to link when media download fails
+Task: Build author information extractor
+Task: Add engagement metrics capture (likes, comments, shares)
+Task: Create hashtag and mention extraction
+Task: Implement settings page with configuration options
+Task: Build timeline view for archived posts
+Task: Implement virtual scrolling for timeline view
+Task: Add timeline grouping by day/week/month/platform
+Task: Create platform-specific post card components
+Task: Implement platform color system (Facebook #1877f2, LinkedIn #0077b5, etc)
+Task: Add platform icons and badges
+Task: Create platform-specific interaction patterns
+Task: Add search and filter capabilities
+Task: Implement useArchiveState hook with Svelte 5 Runes
+Task: Create useLicense hook for license management
+Task: Create usePlatformDetection hook for URL validation
+Task: Implement useAutoSave hook with intervals
+Task: Create useForm hook for form state management
+Task: Implement useFieldArray hook for dynamic fields
+Task: Create useDebounce hook for input optimization
+Task: Create PostData interface for unified data structure
+Task: Add YAML frontmatter structure with share controls
+Task: Implement platform URL pattern validation system
+Task: Create Facebook URL pattern regex (/posts/, /watch/, /share/, /permalink/)
+Task: Create LinkedIn URL pattern regex (/posts/, /feed/update/, /pulse/)
+Task: Create Instagram URL pattern regex (/p/, /reel/, /tv/)
+Task: Create TikTok URL pattern regex (/video/, /@username/video/)
+Task: Create X.com URL pattern regex (/status/, /i/spaces/)
+Task: Create Threads URL pattern regex (/t/, /@username/post/)
+Task: Create URL expansion for shortened links (t.co, bit.ly)
+Task: Implement URL redirect following with 3-hop limit
+Task: Validate final redirect host against platform allowlist
+Task: Normalize URLs by stripping tracking parameters
+Task: Store canonical URL in PostData schema
+Task: Implement dedup cache key as hash(platform + canonicalUrl)
+Task: Cache successful results for 24-48h to avoid duplicate charges
+Task: Handle emoji and RTL text normalization
+Task: Escape code blocks and links in markdown conversion
+Task: Implement configurable comment policy (top N, all, summarized)
+Task: Sanitize HTML embeds with allowlist for iframes
+
+PHASE 4 - AI ENHANCEMENT (Week 4)
+--------------------------------------------------
+Task: Integrate Perplexity API for deep research
+Task: Setup Perplexity API client with error handling
+Task: Implement AI model selection (sonar-large for research)
+Task: Implement content summarization feature
+Task: Create smart tag suggestion system
+Task: Add sentiment analysis capability
+Task: Build title optimization service
+Task: Implement AI YAML generation system
+Task: Create AIYamlGenerator service class
+Task: Build NLP processor for sentiment analysis
+Task: Implement smart title optimization
+Task: Generate AI-enhanced tags and categories
+Task: Create key points extraction service
+Task: Add topic categorization with AI
+Task: Build Deep Research service architecture
+Task: Integrate fact-checking API (Pro feature)
+Task: Implement credibility scoring algorithm
+Task: Create claim extraction for fact-checking
+Task: Build related sources discovery service
+Task: Generate AI commentary based on research
+
+PHASE 5 - SHARING SYSTEM (Week 5)
+--------------------------------------------------
+Task: Design share link generation system
+Task: Implement time-based expiration (30 days free, permanent pro)
+Task: Create password protection for shared links
+Task: Build view tracking analytics
+Task: Implement share status in YAML frontmatter
+Task: Create public share page on Cloudflare Workers
+Task: Implement Share Note style sharing system
+Task: Add share icon to properties panel (like Share Note)
+Task: Create share toggle functionality with YAML update
+Task: Implement share link management UI
+Task: Build share status synchronization
+Task: Add view count tracking for shared notes
+Task: Implement R2 storage for Pro users (large files)
+Task: Create KV store management for free users (1MB limit)
+Task: Build expired link handling with auto-cleanup
+Task: Create share notification system
+Task: Generate static HTML for shared timelines
+Task: Implement POST /share/delete/{viewId} endpoint
+Task: Enforce TTL by default on KV storage
+Task: Sanitize HTML output to prevent XSS
+Task: Exclude or encrypt PII in shared content
+Task: Add X-Robots-Tag: noindex to prevent search indexing
+Task: Support DMCA/delete requests with documentation
+
+PHASE 6 - MOBILE OPTIMIZATION (Week 5)
+--------------------------------------------------
+Task: Implement 44px minimum touch targets
+Task: Create Native Share Extension for iOS
+Task: Create Native Share Extension for Android
+Task: Implement Web Share API integration
+Task: Build offline-first architecture with local queue
+Task: Create Service Worker for background sync
+Task: Implement stale-while-revalidate caching strategy
+Task: Setup offline cache for critical resources
+Task: Create cache versioning and cleanup system
+Task: Add PWA manifest.json configuration
+Task: Implement PWA install prompt with custom UI
+Task: Create PWA update notification system
+Task: Setup background sync for offline archives
+Task: Implement periodic sync for archive updates
+Task: Create offline queue management system
+Task: Add Progressive Web App capabilities
+Task: Implement Web Share Target API integration
+Task: Create share_target configuration in manifest
+Task: Handle incoming shares from other apps
+Task: Implement quick archive for shared content
+Task: Implement gesture controls for mobile
+Task: Create gesture recognition system (doubleTap, swipe, longPress)
+Task: Implement platform-specific mobile experiences
+Task: Create Instagram-style swipeable carousel for images
+Task: Implement TikTok-style vertical video player
+Task: Add Twitter/X thread expansion/collapse UI
+Task: Create Facebook-style reaction emoji animations
+Task: Implement LinkedIn professional card layout
+Task: Add Threads conversation thread view
+Task: Create responsive modal designs
+Task: Add haptic feedback support (light, medium, heavy patterns)
+Task: Implement touch feedback for all interactive elements
+Task: Build swipe navigation for timeline
+Task: Optimize for iOS and Android browsers
+Task: Implement background sync for offline archives
+Task: Add progress indicators with phases (validate → scrape → parse → convert → save)
+Task: Implement "Save text-only" retry option on failure
+Task: Support Poll/SSE for async job monitoring
+Task: Add keyboard navigation and focus trap for accessibility
+Task: Implement ARIA labels and live regions for screen readers
+Task: Ensure proper contrast ratios for accessibility
+
+PHASE 7 - TESTING & QUALITY ASSURANCE (Week 5-6)
+--------------------------------------------------
+Task: Write unit tests for all service classes
+Task: Create integration tests for API endpoints
+Task: Implement component tests for Svelte components
+Task: Add E2E tests for critical user flows
+Task: Setup TypeScript strict mode checking
+Task: Configure ESLint and Prettier
+Task: Implement ArchiveError class with error codes
+Task: Create ErrorHandler service with retry logic
+Task: Add ErrorBoundary component for Svelte
+Task: Implement error monitoring and logging
+Task: Create user-friendly error messages with Notice
+Task: Add comprehensive error handling patterns
+Task: Implement input validation and sanitization
+Task: Create error recovery mechanisms
+Task: Implement [Social Archiver] prefix for all console logs
+Task: Setup error reporting to Cloudflare Analytics
+Task: Create contract tests with BrightData response snapshots
+Task: Implement performance guards (p95 ≤ X seconds)
+Task: Add timeout and backoff testing
+Task: Validate PostData schemas with snapshot tests
+Task: Test rendered markdown templates
+Task: Add security tests for SSRF, XSS, path traversal
+Task: Test open redirect vulnerabilities
+Task: Implement partial fallback for failed media downloads
+
+PHASE 8 - DEVOPS & CI/CD (Week 5-6)
+--------------------------------------------------
+Task: Setup GitHub Actions for automated testing
+Task: Configure automated build pipeline
+Task: Implement version tagging and release notes
+Task: Setup Cloudflare deployment pipeline
+Task: Create environment variables management
+Task: Implement security scanning for dependencies
+Task: Setup performance monitoring with Cloudflare Analytics
+Task: Implement security checklist validations
+Task: Ensure HTTPS-only communication
+Task: Add API key encryption and secure storage
+Task: Implement comprehensive input sanitization
+Task: Create backup and recovery procedures
+Task: Implement rate limiting and DDoS protection
+Task: Setup error tracking and alerting
+Task: Create success metrics tracking system
+Task: Implement download count tracking
+Task: Build MRR (Monthly Recurring Revenue) calculator
+Task: Create user engagement analytics
+Task: Setup conversion funnel tracking
+Task: Implement A/B testing framework
+Task: Create admin dashboard for monitoring
+Task: Implement structured JSON logging with requestId
+Task: Add metrics for success/failure rates by error code
+Task: Track p95 latency and external call times
+Task: Monitor per-platform scraping costs
+Task: Implement daily free cap per user (e.g., 3 archives)
+Task: Create cache hit metrics for cost optimization
+Task: Setup Cloudflare Queues for bulk request handling
+Task: Add fallback to oEmbed/OpenGraph when BrightData fails
+Task: Monitor parser failure rates for DOM changes
+Task: Prepare hotfix deployment path
+
+PHASE 9 - LAUNCH PREPARATION (Week 6)
+--------------------------------------------------
+Task: Submit plugin to Obsidian Community Plugins (free core version)
+Task: Ensure compliance with Obsidian plugin guidelines
+Task: Remove any in-app purchase mechanisms from plugin
+Task: Create comprehensive user documentation
+Task: Build video tutorials for key features
+Task: Prepare Product Hunt launch materials
+Task: Create marketing landing page (external site)
+Task: Write blog post announcements
+Task: Prepare Reddit and forum posts
+Task: Setup external purchase page on Gumroad
+Task: Create license activation tutorial
+Task: Document external licensing model clearly
+Task: Setup customer support system
+Task: Create troubleshooting guide
+Task: Build feedback collection system
+Task: Document commit message conventions (feat, fix, refactor, docs, test, chore)
+Task: Create developer onboarding guide
+Task: Document long-term vision (Phase 2: Very Very Social platform)
+Task: Create plugin settings import/export system
+Task: Implement data migration for version updates
+Task: Build settings backup and restore functionality
+Task: Create plugin version compatibility checking
+Task: Implement automatic update notifications
+
+==================================================
+OBSIDIAN PLUGIN COMPLIANCE
+==================================================
+
+Plugin Distribution:
+- Core plugin must be free in Community Plugins
+- External licensing via Gumroad (not in-app)
+- No payment processing within Obsidian
+- Donation links allowed in settings
+- Freemium model with external license validation
+
+Monetization Strategy:
+- Free tier: 10 credits/month
+- Pro features: External license key required
+- License validation via Cloudflare Workers
+- Gumroad handles all payments
+- No Obsidian marketplace integration
+
+==================================================
+TECHNICAL REQUIREMENTS
+==================================================
+
+Frontend Architecture:
+- Svelte 5 with Runes API ($state, $derived, $effect)
+- TypeScript 5.0+ with strict mode enabled
+- Tailwind CSS v3 (no preflight) + Obsidian CSS variables
+- Vite bundler with hot module replacement
+- Single Responsibility Principle for all services
+
+Backend Architecture:
+- Cloudflare Workers for serverless API
+- Cloudflare KV Store for temporary data
+- BrightData API for content scraping
+- Perplexity API for AI features
+- Gumroad API for license management
+
+File Structure:
+- Media: assets/social/{platform}/{postId}/{hash}.{ext}
+- Notes: Social Archives/{platform}/{year}/{month}/
+- Naming: [YYYY-MM-DD] {platform}-{slug}-{shortId}.md
+- Media naming: Content hash based with deduplication
+
+Testing Requirements:
+- Unit tests for all service classes
+- Integration tests for API endpoints
+- Component tests for Svelte components
+- E2E tests for critical user flows
+- Mobile device testing
+
+Security Requirements:
+- HTTPS-only communication
+- Input validation and sanitization
+- Rate limiting on all endpoints
+- Secure license key storage
+- Legal disclaimer display
+
+Performance Requirements:
+- Archive completion within 30 seconds
+- Support 1000+ notes without lag
+- Virtual scrolling for large lists
+- Lazy loading for images
+- Batch processing support
+
+==================================================
+PRICING TIERS
+==================================================
+
+Free Plan:
+- 10 credits per month
+- 30-day share links
+- Basic features only
+
+Pro ($19.99/month) - External Purchase via Gumroad:
+- 500 credits per month
+- Permanent share links
+- AI analysis features
+- Custom domain support
+- Deep research capabilities
+- License key activation in plugin settings
+
+Credit Usage:
+- Basic archive: 1 credit
+- Archive with AI: 3 credits  
+- Deep research: 5 credits
+
+==================================================
+SUCCESS METRICS
+==================================================
+
+Week 6 Launch:
+- 100+ downloads
+- 20+ beta testers
+- 5+ positive reviews
+
+Month 2:
+- 500+ active users
+- $500+ MRR
+- 50+ paying customers
+
+Month 3:
+- 2,000+ active users
+- $2,000+ MRR
+- 200+ paying customers
+
+Month 6:
+- 10,000+ active users
+- $10,000+ MRR
+- 1,000+ paying customers
+
+==================================================
+KEY PRINCIPLES
+==================================================
+
+1. Mobile-First Design
+   - 44px minimum touch targets (iOS HIG)
+   - Offline-first architecture
+   - Share extension support
+   - Always display disclaimer: "Archive only content you have permission to save"
+
+2. Security & Privacy
+   - Local data storage
+   - No unnecessary tracking
+   - Transparent data handling
+   - Never hardcode API keys
+   - Always use HTTPS
+   - Input validation on all endpoints
+   - Rate limiting protection
+
+3. User Experience
+   - 30-second setup
+   - One-click operations
+   - Clear error messages
+   - Progressive disclosure
+
+4. Code Quality
+   - Single Responsibility Principle (SRP)
+   - TypeScript strict mode (no any types)
+   - Comprehensive error handling (try-catch on all async)
+   - Test-driven development
+   - Svelte 5 Runes usage ($state, not plain variables)
+
+5. Performance
+   - Fast archiving (< 30 seconds)
+   - Efficient resource usage
+   - Optimized for large vaults
+   - Lazy loading for media
+   - Virtual scrolling for lists
+   - Stale-while-revalidate caching
+
+==================================================
+CONSTRAINTS & RISKS
+==================================================
+
+Technical Constraints:
+- Cannot archive private posts
+- Cannot archive Stories (ephemeral)
+- Cannot archive live streams
+- 1MB limit for free tier (KV Store)
+
+Legal Constraints:
+- Must display disclaimers
+- Respect platform ToS
+- User responsible for rights
+
+Risk Mitigation:
+- Abstract platform interfaces
+- Implement retry logic
+- Local-first storage
+- Clear legal disclaimers
+- Multiple pricing tiers
+
+==================================================
+DEVELOPMENT GUIDELINES
+==================================================
+
+Commit Message Format:
+- feat: New feature additions
+- fix: Bug fixes
+- refactor: Code improvements
+- docs: Documentation updates
+- test: Test additions/modifications
+- chore: Build/configuration changes
+
+Architecture Patterns:
+- Each class has single responsibility
+- Services separated by concern (ArchiveService, MarkdownConverter, MediaHandler, VaultManager)
+- Svelte 5 Runes for all state management
+- Common hooks pattern (useArchiveState)
+
+Error Handling:
+- try-catch on all async functions
+- User-friendly error messages with Notice.show()
+- Console logging with [Social Archiver] prefix
+- Never expose technical errors to users
+
+==================================================
+LONG TERM VISION
+==================================================
+
+Phase 1 - Social Archiver (Current):
+- Focus on archiving capabilities
+- "Save what matters" philosophy
+- User data ownership
+
+Phase 2 - Very Very Social (Future):
+- Independent SNS platform
+- Separate project from archiver
+- "Share what you think" philosophy
+- Synergy with archiver but independent
+
+==================================================
+END OF DOCUMENT
+==================================================
