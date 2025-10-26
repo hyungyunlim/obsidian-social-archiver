@@ -440,4 +440,333 @@ export class PlatformDetector implements IService<Platform> {
     const threadMatch = urlObj.pathname.match(/\/t\/([A-Za-z0-9_-]+)/);
     return threadMatch ? threadMatch[1] : null;
   }
+
+  /**
+   * Canonicalize URL for deduplication and comparison
+   * Removes tracking parameters and normalizes URL structure
+   */
+  canonicalizeUrl(url: string, platform?: Platform): string {
+    try {
+      const normalizedUrl = this.normalizeUrl(url);
+      const urlObj = new URL(normalizedUrl);
+
+      // Detect platform if not provided
+      const detectedPlatform = platform || this.detectPlatform(url);
+
+      if (!detectedPlatform) {
+        // If platform cannot be detected, just return normalized URL
+        return this.basicCanonicalization(urlObj);
+      }
+
+      // Apply platform-specific canonicalization
+      switch (detectedPlatform) {
+        case 'facebook':
+          return this.canonicalizeFacebookUrl(urlObj);
+        case 'linkedin':
+          return this.canonicalizeLinkedInUrl(urlObj);
+        case 'instagram':
+          return this.canonicalizeInstagramUrl(urlObj);
+        case 'tiktok':
+          return this.canonicalizeTikTokUrl(urlObj);
+        case 'x':
+          return this.canonicalizeXUrl(urlObj);
+        case 'threads':
+          return this.canonicalizeThreadsUrl(urlObj);
+        default:
+          return this.basicCanonicalization(urlObj);
+      }
+    } catch (error) {
+      // If canonicalization fails, return original URL
+      return url;
+    }
+  }
+
+  /**
+   * Basic canonicalization without platform-specific rules
+   */
+  private basicCanonicalization(urlObj: URL): string {
+    // Remove common tracking parameters
+    this.removeTrackingParams(urlObj);
+
+    // Normalize domain (remove www, convert to lowercase)
+    urlObj.hostname = urlObj.hostname.toLowerCase().replace(/^www\./, '');
+
+    // Remove trailing slash
+    if (urlObj.pathname.endsWith('/') && urlObj.pathname.length > 1) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+
+    // Sort query parameters for consistency
+    this.sortQueryParams(urlObj);
+
+    // Remove hash/fragment
+    urlObj.hash = '';
+
+    return urlObj.href;
+  }
+
+  /**
+   * Remove common tracking parameters
+   */
+  private removeTrackingParams(urlObj: URL): void {
+    const trackingParams = [
+      // UTM parameters
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_term',
+      'utm_content',
+      'utm_id',
+
+      // Click tracking
+      'fbclid',
+      'gclid',
+      'msclkid',
+      'dclid',
+      '_ga',
+
+      // Social media tracking
+      'ref',
+      'ref_src',
+      'ref_url',
+      'referrer',
+      'source',
+      'share',
+
+      // Video tracking
+      'feature',
+      't',
+      'time_continue',
+
+      // General tracking
+      'si',
+      'trkid',
+      'tracking',
+      'track',
+      'trk',
+      'icid',
+      'cid',
+    ];
+
+    trackingParams.forEach(param => {
+      urlObj.searchParams.delete(param);
+    });
+  }
+
+  /**
+   * Sort query parameters alphabetically for consistency
+   */
+  private sortQueryParams(urlObj: URL): void {
+    const params = Array.from(urlObj.searchParams.entries());
+    urlObj.search = '';
+
+    params
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([key, value]) => {
+        urlObj.searchParams.append(key, value);
+      });
+  }
+
+  /**
+   * Facebook-specific canonicalization
+   */
+  private canonicalizeFacebookUrl(urlObj: URL): string {
+    // Convert mobile URLs to desktop
+    if (urlObj.hostname === 'm.facebook.com') {
+      urlObj.hostname = 'facebook.com';
+    }
+
+    // Remove fb.com variations
+    if (urlObj.hostname === 'fb.com') {
+      urlObj.hostname = 'facebook.com';
+    }
+
+    // Remove www
+    urlObj.hostname = urlObj.hostname.replace(/^www\./, '');
+
+    // Remove tracking parameters
+    this.removeTrackingParams(urlObj);
+
+    // Facebook-specific parameters to remove
+    const fbTrackingParams = ['__cft__', '__tn__', 'comment_id', 'reply_comment_id', 'notif_id', 'notif_t', 'paipv'];
+    fbTrackingParams.forEach(param => urlObj.searchParams.delete(param));
+
+    // Keep essential parameters (story_fbid, fbid, v, id)
+    const essentialParams = ['story_fbid', 'fbid', 'v', 'id'];
+    const paramsToKeep = new Map<string, string>();
+
+    essentialParams.forEach(param => {
+      const value = urlObj.searchParams.get(param);
+      if (value) {
+        paramsToKeep.set(param, value);
+      }
+    });
+
+    // Clear all params and add back essential ones
+    urlObj.search = '';
+    paramsToKeep.forEach((value, key) => {
+      urlObj.searchParams.set(key, value);
+    });
+
+    // Remove trailing slash
+    if (urlObj.pathname.endsWith('/') && urlObj.pathname.length > 1) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+
+    // Remove hash
+    urlObj.hash = '';
+
+    return urlObj.href;
+  }
+
+  /**
+   * LinkedIn-specific canonicalization
+   */
+  private canonicalizeLinkedInUrl(urlObj: URL): string {
+    // Remove www
+    urlObj.hostname = urlObj.hostname.replace(/^www\./, '');
+
+    // Convert shortened URLs
+    if (urlObj.hostname === 'lnkd.in') {
+      // Keep shortened URL as-is (will be expanded by URLExpander)
+      return urlObj.href;
+    }
+
+    // Remove tracking parameters
+    this.removeTrackingParams(urlObj);
+
+    // LinkedIn-specific parameters to remove
+    const linkedInTrackingParams = ['trk', 'trkInfo', 'lipi', 'licu', 'trackingId', 'originalSubdomain'];
+    linkedInTrackingParams.forEach(param => urlObj.searchParams.delete(param));
+
+    // Remove trailing slash
+    if (urlObj.pathname.endsWith('/') && urlObj.pathname.length > 1) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+
+    // Remove hash
+    urlObj.hash = '';
+
+    return urlObj.href;
+  }
+
+  /**
+   * Instagram-specific canonicalization
+   */
+  private canonicalizeInstagramUrl(urlObj: URL): string {
+    // Remove www
+    urlObj.hostname = urlObj.hostname.replace(/^www\./, '');
+
+    // Convert shortened URLs
+    if (urlObj.hostname === 'instagr.am') {
+      urlObj.hostname = 'instagram.com';
+    }
+
+    // Remove ALL query parameters for Instagram (post ID is in path)
+    urlObj.search = '';
+
+    // Remove trailing slash
+    if (urlObj.pathname.endsWith('/') && urlObj.pathname.length > 1) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+
+    // Remove hash
+    urlObj.hash = '';
+
+    return urlObj.href;
+  }
+
+  /**
+   * TikTok-specific canonicalization
+   */
+  private canonicalizeTikTokUrl(urlObj: URL): string {
+    // Remove www
+    urlObj.hostname = urlObj.hostname.replace(/^www\./, '');
+
+    // Keep shortened URLs as-is (will be expanded by URLExpander)
+    if (urlObj.hostname === 'vm.tiktok.com' || urlObj.hostname === 'vt.tiktok.com') {
+      return urlObj.href;
+    }
+
+    // Remove tracking parameters
+    this.removeTrackingParams(urlObj);
+
+    // TikTok-specific parameters to remove
+    const tiktokTrackingParams = ['_r', '_t', 'is_copy_url', 'is_from_webapp', 'sender_device', 'sender_web_id'];
+    tiktokTrackingParams.forEach(param => urlObj.searchParams.delete(param));
+
+    // Remove trailing slash
+    if (urlObj.pathname.endsWith('/') && urlObj.pathname.length > 1) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+
+    // Remove hash
+    urlObj.hash = '';
+
+    return urlObj.href;
+  }
+
+  /**
+   * X (Twitter) specific canonicalization
+   */
+  private canonicalizeXUrl(urlObj: URL): string {
+    // Standardize to x.com domain
+    if (urlObj.hostname.includes('twitter.com')) {
+      urlObj.hostname = urlObj.hostname.replace('twitter.com', 'x.com');
+    }
+
+    // Convert mobile URLs to desktop
+    if (urlObj.hostname === 'mobile.x.com' || urlObj.hostname === 'mobile.twitter.com') {
+      urlObj.hostname = 'x.com';
+    }
+
+    // Remove www
+    urlObj.hostname = urlObj.hostname.replace(/^www\./, '');
+
+    // Keep shortened URLs as-is (will be expanded by URLExpander)
+    if (urlObj.hostname === 't.co') {
+      return urlObj.href;
+    }
+
+    // Remove tracking parameters
+    this.removeTrackingParams(urlObj);
+
+    // X-specific parameters to remove
+    const xTrackingParams = ['s', 'src', 'cn', 'cxt', 'twclid'];
+    xTrackingParams.forEach(param => urlObj.searchParams.delete(param));
+
+    // Remove photo/video suffixes from path (they're just UI views)
+    urlObj.pathname = urlObj.pathname.replace(/\/(photo|video)\/\d+$/, '');
+
+    // Remove trailing slash
+    if (urlObj.pathname.endsWith('/') && urlObj.pathname.length > 1) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+
+    // Remove hash
+    urlObj.hash = '';
+
+    return urlObj.href;
+  }
+
+  /**
+   * Threads-specific canonicalization
+   */
+  private canonicalizeThreadsUrl(urlObj: URL): string {
+    // Remove www
+    urlObj.hostname = urlObj.hostname.replace(/^www\./, '');
+
+    // Remove ALL query parameters (post ID is in path)
+    urlObj.search = '';
+
+    // Remove trailing slash
+    if (urlObj.pathname.endsWith('/') && urlObj.pathname.length > 1) {
+      urlObj.pathname = urlObj.pathname.slice(0, -1);
+    }
+
+    // Remove hash
+    urlObj.hash = '';
+
+    return urlObj.href;
+  }
 }

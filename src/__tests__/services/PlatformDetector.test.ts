@@ -378,4 +378,202 @@ describe('PlatformDetector', () => {
       expect(detector.extractPostId('https://instagram.com/')).toBeNull();
     });
   });
+
+  describe('URL Canonicalization', () => {
+    describe('Facebook canonicalization', () => {
+      it('should remove tracking parameters', () => {
+        const url = 'https://www.facebook.com/user/posts/123?utm_source=twitter&fbclid=abc123&__cft__=xyz';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://facebook.com/user/posts/123');
+      });
+
+      it('should convert mobile URLs to desktop', () => {
+        const url = 'https://m.facebook.com/story.php?story_fbid=123&id=456';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toContain('facebook.com');
+        expect(canonical).not.toContain('m.facebook.com');
+      });
+
+      it('should preserve essential parameters', () => {
+        const url = 'https://www.facebook.com/photo.php?fbid=789&set=a.123&ref=share';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toContain('fbid=789');
+        expect(canonical).not.toContain('ref=share');
+      });
+
+      it('should convert fb.com to facebook.com', () => {
+        const url = 'https://fb.com/user/posts/123';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toContain('facebook.com');
+        expect(canonical).not.toContain('fb.com');
+      });
+    });
+
+    describe('LinkedIn canonicalization', () => {
+      it('should remove tracking parameters', () => {
+        const url = 'https://www.linkedin.com/posts/user_activity-abc123?trk=public_post&utm_source=share';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).not.toContain('trk=');
+        expect(canonical).not.toContain('utm_source=');
+      });
+
+      it('should remove LinkedIn-specific tracking', () => {
+        const url = 'https://linkedin.com/feed/update/urn:li:activity:123?lipi=xyz&trackingId=abc';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).not.toContain('lipi=');
+        expect(canonical).not.toContain('trackingId=');
+      });
+    });
+
+    describe('Instagram canonicalization', () => {
+      it('should remove all query parameters', () => {
+        const url = 'https://www.instagram.com/p/ABC123/?utm_source=ig_web_copy_link&igshid=xyz';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://instagram.com/p/ABC123');
+      });
+
+      it('should convert instagr.am to instagram.com', () => {
+        const url = 'https://instagr.am/p/ABC123/';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://instagram.com/p/ABC123');
+      });
+
+      it('should remove trailing slash', () => {
+        const url = 'https://www.instagram.com/reel/XYZ789/';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://instagram.com/reel/XYZ789');
+      });
+    });
+
+    describe('TikTok canonicalization', () => {
+      it('should remove tracking parameters', () => {
+        const url = 'https://www.tiktok.com/@user/video/123?is_copy_url=1&is_from_webapp=v1&utm_source=share';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).not.toContain('is_copy_url=');
+        expect(canonical).not.toContain('is_from_webapp=');
+        expect(canonical).not.toContain('utm_source=');
+      });
+
+      it('should preserve shortened URLs', () => {
+        const url = 'https://vm.tiktok.com/ABC123/';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toContain('vm.tiktok.com/ABC123');
+      });
+    });
+
+    describe('X (Twitter) canonicalization', () => {
+      it('should convert twitter.com to x.com', () => {
+        const url = 'https://twitter.com/user/status/123456789';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toContain('x.com');
+        expect(canonical).not.toContain('twitter.com');
+      });
+
+      it('should convert mobile URLs to desktop', () => {
+        const url = 'https://mobile.twitter.com/user/status/123';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://x.com/user/status/123');
+      });
+
+      it('should remove photo/video suffixes', () => {
+        const url = 'https://x.com/user/status/123/photo/1';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://x.com/user/status/123');
+      });
+
+      it('should remove X-specific tracking parameters', () => {
+        const url = 'https://x.com/user/status/123?s=20&t=abc&utm_source=twitter';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://x.com/user/status/123');
+      });
+
+      it('should preserve t.co shortened URLs', () => {
+        const url = 'https://t.co/abc123def';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toContain('t.co/abc123def');
+      });
+    });
+
+    describe('Threads canonicalization', () => {
+      it('should remove all query parameters', () => {
+        const url = 'https://www.threads.net/@user/post/ABC123?utm_source=share';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://threads.net/@user/post/ABC123');
+      });
+
+      it('should remove trailing slash', () => {
+        const url = 'https://threads.net/t/XYZ789/';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).toBe('https://threads.net/t/XYZ789');
+      });
+    });
+
+    describe('General canonicalization', () => {
+      it('should remove www prefix', () => {
+        const urls = [
+          'https://www.facebook.com/user/posts/123',
+          'https://www.instagram.com/p/ABC123',
+          'https://www.linkedin.com/posts/user_activity-abc',
+        ];
+
+        urls.forEach(url => {
+          const canonical = detector.canonicalizeUrl(url);
+          expect(canonical).not.toContain('www.');
+        });
+      });
+
+      it('should remove hash fragments', () => {
+        const url = 'https://facebook.com/user/posts/123#comment-456';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).not.toContain('#');
+      });
+
+      it('should remove common UTM parameters', () => {
+        const url = 'https://facebook.com/user/posts/123?utm_source=social&utm_medium=twitter&utm_campaign=spring';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).not.toContain('utm_');
+      });
+
+      it('should handle URLs without platform detection', () => {
+        const url = 'https://example.com/page?utm_source=test&ref=abc';
+        const canonical = detector.canonicalizeUrl(url);
+        expect(canonical).not.toContain('utm_source');
+        expect(canonical).not.toContain('ref');
+      });
+
+      it('should be idempotent', () => {
+        const url = 'https://www.facebook.com/user/posts/123?utm_source=test';
+        const canonical1 = detector.canonicalizeUrl(url);
+        const canonical2 = detector.canonicalizeUrl(canonical1);
+        expect(canonical1).toBe(canonical2);
+      });
+
+      it('should produce same result for equivalent URLs', () => {
+        const urls = [
+          'https://www.facebook.com/user/posts/123?utm_source=twitter',
+          'https://facebook.com/user/posts/123?fbclid=abc',
+          'https://m.facebook.com/user/posts/123?ref=share',
+          'https://www.facebook.com/user/posts/123/',
+        ];
+
+        const canonicals = urls.map(url => detector.canonicalizeUrl(url));
+        const unique = new Set(canonicals);
+        expect(unique.size).toBe(1);
+      });
+    });
+
+    describe('Error handling', () => {
+      it('should return original URL for invalid URLs', () => {
+        const invalidUrl = 'not-a-valid-url';
+        const canonical = detector.canonicalizeUrl(invalidUrl);
+        expect(canonical).toBe(invalidUrl);
+      });
+
+      it('should handle malformed URLs gracefully', () => {
+        const malformed = 'http://[invalid';
+        const canonical = detector.canonicalizeUrl(malformed);
+        expect(canonical).toBe(malformed);
+      });
+    });
+  });
 });
