@@ -5,6 +5,7 @@ export { VaultManager } from './VaultManager';
 export { ApiClient } from './ApiClient';
 export { ArchiveOrchestrator } from './ArchiveOrchestrator';
 export { ErrorHandler } from './ErrorHandler';
+export { PlatformDetector } from './PlatformDetector';
 
 // Export types
 export type {
@@ -44,3 +45,7 @@ export type {
   ErrorStats,
   RecoveryStrategy,
 } from './ErrorHandler';
+
+export type {
+  PlatformDetectionResult,
+} from './PlatformDetector';
