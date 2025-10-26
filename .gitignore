@@ -32,7 +32,7 @@ yarn-error.log*
 
 # Obsidian plugin development
 main.js
-styles.css
+# styles.css is tracked as source file, only main.js is build output
 
 logs
 dev-debug.log
@@ -47,12 +47,12 @@ dev-debug.log
 *.sw?
 # OS specific
 
-# Task files
-# tasks.json
-# tasks/ 
-
 # Cloudflare Workers
 .wrangler/
 workers/dist/
 workers/.wrangler/
 workers/.dev.vars
+
+# Task files
+# tasks.json
+# tasks/ 

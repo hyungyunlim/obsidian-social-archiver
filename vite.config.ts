@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import obsidian from '@codewithcheese/vite-plugin-obsidian';
 import path from 'path';
 
 export default defineConfig({
@@ -10,11 +9,12 @@ export default defineConfig({
         // Enable Svelte 5 Runes mode
         runes: true
       }
-    }),
-    obsidian({
-      manifest: './manifest.json'
     })
   ],
+  // PostCSS is automatically detected via postcss.config.js
+  css: {
+    postcss: './postcss.config.js'
+  },
   build: {
     lib: {
       entry: path.resolve(__dirname, 'src/main.ts'),
