@@ -1,135 +1,264 @@
-import { Notice } from 'obsidian';
-import type { PostData, ArchiveOptions, ArchiveResult, ArchiveProgress } from '@/types';
+import type { IService } from './base/IService';
+import type { PostData, Platform } from '@/types/post';
+import type { ArchiveOptions } from '@/types/archive';
+import type { ArchiveRequest } from '@/types/api';
+import { PostDataSchema } from '@/types/post';
 import { ApiClient } from './ApiClient';
-import { MarkdownConverter } from './MarkdownConverter';
-import { MediaHandler } from './MediaHandler';
-import { VaultManager } from './VaultManager';
-import type SocialArchiverPlugin from '@/main';
 
-export class ArchiveService {
-  private apiClient: ApiClient;
-  private markdownConverter: MarkdownConverter;
-  private mediaHandler: MediaHandler;
-  private vaultManager: VaultManager;
+/**
+ * ArchiveService configuration
+ */
+export interface ArchiveServiceConfig {
+  apiClient: ApiClient;
+  licenseKey?: string;
+}
 
-  constructor(private plugin: SocialArchiverPlugin) {
-    this.apiClient = new ApiClient(plugin.settings);
-    this.markdownConverter = new MarkdownConverter();
-    this.mediaHandler = new MediaHandler(plugin.app.vault);
-    this.vaultManager = new VaultManager(plugin.app.vault, plugin.settings);
+/**
+ * Request builder for constructing platform-specific requests
+ */
+class RequestBuilder {
+  /**
+   * Detect platform from URL
+   */
+  static detectPlatform(url: string): Platform {
+    const urlLower = url.toLowerCase();
+
+    if (urlLower.includes('facebook.com')) return 'facebook';
+    if (urlLower.includes('linkedin.com')) return 'linkedin';
+    if (urlLower.includes('instagram.com')) return 'instagram';
+    if (urlLower.includes('tiktok.com')) return 'tiktok';
+    if (urlLower.includes('x.com') || urlLower.includes('twitter.com')) return 'x';
+    if (urlLower.includes('threads.net')) return 'threads';
+
+    throw new Error(`Unsupported platform: ${url}`);
   }
 
-  async archive(
-    url: string, 
-    options: ArchiveOptions,
-    onProgress?: (progress: ArchiveProgress) => void
-  ): Promise<ArchiveResult> {
+  /**
+   * Validate URL format
+   */
+  static validateUrl(url: string): void {
     try {
-      // Check credits
-      const creditsNeeded = this.calculateCredits(options);
-      if (this.plugin.settings.creditsRemaining < creditsNeeded) {
-        throw new Error(`Insufficient credits. Need ${creditsNeeded}, have ${this.plugin.settings.creditsRemaining}`);
+      const parsed = new URL(url);
+
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        throw new Error('URL must use HTTP or HTTPS protocol');
       }
 
-      // Stage 1: Fetch post data
-      onProgress?.({
-        stage: 'fetching',
-        progress: 10,
-        message: 'Fetching post data...'
-      });
-
-      const postData = await this.apiClient.fetchPost(url, options);
-
-      // Stage 2: Process content
-      onProgress?.({
-        stage: 'processing',
-        progress: 30,
-        message: 'Processing content...'
-      });
-
-      const markdown = await this.markdownConverter.convert(postData);
-
-      // Stage 3: Download media
-      if (options.downloadMedia && postData.media.length > 0) {
-        onProgress?.({
-          stage: 'downloading',
-          progress: 50,
-          message: `Downloading ${postData.media.length} media files...`
-        });
-
-        const mediaFiles = await this.mediaHandler.downloadMedia(
-          postData.media,
-          postData.platform,
-          postData.id
-        );
-
-        // Update markdown with local media paths
-        for (const media of mediaFiles) {
-          markdown.content = markdown.content.replace(
-            media.originalUrl,
-            media.localPath
-          );
-        }
-      }
-
-      // Stage 4: Save to vault
-      onProgress?.({
-        stage: 'saving',
-        progress: 80,
-        message: 'Saving to vault...'
-      });
-
-      const filePath = await this.vaultManager.savePost(postData, markdown);
-
-      // Stage 5: Generate share link if needed
-      let shareUrl: string | undefined;
-      if (options.generateShareLink) {
-        shareUrl = await this.apiClient.createShareLink(filePath);
-      }
-
-      // Update credits
-      this.plugin.settings.creditsRemaining -= creditsNeeded;
-      await this.plugin.saveSettings();
-
-      // Complete
-      onProgress?.({
-        stage: 'complete',
-        progress: 100,
-        message: 'Archive complete!'
-      });
-
-      new Notice(`Post archived successfully! ${creditsNeeded} credits used.`);
-
-      return {
-        success: true,
-        filePath,
-        shareUrl,
-        creditsUsed: creditsNeeded
-      };
-
+      // Basic format validation passed
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      new Notice(`Archive failed: ${errorMessage}`);
-      
-      return {
-        success: false,
-        creditsUsed: 0,
-        error: errorMessage
-      };
+      if (error instanceof TypeError) {
+        throw new Error('Invalid URL format');
+      }
+      throw error;
     }
   }
 
-  private calculateCredits(options: ArchiveOptions): number {
-    let credits = 1; // Base cost
-    
-    if (options.enableAI) {
-      credits += 2; // AI analysis
+  /**
+   * Build archive request
+   */
+  static buildRequest(
+    url: string,
+    options: ArchiveOptions,
+    licenseKey?: string
+  ): ArchiveRequest {
+    this.validateUrl(url);
+
+    return {
+      url,
+      options: {
+        enableAI: options.enableAI,
+        deepResearch: options.deepResearch,
+        downloadMedia: options.downloadMedia,
+      },
+      licenseKey,
+    };
+  }
+}
+
+/**
+ * Response transformer for converting API responses to PostData
+ */
+class ResponseTransformer {
+  /**
+   * Transform and validate API response to PostData
+   */
+  static transform(raw: unknown): PostData {
+    try {
+      // Validate using Zod schema
+      const validated = PostDataSchema.parse(raw);
+
+      // Convert to PostData format (remove schemaVersion)
+      const { schemaVersion, ...postData } = validated;
+
+      return postData as PostData;
+    } catch (error) {
+      throw new Error(
+        `Invalid post data format: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
-    
-    if (options.deepResearch) {
-      credits += 2; // Deep research
+  }
+
+  /**
+   * Sanitize and normalize post data
+   */
+  static sanitize(postData: PostData): PostData {
+    return {
+      ...postData,
+      content: {
+        text: this.sanitizeText(postData.content.text),
+        html: postData.content.html
+          ? this.sanitizeHtml(postData.content.html)
+          : undefined,
+        markdown: postData.content.markdown,
+      },
+      url: this.normalizeUrl(postData.url),
+      author: {
+        ...postData.author,
+        url: this.normalizeUrl(postData.author.url),
+      },
+    };
+  }
+
+  /**
+   * Sanitize text content
+   */
+  private static sanitizeText(text: string): string {
+    // Remove null bytes
+    return text.replace(/\0/g, '');
+  }
+
+  /**
+   * Sanitize HTML content
+   */
+  private static sanitizeHtml(html: string): string {
+    // Basic HTML sanitization (more comprehensive sanitization would use DOMPurify)
+    // Remove script tags
+    return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  }
+
+  /**
+   * Normalize URL
+   */
+  private static normalizeUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      return parsed.href;
+    } catch {
+      return url;
     }
-    
-    return credits;
+  }
+}
+
+/**
+ * ArchiveService - Responsible for API orchestration
+ * Handles communication with backend API for archiving posts
+ *
+ * Single Responsibility: API communication and response transformation
+ */
+export class ArchiveService implements IService<PostData> {
+  private apiClient: ApiClient;
+  private licenseKey?: string;
+
+  constructor(config: ArchiveServiceConfig) {
+    this.apiClient = config.apiClient;
+    this.licenseKey = config.licenseKey;
+  }
+
+  async initialize(): Promise<void> {
+    // Verify API client is ready
+    const healthy = await this.apiClient.isHealthy();
+    if (!healthy) {
+      throw new Error('API client is not healthy');
+    }
+  }
+
+  async dispose(): Promise<void> {
+    // Cleanup handled by ApiClient
+  }
+
+  async isHealthy(): Promise<boolean> {
+    return this.apiClient.isHealthy();
+  }
+
+  /**
+   * Archive a post from URL
+   * Main entry point for archiving operations
+   */
+  async archivePost(
+    url: string,
+    options: ArchiveOptions,
+    onProgress?: (progress: number) => void
+  ): Promise<PostData> {
+    try {
+      // Build request
+      const request = RequestBuilder.buildRequest(
+        url,
+        options,
+        this.licenseKey
+      );
+
+      // Submit archive job
+      onProgress?.(10);
+      const archiveResponse = await this.apiClient.archivePost(request);
+
+      // Poll for completion
+      onProgress?.(30);
+      const rawResult = await this.apiClient.waitForJob(
+        archiveResponse.jobId,
+        (jobProgress) => {
+          // Map job progress (0-100) to overall progress (30-90)
+          const mappedProgress = 30 + (jobProgress * 0.6);
+          onProgress?.(Math.round(mappedProgress));
+        }
+      );
+
+      // Transform and validate response
+      onProgress?.(90);
+      const postData = ResponseTransformer.transform(rawResult);
+
+      // Sanitize data
+      const sanitized = ResponseTransformer.sanitize(postData);
+
+      onProgress?.(100);
+      return sanitized;
+    } catch (error) {
+      // Wrap and rethrow with context
+      throw this.wrapError(error, url);
+    }
+  }
+
+  /**
+   * Detect platform from URL
+   */
+  detectPlatform(url: string): Platform {
+    return RequestBuilder.detectPlatform(url);
+  }
+
+  /**
+   * Validate URL
+   */
+  validateUrl(url: string): boolean {
+    try {
+      RequestBuilder.validateUrl(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Wrap errors with additional context
+   */
+  private wrapError(error: unknown, url: string): Error {
+    if (error instanceof Error) {
+      const wrappedError = new Error(
+        `Failed to archive post from ${url}: ${error.message}`
+      );
+      wrappedError.name = 'ArchiveServiceError';
+      wrappedError.cause = error;
+      return wrappedError;
+    }
+
+    return new Error(`Failed to archive post from ${url}: Unknown error`);
   }
 }
