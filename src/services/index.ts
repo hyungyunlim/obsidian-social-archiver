@@ -4,6 +4,7 @@ export { MediaHandler } from './MediaHandler';
 export { VaultManager } from './VaultManager';
 export { ApiClient } from './ApiClient';
 export { ArchiveOrchestrator } from './ArchiveOrchestrator';
+export { ErrorHandler } from './ErrorHandler';
 
 // Export types
 export type {
@@ -36,3 +37,10 @@ export type {
   ApiClientConfig,
   RetryConfig,
 } from './ApiClient';
+
+export type {
+  ErrorHandlerConfig,
+  ErrorLogEntry,
+  ErrorStats,
+  RecoveryStrategy,
+} from './ErrorHandler';
