@@ -1,11 +1,22 @@
 {
   "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {
+        "CONTEXT7_API_KEY": "ctx7sk-59940f61-3192-4b70-9f65-bb207c183846"
+      }
+    },
     "task-master-ai": {
       "command": "npx",
       "args": [
         "-y",
-        "task-master-ai@latest"
-      ]
+        "task-master-ai"
+      ],
+      "env": {}
     }
   }
 }
