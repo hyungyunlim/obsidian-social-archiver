@@ -6,6 +6,7 @@ export { ApiClient } from './ApiClient';
 export { ArchiveOrchestrator } from './ArchiveOrchestrator';
 export { ErrorHandler } from './ErrorHandler';
 export { PlatformDetector } from './PlatformDetector';
+export { URLExpander } from './URLExpander';
 
 // Export types
 export type {
@@ -49,3 +50,8 @@ export type {
 export type {
   PlatformDetectionResult,
 } from './PlatformDetector';
+
+export type {
+  ExpansionResult,
+  ExpansionOptions,
+} from './URLExpander';
