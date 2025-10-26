@@ -1,5 +1,7 @@
 import type { IService } from './base/IService';
 import type { Platform } from '@/types/post';
+import type { URLValidationResult } from '@/types/platform';
+import { getPlatformConfig } from '@/types/platform';
 
 /**
  * URL pattern for platform detection
@@ -768,5 +770,78 @@ export class PlatformDetector implements IService<Platform> {
     urlObj.hash = '';
 
     return urlObj.href;
+  }
+
+  /**
+   * Validate URL with detailed error reporting
+   */
+  validateUrl(url: string): URLValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    try {
+      // Normalize and parse URL
+      const normalizedUrl = this.normalizeUrl(url);
+      const urlObj = new URL(normalizedUrl);
+
+      // Detect platform
+      const platform = this.detectPlatform(url);
+
+      if (!platform) {
+        errors.push('URL is not from a supported social media platform');
+        return {
+          valid: false,
+          platform: 'facebook', // Default, not used when invalid
+          postId: null,
+          errors,
+          warnings,
+        };
+      }
+
+      // Extract post ID
+      const postId = this.extractPostId(url);
+
+      if (!postId) {
+        errors.push('Could not extract post ID from URL');
+        warnings.push('URL format may not be fully supported');
+      }
+
+      // Get platform config for additional validation
+      const config = getPlatformConfig(platform);
+
+      // Check domain
+      const isValidDomain = config.domains.some(domain =>
+        urlObj.hostname.toLowerCase().includes(domain.toLowerCase())
+      );
+
+      if (!isValidDomain) {
+        warnings.push(`Unexpected domain for ${config.displayName}`);
+      }
+
+      return {
+        valid: errors.length === 0,
+        platform,
+        postId,
+        errors,
+        warnings,
+      };
+    } catch (error) {
+      errors.push(`Invalid URL format: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+      return {
+        valid: false,
+        platform: 'facebook', // Default, not used when invalid
+        postId: null,
+        errors,
+        warnings,
+      };
+    }
+  }
+
+  /**
+   * Get platform configuration
+   */
+  getPlatformConfig(platform: Platform) {
+    return getPlatformConfig(platform);
   }
 }
