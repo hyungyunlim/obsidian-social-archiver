@@ -5,7 +5,10 @@ export interface Bindings {
   ARCHIVE_CACHE: KVNamespace;
   LICENSE_KEYS: KVNamespace;
   SHARE_LINKS: KVNamespace;
-  
+
+  // R2 Buckets
+  R2_BUCKET?: R2Bucket;
+
   // Environment variables
   ENVIRONMENT: 'development' | 'staging' | 'production';
   BRIGHTDATA_API_KEY?: string;
@@ -13,10 +16,10 @@ export interface Bindings {
   GUMROAD_API_KEY?: string;
   GUMROAD_WEBHOOK_SECRET?: string;
   HMAC_SECRET?: string;
-  
+
   // Rate limiter
   RATE_LIMITER?: RateLimiter;
-  
+
   // Index signature for Hono compatibility
   [key: string]: unknown;
 }

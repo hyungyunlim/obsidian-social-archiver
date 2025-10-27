@@ -31,7 +31,8 @@ export interface SocialArchiverSettings {
 
 export const DEFAULT_SETTINGS: SocialArchiverSettings = {
   // API Configuration
-  apiEndpoint: 'https://api.social-archiver.com',
+  // Use local dev server if available, otherwise production
+  apiEndpoint: 'http://localhost:8787',
   apiKey: '',
   licenseKey: '',
   

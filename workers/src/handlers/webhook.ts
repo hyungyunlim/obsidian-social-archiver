@@ -35,7 +35,7 @@ interface WebhookEventRecord {
  * POST /webhook/gumroad - Handle Gumroad webhooks
  */
 webhookRouter.post('/gumroad', async (c) => {
-  const logger = new Logger('webhook:gumroad', c.var.requestId);
+  const logger = new Logger('webhook:gumroad', { requestId: c.var.requestId });
 
   try {
     // Get signature from header
@@ -191,7 +191,10 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = '';
   for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+    const byte = bytes[i];
+    if (byte !== undefined) {
+      binary += String.fromCharCode(byte);
+    }
   }
   return btoa(binary);
 }
@@ -247,7 +250,7 @@ async function processWebhookEvent(
   c: any
 ): Promise<void> {
   const { type, payload } = event;
-  const logger = new Logger('webhook:processor', c.var.requestId);
+  const logger = new Logger('webhook:processor', { requestId: c.var.requestId });
 
   logger.info(`Processing ${type} event`, {
     licenseKey: payload.license_key,

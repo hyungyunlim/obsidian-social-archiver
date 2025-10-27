@@ -26,6 +26,10 @@ export const SERVICE_TOKENS = {
   CREDIT_MANAGER: Symbol.for('CreditManager'),
   CREDIT_RESET_SCHEDULER: Symbol.for('CreditResetScheduler'),
   GUMROAD_WEBHOOK_HANDLER: Symbol.for('GumroadWebhookHandler'),
+  PROMO_CODE_VALIDATOR: Symbol.for('PromoCodeValidator'),
+  PROMO_CODE_STORAGE: Symbol.for('PromoCodeStorage'),
+  LICENSE_EXPIRATION_NOTIFIER: Symbol.for('LicenseExpirationNotifier'),
+  GRACE_PERIOD_MANAGER: Symbol.for('GracePeriodManager'),
 
   // Plugin instance (special token for accessing Obsidian plugin)
   PLUGIN_INSTANCE: Symbol.for('PluginInstance'),

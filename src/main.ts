@@ -1,16 +1,91 @@
-import { Plugin, Notice, addIcon } from 'obsidian';
+import { Plugin, Notice, addIcon, Modal, App } from 'obsidian';
 import { SocialArchiverSettingTab } from './settings/SettingTab';
 import { SocialArchiverSettings, DEFAULT_SETTINGS } from './types/settings';
-import { ArchiveModal } from './components/ArchiveModal';
+
+// Temporary ArchiveModal class until Svelte integration is complete
+class ArchiveModal extends Modal {
+  private plugin: SocialArchiverPlugin;
+  private url: string = '';
+
+  constructor(app: App, plugin: SocialArchiverPlugin) {
+    super(app);
+    this.plugin = plugin;
+  }
+
+  setUrl(url: string): void {
+    this.url = url;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+
+    contentEl.createEl('h2', { text: 'Archive Social Media Post' });
+
+    const container = contentEl.createDiv({ cls: 'social-archiver-modal' });
+
+    // URL Input
+    const urlLabel = container.createEl('label', { text: 'Post URL' });
+    const urlInput = container.createEl('input', {
+      type: 'text',
+      placeholder: 'Paste URL from Facebook, LinkedIn, Instagram, TikTok, X, or Threads',
+      value: this.url
+    });
+    urlInput.style.width = '100%';
+    urlInput.style.marginBottom = '1em';
+
+    // Disclaimer
+    const disclaimer = container.createDiv({ cls: 'social-archiver-disclaimer' });
+    disclaimer.innerHTML = `
+      <p style="color: var(--text-muted); font-size: 0.9em; margin: 1em 0;">
+        ⚠️ <strong>Important:</strong> Only archive content you have permission to save.
+        Respect copyright and privacy rights.
+      </p>
+    `;
+
+    // Buttons
+    const buttonContainer = container.createDiv({ cls: 'social-archiver-buttons' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.gap = '0.5em';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.marginTop = '1em';
+
+    const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
+    cancelBtn.addEventListener('click', () => this.close());
+
+    const archiveBtn = buttonContainer.createEl('button', {
+      text: 'Archive',
+      cls: 'mod-cta'
+    });
+    archiveBtn.addEventListener('click', async () => {
+      const url = urlInput.value.trim();
+      if (!url) {
+        new Notice('Please enter a URL');
+        return;
+      }
+
+      new Notice('🚧 Archive functionality coming soon! The Workers backend is ready.');
+      this.close();
+    });
+
+    // Focus on input
+    urlInput.focus();
+  }
+
+  onClose(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
 
 export default class SocialArchiverPlugin extends Plugin {
   settings: SocialArchiverSettings = DEFAULT_SETTINGS;
 
   async onload(): Promise<void> {
     console.log('Social Archiver plugin loaded');
-    
+
     await this.loadSettings();
-    
+
     // Register custom icon
     addIcon('social-archive', `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
@@ -19,12 +94,12 @@ export default class SocialArchiverPlugin extends Plugin {
         <circle fill="currentColor" cx="50" cy="55" r="15" />
       </svg>
     `);
-    
+
     // Add ribbon icon
     this.addRibbonIcon('social-archive', 'Archive social media post', () => {
       this.openArchiveModal();
     });
-    
+
     // Add command
     this.addCommand({
       id: 'open-archive-modal',
@@ -33,7 +108,7 @@ export default class SocialArchiverPlugin extends Plugin {
         this.openArchiveModal();
       }
     });
-    
+
     // Add command for quick archive from clipboard
     this.addCommand({
       id: 'archive-from-clipboard',
@@ -42,10 +117,10 @@ export default class SocialArchiverPlugin extends Plugin {
         await this.archiveFromClipboard();
       }
     });
-    
+
     // Add settings tab
     this.addSettingTab(new SocialArchiverSettingTab(this.app, this));
-    
+
     // Register protocol handler for mobile share
     this.registerProtocolHandler();
   }
@@ -69,16 +144,16 @@ export default class SocialArchiverPlugin extends Plugin {
   private async archiveFromClipboard(): Promise<void> {
     try {
       const clipboardText = await navigator.clipboard.readText();
-      
+
       if (!this.isValidUrl(clipboardText)) {
         new Notice('No valid URL found in clipboard');
         return;
       }
-      
+
       const modal = new ArchiveModal(this.app, this);
       modal.setUrl(clipboardText);
       modal.open();
-      
+
     } catch (error) {
       console.error('Failed to read clipboard:', error);
       new Notice('Failed to read clipboard. Please check permissions.');
@@ -98,7 +173,7 @@ export default class SocialArchiverPlugin extends Plugin {
         'twitter.com',
         'threads.net'
       ];
-      
+
       return supportedDomains.some(domain => url.hostname.includes(domain));
     } catch {
       return false;
@@ -109,17 +184,17 @@ export default class SocialArchiverPlugin extends Plugin {
     // Register obsidian://social-archive protocol
     this.registerObsidianProtocolHandler('social-archive', async (params) => {
       const url = params.url;
-      
+
       if (!url) {
         new Notice('No URL provided');
         return;
       }
-      
+
       if (!this.isValidUrl(url)) {
         new Notice('Invalid or unsupported URL');
         return;
       }
-      
+
       const modal = new ArchiveModal(this.app, this);
       modal.setUrl(url);
       modal.open();

@@ -270,6 +270,41 @@ export class GumroadClient implements IService {
       });
     }
 
+    // Determine license type from custom fields or product variants
+    let licenseType = 'subscription'; // Default to subscription
+    let initialCredits: number | undefined;
+    let creditsResetMonthly = true;
+
+    if (purchase.custom_fields) {
+      // Check for license_type custom field
+      const typeField = purchase.custom_fields['license_type'];
+      if (typeField === 'credit_pack' || typeField === 'CREDIT_PACK') {
+        licenseType = 'credit_pack';
+        creditsResetMonthly = false;
+      } else if (typeField === 'free_tier' || typeField === 'FREE_TIER') {
+        licenseType = 'free_tier';
+      }
+
+      // Check for initial_credits custom field
+      const creditsField = purchase.custom_fields['initial_credits'];
+      if (creditsField) {
+        initialCredits = parseInt(creditsField, 10);
+      }
+    }
+
+    // Parse variants for credit pack info (e.g., "100 Credits", "500 Credits")
+    if (purchase.variants && !initialCredits) {
+      const variantMatch = purchase.variants.match(/(\d+)\s*credits?/i);
+      if (variantMatch) {
+        initialCredits = parseInt(variantMatch[1], 10);
+        if (licenseType === 'subscription' && initialCredits) {
+          // If credits found in variant but no explicit type, treat as credit pack
+          licenseType = 'credit_pack';
+          creditsResetMonthly = false;
+        }
+      }
+    }
+
     // Determine expiration
     let expiresAt: Date | null = null;
     let inGracePeriod = false;
@@ -288,11 +323,27 @@ export class GumroadClient implements IService {
         inGracePeriod = true;
         gracePeriodEndsAt = gracePeriodEnd;
       }
+    } else if (licenseType === 'credit_pack') {
+      // For credit packs without subscription, set expiration (e.g., 1 year from purchase)
+      const purchaseDate = new Date(purchase.sale_timestamp);
+      expiresAt = new Date(purchaseDate.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+
+      // Check if in grace period
+      const now = new Date();
+      const gracePeriodEnd = new Date(
+        expiresAt.getTime() + this.licenseConfig.gracePeriodDays * 24 * 60 * 60 * 1000
+      );
+
+      if (now >= expiresAt && now < gracePeriodEnd) {
+        inGracePeriod = true;
+        gracePeriodEndsAt = gracePeriodEnd;
+      }
     }
 
     return {
       licenseKey,
       provider: 'gumroad',
+      licenseType: licenseType as any,
       productId: purchase.product_id,
       email: purchase.email,
       purchaseDate: new Date(purchase.sale_timestamp),
@@ -301,6 +352,8 @@ export class GumroadClient implements IService {
       isActive: !purchase.refunded && !purchase.disputed && !purchase.chargebacked,
       inGracePeriod,
       gracePeriodEndsAt: gracePeriodEndsAt || undefined,
+      initialCredits,
+      creditsResetMonthly,
     };
   }
 

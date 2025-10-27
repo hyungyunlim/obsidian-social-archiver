@@ -13,6 +13,10 @@ export { LicenseStorage } from './LicenseStorage';
 export { CreditManager } from './CreditManager';
 export { CreditResetScheduler } from './CreditResetScheduler';
 export { GumroadWebhookHandler } from './GumroadWebhookHandler';
+export { PromoCodeValidator } from './licensing/PromoCodeValidator';
+export { PromoCodeStorage } from './licensing/PromoCodeStorage';
+export { LicenseExpirationNotifier } from './licensing/LicenseExpirationNotifier';
+export { GracePeriodManager } from './licensing/GracePeriodManager';
 
 // Export types
 export type {
@@ -85,3 +89,18 @@ export type {
 export type {
   GumroadWebhookHandlerConfig,
 } from './GumroadWebhookHandler';
+
+export type {
+  PromoCodeValidatorConfig,
+} from './licensing/PromoCodeValidator';
+
+export type {
+  LicenseExpirationNotifierConfig,
+  NotificationThreshold,
+} from './licensing/LicenseExpirationNotifier';
+
+export type {
+  GracePeriodManagerConfig,
+  GracePeriodStatus,
+  FeatureRestrictions,
+} from './licensing/GracePeriodManager';

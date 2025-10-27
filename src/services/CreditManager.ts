@@ -24,6 +24,12 @@ import { IService } from '../types/services';
 import { CloudflareAPI } from './CloudflareAPI';
 import { CostTracker } from './CostTracker';
 import { Logger } from './Logger';
+import { PromoCodeValidator } from './licensing/PromoCodeValidator';
+import { PromoCodeStorage } from './licensing/PromoCodeStorage';
+import {
+  PromoCodeType,
+  AppliedPromoCode,
+} from '../types/license';
 
 /**
  * Credit manager configuration
@@ -62,6 +68,8 @@ export class CreditManager implements IService {
   private tracker: CostTracker;
   private logger?: Logger;
   private initialized = false;
+  private promoValidator?: PromoCodeValidator;
+  private promoStorage?: PromoCodeStorage;
 
   // Current license and balance
   private license?: License;
@@ -551,7 +559,7 @@ export class CreditManager implements IService {
   }
 
   /**
-   * Reset monthly credits with rollover logic
+   * Reset monthly credits with rollover logic (subscription only)
    */
   async resetMonthlyCredits(): Promise<void> {
     this.ensureInitialized();
@@ -560,9 +568,17 @@ export class CreditManager implements IService {
       throw new Error('No license loaded');
     }
 
+    // Only reset for subscription and free tier licenses
+    const licenseType = (this.license as any).licenseType;
+    if (licenseType === 'credit_pack') {
+      this.logger?.debug('Skipping reset for credit pack license');
+      return;
+    }
+
     this.logger?.info('Resetting monthly credits', {
       plan: this.license.plan,
       currentBalance: this.balance,
+      licenseType,
     });
 
     const now = new Date();
@@ -614,6 +630,7 @@ export class CreditManager implements IService {
         rollover,
         monthlyAllowance,
         resetDate: now.toISOString(),
+        licenseType,
       },
     });
 
@@ -625,9 +642,19 @@ export class CreditManager implements IService {
   }
 
   /**
-   * Check if credits need to be reset
+   * Check if credits need to be reset (subscription only)
    */
   shouldResetCredits(): boolean {
+    if (!this.license) {
+      return false;
+    }
+
+    // Only reset for subscription and free tier licenses
+    const licenseType = (this.license as any).licenseType;
+    if (licenseType === 'credit_pack') {
+      return false; // Credit packs don't reset
+    }
+
     if (!this.lastResetDate) {
       return true; // Never reset before
     }
@@ -643,6 +670,29 @@ export class CreditManager implements IService {
   }
 
   /**
+   * Check if license is credit pack type
+   */
+  isCreditPack(): boolean {
+    if (!this.license) {
+      return false;
+    }
+
+    const licenseType = (this.license as any).licenseType;
+    return licenseType === 'credit_pack';
+  }
+
+  /**
+   * Get license type
+   */
+  getLicenseType(): string {
+    if (!this.license) {
+      return 'free_tier';
+    }
+
+    return (this.license as any).licenseType || 'subscription';
+  }
+
+  /**
    * Get last reset date
    */
   getLastResetDate(): Date | undefined {
@@ -654,6 +704,172 @@ export class CreditManager implements IService {
    */
   getRolloverCredits(): number {
     return this.rolloverCredits;
+  }
+
+  /**
+   * Set promo code validator
+   */
+  setPromoValidator(validator: PromoCodeValidator): void {
+    this.promoValidator = validator;
+    this.logger?.debug('PromoCodeValidator set');
+  }
+
+  /**
+   * Set promo code storage
+   */
+  setPromoStorage(storage: PromoCodeStorage): void {
+    this.promoStorage = storage;
+    this.logger?.debug('PromoCodeStorage set');
+  }
+
+  /**
+   * Apply promotional code
+   */
+  async applyPromoCode(code: string): Promise<AppliedPromoCode> {
+    this.ensureInitialized();
+
+    if (!this.promoValidator) {
+      throw new Error('PromoCodeValidator not set');
+    }
+
+    if (!this.promoStorage) {
+      throw new Error('PromoCodeStorage not set');
+    }
+
+    if (!this.license) {
+      throw new Error('No license loaded');
+    }
+
+    this.logger?.info('Applying promotional code', { code });
+
+    // Validate promo code
+    const validation = await this.promoValidator.validatePromoCode(
+      code,
+      this.license.key,
+      undefined // Email is optional
+    );
+
+    if (!validation.valid || !validation.promoCode) {
+      throw new Error(validation.error || 'Invalid promotional code');
+    }
+
+    // Apply the promo code
+    const appliedCode = await this.promoValidator.applyPromoCode(
+      code,
+      this.license.key,
+      '' // Email
+    );
+
+    // Store the applied code
+    await this.promoStorage.storeAppliedCode(appliedCode);
+
+    // Apply benefits based on promo type
+    await this.applyPromoBenefits(appliedCode);
+
+    this.logger?.info('Promotional code applied successfully', {
+      code,
+      benefit: appliedCode.benefit,
+    });
+
+    // Emit event
+    this.emitEvent({
+      type: CreditEventType.BALANCE_UPDATED,
+      timestamp: Date.now(),
+      data: {
+        balance: this.balance,
+        promoCodeApplied: code,
+        benefit: appliedCode.benefit,
+      },
+    });
+
+    return appliedCode;
+  }
+
+  /**
+   * Check if a promo code has been applied
+   */
+  isPromoCodeApplied(code: string): boolean {
+    this.ensureInitialized();
+
+    if (!this.promoStorage || !this.license) {
+      return false;
+    }
+
+    return this.promoStorage.isCodeApplied(code, this.license.key);
+  }
+
+  /**
+   * Get all applied promo codes
+   */
+  getAppliedPromoCodes(): AppliedPromoCode[] {
+    this.ensureInitialized();
+
+    if (!this.promoStorage || !this.license) {
+      return [];
+    }
+
+    return this.promoStorage.getAppliedCodes(this.license.key);
+  }
+
+  /**
+   * Apply benefits from promotional code
+   */
+  private async applyPromoBenefits(appliedCode: AppliedPromoCode): Promise<void> {
+    const { benefit } = appliedCode;
+
+    switch (benefit.type) {
+      case PromoCodeType.BONUS_CREDITS:
+        // Add bonus credits to balance
+        const previousBalance = this.balance;
+        this.balance += benefit.amount;
+
+        if (this.license) {
+          this.license.creditsRemaining = this.balance;
+          this.license.creditLimit += benefit.amount;
+        }
+
+        this.logger?.info('Bonus credits applied', {
+          amount: benefit.amount,
+          newBalance: this.balance,
+        });
+
+        // Record transaction
+        const transaction: CreditTransaction = {
+          id: this.generateId(),
+          type: TransactionType.RESET, // Using RESET type for bonus credits
+          platform: 'facebook', // Placeholder
+          amount: benefit.amount,
+          timestamp: Date.now(),
+          reference: `promo-${appliedCode.code}`,
+          success: true,
+          balanceBefore: previousBalance,
+          balanceAfter: this.balance,
+        };
+
+        this.tracker.recordTransaction(transaction);
+        break;
+
+      case PromoCodeType.EXTENDED_TRIAL:
+        // Extended trial is handled at the license level
+        // This would typically be processed by LicenseValidator
+        this.logger?.info('Extended trial applied', {
+          days: benefit.amount,
+        });
+        break;
+
+      case PromoCodeType.PERCENTAGE_DISCOUNT:
+      case PromoCodeType.FIXED_DISCOUNT:
+        // Discounts are applied during purchase flow
+        // No immediate credit changes
+        this.logger?.info('Discount code applied (will apply on next purchase)', {
+          type: benefit.type,
+          amount: benefit.amount,
+        });
+        break;
+
+      default:
+        this.logger?.warn('Unknown promo code type', { type: benefit.type });
+    }
   }
 
   /**

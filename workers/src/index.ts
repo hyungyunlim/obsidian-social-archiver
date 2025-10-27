@@ -10,6 +10,7 @@ import {
 import { rateLimiter } from './middleware/rateLimiter';
 import { archiveRouter } from './handlers/archive';
 import { shareRouter } from './handlers/share';
+import { publicShareRouter } from './handlers/public-share';
 import { licenseRouter } from './handlers/license';
 import { healthRouter } from './handlers/health';
 import { webhookRouter } from './handlers/webhook';
@@ -52,6 +53,9 @@ app.route('/', healthRouter);
 app.route('/api/archive', archiveRouter);
 app.route('/api/share', shareRouter);
 app.route('/api/license', licenseRouter);
+
+// Public share pages (no rate limiting, no CORS)
+app.route('/share', publicShareRouter);
 
 // Webhook routes (no rate limiting for webhooks)
 app.route('/webhook', webhookRouter);

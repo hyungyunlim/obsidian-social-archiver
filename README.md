@@ -98,6 +98,169 @@ npm run build
 npm test
 ```
 
+### Local Development & Testing
+
+#### Quick Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/hyungyunlim/obsidian-social-archiver.git
+   cd obsidian-social-archiver
+   npm install
+   ```
+
+2. **Build and deploy to test vault**
+   ```bash
+   # Build once and copy to test vault
+   npm run build:deploy
+
+   # Or build and watch for changes
+   npm run dev
+   ```
+
+3. **Enable in Obsidian**
+   - Open your test vault in Obsidian
+   - Settings → Community Plugins
+   - Find "Social Archiver" and toggle it on
+   - Click "Reload" after code changes
+
+#### Custom Test Vault Location
+
+By default, the plugin deploys to:
+```
+/Users/[username]/Library/Mobile Documents/iCloud~md~obsidian/Documents/test/.obsidian
+```
+
+To use a different vault, set the environment variable:
+```bash
+export SOCIAL_ARCHIVER_TEST_VAULT="/path/to/your/vault/.obsidian"
+npm run build:deploy
+```
+
+#### Testing Features
+
+**1. Basic UI**
+- ✅ Ribbon icon appears in left sidebar
+- ✅ Click opens Archive Modal
+- ✅ Modal has URL input field
+- ✅ Disclaimer is displayed
+- ✅ Archive button shows "Coming Soon" message
+
+**2. Commands**
+- ✅ Cmd/Ctrl + P → "Archive social media post"
+- ✅ Cmd/Ctrl + P → "Archive from clipboard URL"
+- ✅ Clipboard command auto-fills URL if valid
+
+**3. Settings**
+- ✅ Settings → Social Archiver tab
+- ✅ API URL configuration
+- ✅ Archive/Media folder paths
+- ✅ License key input
+- ✅ Feature toggles (Download media, AI enhancement)
+
+**4. URL Validation**
+- ✅ Validates URLs from supported platforms
+- ✅ Rejects invalid or unsupported URLs
+- ✅ Shows appropriate error messages
+
+**5. Protocol Handler** (Mobile Share)
+- ✅ `obsidian://social-archive?url=...` opens modal
+- ✅ URL parameter is pre-filled
+
+#### Development Workflow
+
+```bash
+# Make code changes in src/
+
+# Option 1: Build and deploy manually
+npm run build:deploy
+
+# Option 2: Watch mode (auto-rebuild on save)
+npm run dev
+# Then in another terminal:
+node scripts/deploy-to-vault.mjs
+
+# Reload plugin in Obsidian:
+# Settings → Community Plugins → Social Archiver → Reload icon
+```
+
+#### Testing Backend (Cloudflare Workers)
+
+```bash
+cd workers
+
+# Run tests
+npm test
+
+# Local development server
+npm run dev
+
+# Deploy to Cloudflare
+npm run deploy
+```
+
+#### Project Structure
+
+```
+obsidian-social-archiver/
+├── src/                      # Plugin source code
+│   ├── main.ts              # Main plugin entry
+│   ├── settings/            # Settings UI
+│   ├── services/            # Business logic
+│   ├── components/          # Svelte components
+│   └── types/               # TypeScript types
+├── workers/                  # Cloudflare Workers API
+│   ├── src/
+│   │   ├── handlers/        # API endpoints
+│   │   ├── services/        # Backend services
+│   │   └── types/          # Backend types
+│   └── tests/              # Worker tests
+├── scripts/
+│   └── deploy-to-vault.mjs  # Auto-deploy script
+└── tests/                   # Plugin tests
+```
+
+#### Debugging Tips
+
+**Plugin not loading?**
+- Check Developer Console: View → Toggle Developer Tools
+- Look for errors in Console tab
+- Verify files exist in `.obsidian/plugins/obsidian-social-archiver/`
+
+**Changes not appearing?**
+- Make sure you ran `npm run build:deploy`
+- Reload the plugin: Settings → Community Plugins → Reload icon
+- If still not working, restart Obsidian
+
+**Build errors?**
+- Clear node_modules: `rm -rf node_modules && npm install`
+- Check TypeScript errors: `npm run typecheck`
+- Verify all imports are correct
+
+**Testing mobile features?**
+- Use Obsidian Mobile app with iCloud sync
+- Plugin will auto-sync to mobile after deployment
+- Enable plugin in mobile Settings
+
+#### Running Tests
+
+```bash
+# Plugin tests (Vitest)
+npm test
+
+# Watch mode
+npm test -- --watch
+
+# Coverage report
+npm run test:coverage
+
+# Workers tests
+cd workers && npm test
+
+# Specific test file
+npm test ShareManager
+```
+
 ## Support
 
 - [Documentation](https://github.com/hyungyunlim/obsidian-social-archiver/wiki)

@@ -8,6 +8,18 @@
 export type LicenseProvider = 'gumroad' | 'lemonsqueezy' | 'paddle';
 
 /**
+ * License types (billing models)
+ */
+export enum LicenseType {
+  /** Monthly subscription with auto-renewal and credit reset */
+  SUBSCRIPTION = 'subscription',
+  /** One-time credit pack purchase (credits valid until expiry or depleted) */
+  CREDIT_PACK = 'credit_pack',
+  /** Free tier with monthly reset */
+  FREE_TIER = 'free_tier',
+}
+
+/**
  * License information
  */
 export interface LicenseInfo {
@@ -15,13 +27,15 @@ export interface LicenseInfo {
   licenseKey: string;
   /** Provider */
   provider: LicenseProvider;
+  /** License type (billing model) */
+  licenseType: LicenseType;
   /** Product ID */
   productId: string;
   /** User email */
   email: string;
   /** Purchase date */
   purchaseDate: Date;
-  /** Expiration date (null for lifetime) */
+  /** Expiration date (null for lifetime, required for credit packs) */
   expiresAt: Date | null;
   /** Activated devices */
   devices: DeviceInfo[];
@@ -31,6 +45,10 @@ export interface LicenseInfo {
   inGracePeriod?: boolean;
   /** Grace period end date */
   gracePeriodEndsAt?: Date;
+  /** Initial credits purchased (for credit packs) */
+  initialCredits?: number;
+  /** Whether credits reset monthly (true for subscriptions, false for credit packs) */
+  creditsResetMonthly?: boolean;
 }
 
 /**
@@ -55,16 +73,20 @@ export interface DeviceInfo {
  * Credit balance information
  */
 export interface CreditBalance {
-  /** Total credits for current period */
+  /** Total credits for current period (subscription) or purchased (credit pack) */
   total: number;
-  /** Credits used in current period */
+  /** Credits used in current period or since purchase */
   used: number;
   /** Credits remaining */
   remaining: number;
-  /** Next reset date */
-  resetAt: Date;
-  /** Credits carried over from previous period */
+  /** Next reset date (null for credit packs) */
+  resetAt: Date | null;
+  /** Credits carried over from previous period (subscription only) */
   carryover: number;
+  /** License type */
+  licenseType: LicenseType;
+  /** Expiration date for credit pack */
+  expiresAt?: Date | null;
 }
 
 /**
@@ -299,4 +321,137 @@ export interface GumroadWebhookPayload {
   disputed: boolean;
   dispute_won: boolean;
   custom_fields?: Record<string, string>;
+}
+
+/**
+ * Promotional code types
+ */
+export enum PromoCodeType {
+  PERCENTAGE_DISCOUNT = 'percentage_discount',
+  FIXED_DISCOUNT = 'fixed_discount',
+  EXTENDED_TRIAL = 'extended_trial',
+  BONUS_CREDITS = 'bonus_credits',
+}
+
+/**
+ * Promotional code information
+ */
+export interface PromoCodeInfo {
+  /** Promo code */
+  code: string;
+  /** Type of promotion */
+  type: PromoCodeType;
+  /** Discount percentage (0-100) for percentage discounts */
+  discountPercentage?: number;
+  /** Fixed discount amount in credits for fixed discounts */
+  fixedDiscount?: number;
+  /** Extended trial days for trial extensions */
+  extendedDays?: number;
+  /** Bonus credits amount */
+  bonusCredits?: number;
+  /** Valid from date */
+  validFrom: Date;
+  /** Valid until date */
+  validUntil: Date;
+  /** Maximum uses (null for unlimited) */
+  maxUses: number | null;
+  /** Current use count */
+  usesCount: number;
+  /** Whether code is active */
+  isActive: boolean;
+  /** Partner/influencer identifier */
+  partnerId?: string;
+  /** Partner/influencer name */
+  partnerName?: string;
+  /** Description */
+  description?: string;
+}
+
+/**
+ * Promo code validation result
+ */
+export interface PromoCodeValidationResult {
+  /** Whether code is valid */
+  valid: boolean;
+  /** Promo code info if valid */
+  promoCode?: PromoCodeInfo;
+  /** Error message if invalid */
+  error?: string;
+  /** Error code */
+  errorCode?: PromoCodeErrorCode;
+}
+
+/**
+ * Promo code error codes
+ */
+export enum PromoCodeErrorCode {
+  INVALID_CODE = 'INVALID_CODE',
+  EXPIRED = 'EXPIRED',
+  NOT_YET_ACTIVE = 'NOT_YET_ACTIVE',
+  MAX_USES_REACHED = 'MAX_USES_REACHED',
+  ALREADY_USED = 'ALREADY_USED',
+  INACTIVE = 'INACTIVE',
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+}
+
+/**
+ * Applied promo code record
+ */
+export interface AppliedPromoCode {
+  /** Promo code */
+  code: string;
+  /** License key it was applied to */
+  licenseKey: string;
+  /** Email associated with license */
+  email: string;
+  /** Application date */
+  appliedAt: Date;
+  /** Benefit received */
+  benefit: {
+    type: PromoCodeType;
+    amount: number;
+    description: string;
+  };
+  /** Partner identifier if applicable */
+  partnerId?: string;
+}
+
+/**
+ * Promo code analytics
+ */
+export interface PromoCodeAnalytics {
+  /** Promo code */
+  code: string;
+  /** Total uses */
+  totalUses: number;
+  /** Successful conversions */
+  conversions: number;
+  /** Total revenue attributed */
+  revenue: number;
+  /** Partner identifier if applicable */
+  partnerId?: string;
+  /** First use date */
+  firstUsedAt?: Date;
+  /** Last use date */
+  lastUsedAt?: Date;
+}
+
+/**
+ * Gumroad coupon API response
+ */
+export interface GumroadCouponResponse {
+  success: boolean;
+  offer_code?: {
+    id: string;
+    name: string;
+    amount_cents: number;
+    offer_type: 'percentage' | 'fixed';
+    max_purchase_count: number | null;
+    purchase_count: number;
+    is_active: boolean;
+    start_date?: string;
+    end_date?: string;
+  };
+  message?: string;
 }

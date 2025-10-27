@@ -28,13 +28,28 @@ export class Logger {
 
   static fromContext(c: Context): Logger {
     const requestId = c.get('requestId') || generateRequestId();
-    
+
     return new Logger(requestId, {
       url: c.req.url,
       method: c.req.method,
       ip: c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For'),
       userAgent: c.req.header('User-Agent')
     });
+  }
+
+  static error(c: Context, message: string, error?: Error | any): void {
+    const logger = Logger.fromContext(c);
+    logger.error(message, error);
+  }
+
+  static info(c: Context, message: string, data?: any): void {
+    const logger = Logger.fromContext(c);
+    logger.info(message, data);
+  }
+
+  static warn(c: Context, message: string, data?: any): void {
+    const logger = Logger.fromContext(c);
+    logger.warn(message, data);
   }
 
   private log(level: LogLevel, message: string, data?: any): void {
