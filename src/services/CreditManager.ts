@@ -15,6 +15,10 @@ import {
   CreditEvent,
   CreditEventType,
   CostEstimate,
+  OperationType,
+  OPERATION_COSTS,
+  PLAN_LIMITS,
+  MAX_CREDIT_ROLLOVER,
 } from '../types/credit';
 import { IService } from '../types/services';
 import { CloudflareAPI } from './CloudflareAPI';
@@ -62,6 +66,8 @@ export class CreditManager implements IService {
   // Current license and balance
   private license?: License;
   private balance = 0;
+  private lastResetDate?: Date;
+  private rolloverCredits = 0;
 
   // Reservations
   private reservations: Map<string, CreditReservation> = new Map();
@@ -109,6 +115,12 @@ export class CreditManager implements IService {
     // Load license if key is provided
     if (this.config.licenseKey) {
       await this.loadLicense(this.config.licenseKey);
+
+      // Check if credits need to be reset
+      if (this.shouldResetCredits()) {
+        this.logger?.info('Credits need reset on initialization');
+        await this.resetMonthlyCredits();
+      }
     }
 
     // Start reservation cleanup
@@ -508,6 +520,140 @@ export class CreditManager implements IService {
    */
   hasCredits(amount: number): boolean {
     return this.getAvailableBalance() >= amount;
+  }
+
+  /**
+   * Check if user can afford a specific operation type
+   */
+  canAffordOperation(operationType: OperationType): boolean {
+    this.ensureInitialized();
+
+    const cost = OPERATION_COSTS[operationType];
+    return this.hasCredits(cost);
+  }
+
+  /**
+   * Get monthly credit allowance for current plan
+   */
+  getMonthlyAllowance(): number {
+    if (!this.license) {
+      return PLAN_LIMITS.free; // Default to free plan
+    }
+
+    return PLAN_LIMITS[this.license.plan];
+  }
+
+  /**
+   * Get operation cost
+   */
+  getOperationCost(operationType: OperationType): number {
+    return OPERATION_COSTS[operationType];
+  }
+
+  /**
+   * Reset monthly credits with rollover logic
+   */
+  async resetMonthlyCredits(): Promise<void> {
+    this.ensureInitialized();
+
+    if (!this.license) {
+      throw new Error('No license loaded');
+    }
+
+    this.logger?.info('Resetting monthly credits', {
+      plan: this.license.plan,
+      currentBalance: this.balance,
+    });
+
+    const now = new Date();
+    const monthlyAllowance = this.getMonthlyAllowance();
+
+    // Calculate rollover for pro users
+    let rollover = 0;
+    if (this.license.plan === 'pro' && this.balance > 0) {
+      rollover = Math.min(this.balance, MAX_CREDIT_ROLLOVER);
+      this.logger?.info('Rolling over credits', {
+        available: this.balance,
+        rollover,
+        max: MAX_CREDIT_ROLLOVER,
+      });
+    }
+
+    // Reset balance with new allowance + rollover
+    const previousBalance = this.balance;
+    this.balance = monthlyAllowance + rollover;
+    this.rolloverCredits = rollover;
+    this.lastResetDate = now;
+
+    // Update license
+    if (this.license) {
+      this.license.creditsRemaining = this.balance;
+      this.license.creditLimit = monthlyAllowance + rollover;
+    }
+
+    // Record reset transaction
+    const transaction: CreditTransaction = {
+      id: this.generateId(),
+      type: TransactionType.RESET,
+      platform: 'facebook', // Placeholder, reset is not platform-specific
+      amount: this.balance - previousBalance,
+      timestamp: now.getTime(),
+      success: true,
+      balanceBefore: previousBalance,
+      balanceAfter: this.balance,
+    };
+
+    this.tracker.recordTransaction(transaction);
+
+    // Emit event
+    this.emitEvent({
+      type: CreditEventType.BALANCE_UPDATED,
+      timestamp: transaction.timestamp,
+      data: {
+        balance: this.balance,
+        rollover,
+        monthlyAllowance,
+        resetDate: now.toISOString(),
+      },
+    });
+
+    this.logger?.info('Monthly credits reset', {
+      newBalance: this.balance,
+      rollover,
+      monthlyAllowance,
+    });
+  }
+
+  /**
+   * Check if credits need to be reset
+   */
+  shouldResetCredits(): boolean {
+    if (!this.lastResetDate) {
+      return true; // Never reset before
+    }
+
+    const now = new Date();
+    const lastReset = this.lastResetDate;
+
+    // Check if we're in a new month
+    return (
+      now.getFullYear() > lastReset.getFullYear() ||
+      (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth())
+    );
+  }
+
+  /**
+   * Get last reset date
+   */
+  getLastResetDate(): Date | undefined {
+    return this.lastResetDate;
+  }
+
+  /**
+   * Get rollover credits from last period
+   */
+  getRolloverCredits(): number {
+    return this.rolloverCredits;
   }
 
   /**

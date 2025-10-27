@@ -33,6 +33,29 @@ export const PLAN_LIMITS: Record<UserPlan, number> = {
 } as const;
 
 /**
+ * Operation types for credit costs
+ */
+export enum OperationType {
+  BASIC_ARCHIVE = 'basic_archive',
+  WITH_AI = 'with_ai',
+  DEEP_RESEARCH = 'deep_research',
+}
+
+/**
+ * Operation cost matrix (in credits)
+ */
+export const OPERATION_COSTS: Record<OperationType, number> = {
+  [OperationType.BASIC_ARCHIVE]: 1,
+  [OperationType.WITH_AI]: 3,
+  [OperationType.DEEP_RESEARCH]: 5,
+} as const;
+
+/**
+ * Maximum credit rollover for pro plan
+ */
+export const MAX_CREDIT_ROLLOVER = 100;
+
+/**
  * Credit threshold levels for alerts
  */
 export enum CreditThreshold {

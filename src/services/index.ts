@@ -7,6 +7,12 @@ export { ArchiveOrchestrator } from './ArchiveOrchestrator';
 export { ErrorHandler } from './ErrorHandler';
 export { PlatformDetector } from './PlatformDetector';
 export { URLExpander } from './URLExpander';
+export { GumroadClient } from './GumroadClient';
+export { LicenseValidator } from './LicenseValidator';
+export { LicenseStorage } from './LicenseStorage';
+export { CreditManager } from './CreditManager';
+export { CreditResetScheduler } from './CreditResetScheduler';
+export { GumroadWebhookHandler } from './GumroadWebhookHandler';
 
 // Export types
 export type {
@@ -55,3 +61,27 @@ export type {
   ExpansionResult,
   ExpansionOptions,
 } from './URLExpander';
+
+export type {
+  GumroadClientConfig,
+} from './GumroadClient';
+
+export type {
+  LicenseValidatorConfig,
+} from './LicenseValidator';
+
+export type {
+  LicenseStorageConfig,
+} from './LicenseStorage';
+
+export type {
+  CreditManagerConfig,
+} from './CreditManager';
+
+export type {
+  CreditResetSchedulerConfig,
+} from './CreditResetScheduler';
+
+export type {
+  GumroadWebhookHandlerConfig,
+} from './GumroadWebhookHandler';

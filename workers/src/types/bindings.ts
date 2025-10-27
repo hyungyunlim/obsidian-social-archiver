@@ -11,6 +11,7 @@ export interface Bindings {
   BRIGHTDATA_API_KEY?: string;
   PERPLEXITY_API_KEY?: string;
   GUMROAD_API_KEY?: string;
+  GUMROAD_WEBHOOK_SECRET?: string;
   HMAC_SECRET?: string;
   
   // Rate limiter

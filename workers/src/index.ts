@@ -12,6 +12,7 @@ import { archiveRouter } from './handlers/archive';
 import { shareRouter } from './handlers/share';
 import { licenseRouter } from './handlers/license';
 import { healthRouter } from './handlers/health';
+import { webhookRouter } from './handlers/webhook';
 
 const app = new Hono<Env>();
 
@@ -51,6 +52,9 @@ app.route('/', healthRouter);
 app.route('/api/archive', archiveRouter);
 app.route('/api/share', shareRouter);
 app.route('/api/license', licenseRouter);
+
+// Webhook routes (no rate limiting for webhooks)
+app.route('/webhook', webhookRouter);
 
 // 404 handler
 app.notFound((c) => {

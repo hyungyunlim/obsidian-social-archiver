@@ -19,6 +19,14 @@ export const SERVICE_TOKENS = {
   // External API communication
   API_CLIENT: Symbol.for('ApiClient'),
 
+  // Licensing and credit management
+  GUMROAD_CLIENT: Symbol.for('GumroadClient'),
+  LICENSE_VALIDATOR: Symbol.for('LicenseValidator'),
+  LICENSE_STORAGE: Symbol.for('LicenseStorage'),
+  CREDIT_MANAGER: Symbol.for('CreditManager'),
+  CREDIT_RESET_SCHEDULER: Symbol.for('CreditResetScheduler'),
+  GUMROAD_WEBHOOK_HANDLER: Symbol.for('GumroadWebhookHandler'),
+
   // Plugin instance (special token for accessing Obsidian plugin)
   PLUGIN_INSTANCE: Symbol.for('PluginInstance'),
 } as const;

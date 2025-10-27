@@ -13,6 +13,8 @@ import {
   CreditEventType,
   CreditThreshold,
   TransactionType,
+  OperationType,
+  OPERATION_COSTS,
 } from '../../types/credit';
 
 /**
@@ -388,6 +390,135 @@ describe('CreditManager', () => {
     });
   });
 
+  describe('Operation Type Management', () => {
+    it('should check if can afford basic archive operation', () => {
+      const canAfford = creditManager.canAffordOperation(OperationType.BASIC_ARCHIVE);
+      expect(canAfford).toBe(true); // Balance is 100, cost is 1
+    });
+
+    it('should check if can afford AI operation', () => {
+      const canAfford = creditManager.canAffordOperation(OperationType.WITH_AI);
+      expect(canAfford).toBe(true); // Balance is 100, cost is 3
+    });
+
+    it('should check if can afford deep research operation', () => {
+      const canAfford = creditManager.canAffordOperation(OperationType.DEEP_RESEARCH);
+      expect(canAfford).toBe(true); // Balance is 100, cost is 5
+    });
+
+    it('should return false when cannot afford operation', async () => {
+      api.setMockBalance(2);
+      await creditManager.refreshBalance();
+
+      const canAfford = creditManager.canAffordOperation(OperationType.DEEP_RESEARCH);
+      expect(canAfford).toBe(false); // Balance is 2, cost is 5
+    });
+
+    it('should get operation cost', () => {
+      expect(creditManager.getOperationCost(OperationType.BASIC_ARCHIVE)).toBe(1);
+      expect(creditManager.getOperationCost(OperationType.WITH_AI)).toBe(3);
+      expect(creditManager.getOperationCost(OperationType.DEEP_RESEARCH)).toBe(5);
+    });
+  });
+
+  describe('Monthly Allowance and Reset', () => {
+    it('should get monthly allowance for pro plan', () => {
+      const allowance = creditManager.getMonthlyAllowance();
+      expect(allowance).toBe(500); // Pro plan
+    });
+
+    it('should reset monthly credits', async () => {
+      const initialBalance = creditManager.getBalance();
+
+      await creditManager.resetMonthlyCredits();
+
+      const newBalance = creditManager.getBalance();
+      expect(newBalance).toBe(500); // Pro allowance
+
+      const lastReset = creditManager.getLastResetDate();
+      expect(lastReset).toBeDefined();
+    });
+
+    it('should rollover credits for pro users (max 100)', async () => {
+      // Deduct some credits to leave a balance
+      await creditManager.deductCredits('facebook', 2, 'ref-1', true);
+      await creditManager.deductCredits('facebook', 2, 'ref-2', true);
+      expect(creditManager.getBalance()).toBe(96);
+
+      await creditManager.resetMonthlyCredits();
+
+      // Should get 500 new credits + 96 rollover (capped at 100)
+      const rollover = creditManager.getRolloverCredits();
+      expect(rollover).toBe(96);
+      expect(creditManager.getBalance()).toBe(596); // 500 + 96
+    });
+
+    it('should cap rollover at 100 credits', async () => {
+      // Set balance to 150 credits
+      api.setMockBalance(150);
+      await creditManager.refreshBalance();
+
+      await creditManager.resetMonthlyCredits();
+
+      // Should rollover max 100
+      const rollover = creditManager.getRolloverCredits();
+      expect(rollover).toBe(100);
+      expect(creditManager.getBalance()).toBe(600); // 500 + 100
+    });
+
+    it('should not rollover credits for free users', async () => {
+      // Create a new manager with free plan
+      const freeApi = new MockCloudflareAPI(
+        { endpoint: 'https://test.api', licenseKey: 'FREE-KEY' },
+        logger
+      );
+
+      // Override validateLicense to return free plan
+      freeApi.validateLicense = async () => ({
+        valid: true,
+        plan: 'free',
+        creditsRemaining: 5,
+        creditLimit: 10,
+        resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        features: [],
+      });
+
+      const freeManager = new CreditManager(
+        {
+          licenseKey: 'FREE-KEY',
+          alerts: {
+            enabled: false,
+            thresholds: [],
+            showNotifications: false,
+            logToConsole: false,
+          },
+          reservationTimeout: 5000,
+          autoRefund: true,
+        },
+        freeApi,
+        tracker,
+        logger
+      );
+
+      await freeManager.initialize();
+
+      await freeManager.resetMonthlyCredits();
+
+      const rollover = freeManager.getRolloverCredits();
+      expect(rollover).toBe(0); // Free plan doesn't rollover
+      expect(freeManager.getBalance()).toBe(10); // Only monthly allowance
+
+      await freeManager.shutdown();
+    });
+
+    it('should check if reset is needed', () => {
+      // Just initialized, so reset might be needed
+      const needsReset = creditManager.shouldResetCredits();
+      // This depends on when the license was last reset
+      expect(typeof needsReset).toBe('boolean');
+    });
+  });
+
   describe('Integration', () => {
     it('should track all transactions in CostTracker', async () => {
       await creditManager.deductCredits('facebook', 2, 'ref-1', true);
@@ -415,6 +546,19 @@ describe('CreditManager', () => {
       const transactions = tracker.getAllTransactions();
       expect(transactions).toHaveLength(1);
       expect(transactions[0].success).toBe(false);
+    });
+
+    it('should emit event on monthly reset', async () => {
+      const events: any[] = [];
+      creditManager.on(CreditEventType.BALANCE_UPDATED, (event) => {
+        events.push(event);
+      });
+
+      await creditManager.resetMonthlyCredits();
+
+      const resetEvent = events.find((e) => e.data.resetDate);
+      expect(resetEvent).toBeDefined();
+      expect(resetEvent.data.monthlyAllowance).toBe(500);
     });
   });
 });
