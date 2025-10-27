@@ -12,6 +12,8 @@ export default {
     // CSS handling
     css: 'injected'
   },
-  // Enable hot module replacement
-  hot: true
+  // Hot module replacement configuration
+  vitePlugin: {
+    hot: true
+  }
 };
