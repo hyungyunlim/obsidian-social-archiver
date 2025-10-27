@@ -73,9 +73,10 @@ class PathGenerator {
    * Format: Social Archives/{platform}/{year}/{month}/filename.md
    */
   private generatePlatformPath(postData: PostData, filename: string): string {
-    const date = postData.metadata.timestamp;
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const timestamp = postData.metadata.timestamp;
+    const dateObj = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const platform = postData.platform.charAt(0).toUpperCase() + postData.platform.slice(1);
 
     return normalizePath(`${this.basePath}/${platform}/${year}/${month}/${filename}`);
@@ -86,10 +87,11 @@ class PathGenerator {
    * Format: Social Archives/{year}/{month}/{day}/filename.md
    */
   private generateDatePath(postData: PostData, filename: string): string {
-    const date = postData.metadata.timestamp;
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const timestamp = postData.metadata.timestamp;
+    const dateObj = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
 
     return normalizePath(`${this.basePath}/${year}/${month}/${day}/${filename}`);
   }
@@ -103,11 +105,13 @@ class PathGenerator {
 
   /**
    * Format date as YYYY-MM-DD
+   * Handles both Date objects and ISO string timestamps
    */
-  private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+  private formatDate(date: Date | string): string {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 

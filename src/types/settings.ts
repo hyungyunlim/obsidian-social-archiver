@@ -11,6 +11,7 @@ export interface SocialArchiverSettings {
   
   // Feature Toggles
   enableAI: boolean;
+  enableDeepResearch: boolean;
   enableSharing: boolean;
   autoArchive: boolean;
   downloadMedia: boolean;
@@ -43,6 +44,7 @@ export const DEFAULT_SETTINGS: SocialArchiverSettings = {
   
   // Feature Toggles
   enableAI: false,
+  enableDeepResearch: false,
   enableSharing: false,
   autoArchive: false,
   downloadMedia: true,

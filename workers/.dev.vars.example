@@ -1,0 +1,17 @@
+# Development Environment Variables
+# Copy this file to .dev.vars and fill in your actual values
+
+# BrightData API Key
+BRIGHTDATA_API_KEY=your_brightdata_api_key_here
+
+# Perplexity API Key (for AI features)
+PERPLEXITY_API_KEY=your_perplexity_api_key_here
+
+# Gumroad Product ID (NOT the API key)
+GUMROAD_PRODUCT_ID=your_gumroad_product_id_here
+
+# Gumroad Webhook Secret (for webhook verification)
+GUMROAD_WEBHOOK_SECRET=your_webhook_secret_here
+
+# HMAC Secret (for share link protection)
+HMAC_SECRET=your_hmac_secret_here

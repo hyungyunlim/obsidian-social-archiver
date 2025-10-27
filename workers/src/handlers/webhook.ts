@@ -445,3 +445,191 @@ function getNextResetDate(): string {
   date.setHours(0, 0, 0, 0);
   return date.toISOString();
 }
+
+/**
+ * POST /webhook/brightdata - Handle BrightData completion notification
+ * BrightData calls this when scraping is complete, we download the data
+ */
+webhookRouter.post('/brightdata', async (c) => {
+  const logger = new Logger('webhook:brightdata', { requestId: c.var.requestId });
+
+  try {
+    // BrightData webhook payload (notification only, no data)
+    const payload = await c.req.json() as any;
+
+    logger.info('📨 BrightData webhook notification received', {
+      snapshotId: payload.snapshot_id,
+      status: payload.status,
+    });
+
+    const snapshotId = payload.snapshot_id;
+
+    if (!snapshotId) {
+      logger.error('Missing snapshot_id in webhook payload');
+      return c.json({ success: false, error: 'Missing snapshot_id' }, 400);
+    }
+
+    // Snapshot ID에서 Job ID 찾기
+    const jobId = await c.env.ARCHIVE_CACHE.get(`snapshot:${snapshotId}`, 'text');
+
+    if (!jobId) {
+      logger.warn('⚠️  Job not found for snapshot', { snapshotId });
+      return c.json({ success: false, error: 'Job not found' }, 404);
+    }
+
+    logger.info('Found job for snapshot', { jobId, snapshotId });
+
+    // Job 정보 가져오기
+    const job = await c.env.ARCHIVE_CACHE.get(`job:${jobId}`, 'json') as any;
+    if (!job) {
+      logger.error('Job data not found', { jobId });
+      return c.json({ success: false, error: 'Job data not found' }, 404);
+    }
+
+    // 스냅샷 상태 확인 및 데이터 다운로드
+    if (payload.status === 'ready') {
+      logger.info('✅ Snapshot ready, downloading data', { jobId, snapshotId });
+
+      // Download snapshot data from BrightData
+      const apiKey = c.env.BRIGHTDATA_API_KEY;
+      if (!apiKey) {
+        throw new Error('BRIGHTDATA_API_KEY not configured');
+      }
+
+      const rawData = await downloadSnapshotData(snapshotId, apiKey, logger);
+
+      // Platform 감지
+      const platform = job.platform || detectPlatform(job.url);
+
+      // 간단한 PostData 생성 (실제로는 BrightDataService.parseResponse 사용)
+      const postData = {
+        platform,
+        id: rawData.post_id || rawData.id || `post-${Date.now()}`,
+        url: job.url,
+        author: {
+          name: rawData.author_name || rawData.author || 'Unknown',
+          url: rawData.author_url || '',
+        },
+        content: {
+          text: rawData.text || rawData.caption || '',
+        },
+        metadata: {
+          likes: rawData.likes_count || rawData.num_likes || 0,
+          comments: rawData.comments_count || rawData.num_comments || 0,
+          shares: rawData.shares_count || rawData.num_shares || 0,
+          timestamp: rawData.created_time || rawData.published_date || new Date().toISOString(),
+        },
+        raw: rawData,
+      };
+
+      // Job 완료 처리
+      job.status = 'completed';
+      job.updatedAt = Date.now();
+      job.result = {
+        postData,
+        creditsUsed: job.creditsRequired || 1,
+        processingTime: job.updatedAt - job.createdAt,
+        cached: false,
+      };
+
+      await c.env.ARCHIVE_CACHE.put(`job:${jobId}`, JSON.stringify(job), {
+        expirationTtl: 3600,
+      });
+
+      logger.info('🎉 Job completed via webhook', { jobId });
+
+      return c.json({ success: true, jobId });
+
+    } else if (payload.status === 'failed') {
+      logger.error('❌ BrightData collection failed', {
+        jobId,
+        error: payload.error
+      });
+
+      job.status = 'failed';
+      job.error = payload.error || 'BrightData collection failed';
+      job.updatedAt = Date.now();
+
+      await c.env.ARCHIVE_CACHE.put(`job:${jobId}`, JSON.stringify(job), {
+        expirationTtl: 3600,
+      });
+
+      return c.json({ success: true, jobId });
+    }
+
+    return c.json({ success: true, message: 'Webhook received but status not ready' });
+
+  } catch (error) {
+    logger.error('Webhook processing failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
+
+/**
+ * Download snapshot data from BrightData
+ */
+async function downloadSnapshotData(snapshotId: string, apiKey: string, logger: Logger): Promise<any> {
+  const response = await fetch(
+    `https://api.brightdata.com/datasets/v3/snapshot/${snapshotId}?format=json`,
+    {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    logger.error('Failed to download snapshot', { status: response.status, error: errorText });
+    throw new Error(`Failed to download snapshot: ${response.status}`);
+  }
+
+  // BrightData returns NDJSON format
+  const text = await response.text();
+  logger.debug('Raw snapshot response', { snapshotId, responseLength: text.length });
+
+  try {
+    // Split by newlines and parse each line
+    const lines = text.trim().split('\n');
+    const results = lines
+      .filter(line => line.trim().length > 0)
+      .map(line => {
+        try {
+          return JSON.parse(line);
+        } catch (e) {
+          logger.error('Failed to parse NDJSON line', { line: line.substring(0, 100), error: e });
+          return null;
+        }
+      })
+      .filter(result => result !== null);
+
+    if (results.length === 0) {
+      throw new Error('No valid data in snapshot response');
+    }
+
+    logger.debug('Parsed snapshot results', { count: results.length });
+    return results[0]; // Return first result
+  } catch (error) {
+    logger.error('Failed to parse snapshot data', {
+      snapshotId,
+      error: error instanceof Error ? error.message : String(error),
+      responsePreview: text.substring(0, 500)
+    });
+    throw new Error(`Failed to parse snapshot data: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function detectPlatform(url: string): string {
+  if (url.includes('facebook.com')) return 'facebook';
+  if (url.includes('linkedin.com')) return 'linkedin';
+  if (url.includes('instagram.com')) return 'instagram';
+  if (url.includes('tiktok.com')) return 'tiktok';
+  if (url.includes('x.com') || url.includes('twitter.com')) return 'x';
+  if (url.includes('threads.net')) return 'threads';
+  return 'unknown';
+}

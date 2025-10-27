@@ -13,7 +13,7 @@ export interface Bindings {
   ENVIRONMENT: 'development' | 'staging' | 'production';
   BRIGHTDATA_API_KEY?: string;
   PERPLEXITY_API_KEY?: string;
-  GUMROAD_API_KEY?: string;
+  GUMROAD_PRODUCT_ID?: string;
   GUMROAD_WEBHOOK_SECRET?: string;
   HMAC_SECRET?: string;
 

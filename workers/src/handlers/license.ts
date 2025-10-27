@@ -23,9 +23,9 @@ licenseRouter.post('/validate', async (c) => {
       // Check if it's a new license from Gumroad
       const gumroadValidation = await validateWithGumroad(
         request.licenseKey,
-        c.env.GUMROAD_API_KEY
+        c.env.GUMROAD_PRODUCT_ID
       );
-      
+
       if (!gumroadValidation.valid) {
         return c.json({
           success: false,
@@ -35,7 +35,7 @@ licenseRouter.post('/validate', async (c) => {
           }
         }, 401);
       }
-      
+
       // Store new license
       const newLicense = {
         key: request.licenseKey,
@@ -44,14 +44,16 @@ licenseRouter.post('/validate', async (c) => {
         creditLimit: 500,
         resetDate: getNextResetDate(),
         createdAt: Date.now(),
-        email: gumroadValidation.email
+        purchaseDate: gumroadValidation.purchaseDate,
+        email: gumroadValidation.email,
+        cancelled: gumroadValidation.cancelled || false
       };
-      
+
       await c.env.LICENSE_KEYS.put(
         `license:${request.licenseKey}`,
         JSON.stringify(newLicense)
       );
-      
+
       const response: LicenseResponse = {
         valid: true,
         plan: 'pro',
@@ -60,7 +62,7 @@ licenseRouter.post('/validate', async (c) => {
         resetDate: newLicense.resetDate,
         features: ['ai_analysis', 'deep_research', 'unlimited_sharing', 'priority_support']
       };
-      
+
       return c.json({
         success: true,
         data: response
@@ -167,22 +169,58 @@ licenseRouter.post('/use-credits', async (c) => {
 // Helper functions
 async function validateWithGumroad(
   licenseKey: string,
-  apiKey?: string
-): Promise<{ valid: boolean; email?: string }> {
-  if (!apiKey) {
+  productId?: string
+): Promise<{ valid: boolean; email?: string; purchaseDate?: string; cancelled?: boolean }> {
+  if (!productId) {
+    console.error('GUMROAD_PRODUCT_ID not configured');
     return { valid: false };
   }
-  
+
   try {
-    // TODO: Implement actual Gumroad API call
-    // For now, return mock validation
-    if (licenseKey.startsWith('GUMROAD-')) {
-      return {
-        valid: true,
-        email: 'user@example.com'
-      };
+    // Call Gumroad License API
+    const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        product_id: productId,
+        license_key: licenseKey,
+        increment_uses_count: 'false', // Don't increment usage count for validation
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Gumroad API error:', response.status, response.statusText);
+      return { valid: false };
     }
-    return { valid: false };
+
+    const data = await response.json() as any;
+
+    // Gumroad returns { success: true/false, purchase: {...} }
+    if (!data.success) {
+      return { valid: false };
+    }
+
+    const purchase = data.purchase;
+
+    // Check if license is valid and not cancelled
+    const isValid = !purchase.disputed &&
+                   !purchase.chargebacked &&
+                   !purchase.refunded;
+
+    // Check subscription status
+    const isSubscriptionActive = purchase.subscription_id
+      ? !purchase.cancelled || (purchase.subscription_ended_at && new Date(purchase.subscription_ended_at) > new Date())
+      : true; // Non-subscription purchases are always active
+
+    return {
+      valid: isValid && isSubscriptionActive,
+      email: purchase.email,
+      purchaseDate: purchase.created_at,
+      cancelled: purchase.cancelled || false,
+    };
+
   } catch (error) {
     console.error('Gumroad validation error:', error);
     return { valid: false };

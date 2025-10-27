@@ -92,26 +92,40 @@
   async function handleArchive() {
     if (!canArchive) return;
 
-    const result = await archiveState.archive(url, {
-      enableAI,
-      downloadMedia,
-      onProgress: (progress) => {
-        // Progress is already tracked in archiveState
-      },
-    });
+    // Show initial notice
+    const progressNotice = new Notice(`📡 Starting archive for ${detectedPlatform || 'post'}...`, 0);
 
-    if (result.success && result.filePath) {
-      // Show success notice
-      new Notice(`✅ Post archived successfully!`);
+    // Close modal immediately
+    handleClose();
 
-      // Call success callback
-      onSuccess?.(result.filePath);
+    // Run archive in background
+    try {
+      const result = await archiveState.archive(url, {
+        enableAI,
+        downloadMedia,
+        onProgress: (progress) => {
+          // Update progress notice
+          progressNotice.setMessage(`⚙️ Archiving... ${Math.round(progress)}%`);
+        },
+      });
 
-      // Close modal
-      handleClose();
-    } else if (result.error) {
-      // Error is tracked in archiveState
-      new Notice(`❌ Archive failed: ${result.error.message}`);
+      // Hide progress notice
+      progressNotice.hide();
+
+      if (result.success && result.filePath) {
+        // Show success notice
+        new Notice(`✅ Post archived successfully!\nSaved to: ${result.filePath}`, 5000);
+
+        // Call success callback
+        onSuccess?.(result.filePath);
+      } else if (result.error) {
+        // Show error notice
+        new Notice(`❌ Archive failed: ${result.error.message}`, 8000);
+      }
+    } catch (error) {
+      progressNotice.hide();
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      new Notice(`❌ Archive failed: ${errorMessage}`, 8000);
     }
   }
 

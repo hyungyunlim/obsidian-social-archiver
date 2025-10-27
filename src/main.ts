@@ -1,6 +1,11 @@
 import { Plugin, Notice, addIcon, Modal, App } from 'obsidian';
 import { SocialArchiverSettingTab } from './settings/SettingTab';
 import { SocialArchiverSettings, DEFAULT_SETTINGS } from './types/settings';
+import { WorkersAPIClient } from './services/WorkersAPIClient';
+import { ArchiveOrchestrator } from './services/ArchiveOrchestrator';
+import { VaultManager } from './services/VaultManager';
+import { MarkdownConverter } from './services/MarkdownConverter';
+import { MediaHandler } from './services/MediaHandler';
 
 // Temporary ArchiveModal class until Svelte integration is complete
 class ArchiveModal extends Modal {
@@ -64,8 +69,20 @@ class ArchiveModal extends Modal {
         return;
       }
 
-      new Notice('🚧 Archive functionality coming soon! The Workers backend is ready.');
+      // Close modal immediately
       this.close();
+
+      // Show brief notice
+      new Notice('📡 Archiving post...');
+
+      // Run archive in background
+      try {
+        await this.plugin.archivePost(url);
+        // Success notification is shown by archivePost method
+      } catch (error) {
+        console.error('Archive failed:', error);
+        new Notice(`❌ Archive failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 8000);
+      }
     });
 
     // Focus on input
@@ -80,11 +97,16 @@ class ArchiveModal extends Modal {
 
 export default class SocialArchiverPlugin extends Plugin {
   settings: SocialArchiverSettings = DEFAULT_SETTINGS;
+  private apiClient?: WorkersAPIClient;
+  private orchestrator?: ArchiveOrchestrator;
 
   async onload(): Promise<void> {
     console.log('Social Archiver plugin loaded');
 
     await this.loadSettings();
+
+    // Initialize services if API endpoint is configured
+    await this.initializeServices();
 
     // Register custom icon
     addIcon('social-archive', `
@@ -127,6 +149,10 @@ export default class SocialArchiverPlugin extends Plugin {
 
   async onunload(): Promise<void> {
     console.log('Social Archiver plugin unloaded');
+
+    // Cleanup services
+    await this.orchestrator?.dispose();
+    await this.apiClient?.dispose();
   }
 
   async loadSettings(): Promise<void> {
@@ -135,6 +161,114 @@ export default class SocialArchiverPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+    // Reinitialize services if settings changed
+    await this.initializeServices();
+  }
+
+  /**
+   * Initialize API client and orchestrator
+   */
+  private async initializeServices(): Promise<void> {
+    // Clean up existing services
+    await this.orchestrator?.dispose();
+    await this.apiClient?.dispose();
+
+    // Only initialize if we have the required settings
+    if (!this.settings.apiEndpoint) {
+      console.log('[Social Archiver] API endpoint not configured');
+      return;
+    }
+
+    try {
+      // Initialize API client
+      this.apiClient = new WorkersAPIClient({
+        endpoint: this.settings.apiEndpoint,
+        licenseKey: this.settings.licenseKey,
+      });
+      await this.apiClient.initialize();
+
+      // Initialize orchestrator (for local operations)
+      const vaultManager = new VaultManager(this.app.vault, this.app.metadataCache);
+      const markdownConverter = new MarkdownConverter();
+      const mediaHandler = new MediaHandler(this.app.vault, {
+        defaultImagePath: 'attachments/social-archives',
+      });
+
+      // Note: ArchiveService would need to be adapted for plugin use
+      // For now, we'll primarily use the Workers API
+
+      console.log('[Social Archiver] Services initialized successfully');
+
+    } catch (error) {
+      console.error('[Social Archiver] Failed to initialize services:', error);
+      new Notice('Failed to initialize Social Archiver. Check console for details.');
+    }
+  }
+
+  /**
+   * Archive a social media post
+   */
+  async archivePost(url: string): Promise<void> {
+    console.log('[Social Archiver] archivePost called', { url });
+
+    if (!this.apiClient) {
+      console.error('[Social Archiver] apiClient not initialized!');
+      new Notice('⚠️ Please configure API endpoint in settings first');
+      return;
+    }
+
+    console.log('[Social Archiver] apiClient initialized, submitting request');
+
+    try {
+      console.log('[Social Archiver] Calling submitArchive', {
+        url,
+        enableAI: this.settings.enableAI,
+        deepResearch: this.settings.enableDeepResearch,
+      });
+
+      // Submit archive request
+      const response = await this.apiClient.submitArchive({
+        url,
+        options: {
+          enableAI: this.settings.enableAI,
+          deepResearch: this.settings.enableDeepResearch,
+          downloadMedia: true,
+        },
+        licenseKey: this.settings.licenseKey,
+      });
+
+      // Wait for completion (no progress notifications)
+      const result = await this.apiClient.waitForJob(response.jobId, {
+        timeout: 120000, // 2 minutes
+        pollInterval: 2000, // 2 seconds
+      });
+
+      // Save to vault using local services
+      const vaultManager = new VaultManager({
+        vault: this.app.vault,
+        basePath: this.settings.archivePath || 'Social Archives',
+        organizationStrategy: this.settings.organizationStrategy || 'platform'
+      });
+      const markdownConverter = new MarkdownConverter();
+
+      await vaultManager.initialize();
+      await markdownConverter.initialize();
+
+      const markdown = await markdownConverter.convert(result.postData);
+      const filePath = await vaultManager.savePost(result.postData, markdown);
+
+      new Notice(`✅ Archived successfully! Credits used: ${result.creditsUsed}`, 5000);
+
+      // Open the file
+      const file = this.app.vault.getAbstractFileByPath(filePath);
+      if (file) {
+        await this.app.workspace.getLeaf().openFile(file as any);
+      }
+
+    } catch (error) {
+      // Error will be handled by the modal's catch block
+      throw error;
+    }
   }
 
   private openArchiveModal(): void {

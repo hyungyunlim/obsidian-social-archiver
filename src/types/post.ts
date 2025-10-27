@@ -31,8 +31,8 @@ export interface PostMetadata {
   comments?: number;
   shares?: number;
   views?: number;
-  timestamp: Date;
-  editedAt?: Date;
+  timestamp: Date | string; // Support both Date objects and ISO strings
+  editedAt?: Date | string;
   location?: string;
 }
 

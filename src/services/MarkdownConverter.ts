@@ -426,20 +426,28 @@ export class MarkdownConverter implements IService<MarkdownResult> {
 
   /**
    * Format date using custom formatter or default
+   * Handles both Date objects and ISO string timestamps
    */
-  private formatDate(date: Date): string {
+  private formatDate(date: Date | string): string {
+    // Convert to Date object if it's a string
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+
     if (this.customDateFormat) {
-      return this.customDateFormat(date);
+      return this.customDateFormat(dateObj);
     }
 
     // Default format: YYYY-MM-DD HH:mm
-    return date.toISOString().replace('T', ' ').slice(0, 16);
+    return dateObj.toISOString().replace('T', ' ').slice(0, 16);
   }
 
   /**
    * Format media items for markdown
    */
   private formatMedia(media: PostData['media']): string {
+    if (!media || media.length === 0) {
+      return '';
+    }
+
     return media
       .map((item, index) => {
         const alt = item.alt || `${item.type} ${index + 1}`;
