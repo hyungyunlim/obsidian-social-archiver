@@ -17,6 +17,7 @@ describe('ExponentialBackoff', () => {
 			baseDelay: 100, // Faster tests
 			maxDelay: 1000,
 			jitterRange: 50,
+			isRetryable: () => true, // Count all errors as retryable in tests
 		});
 	});
 
@@ -260,6 +261,7 @@ describe('ExponentialBackoff', () => {
 				maxDelay: 100,
 				jitterRange: 0,
 				onRetry,
+				isRetryable: () => true,
 			});
 
 			const fn = vi

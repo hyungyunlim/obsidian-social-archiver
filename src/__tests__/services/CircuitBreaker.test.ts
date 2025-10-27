@@ -11,6 +11,7 @@ describe('CircuitBreaker', () => {
 			failureThreshold: 5,
 			successThreshold: 3,
 			timeout: 1000, // 1 second for faster tests
+			isErrorRetryable: () => true, // Count all errors as failures in tests
 		});
 	});
 
@@ -561,6 +562,7 @@ describe('CircuitBreaker', () => {
 				failureThreshold: 2,
 				successThreshold: 3,
 				timeout: 1000,
+				isErrorRetryable: () => true,
 			});
 
 			const failFn = vi.fn().mockRejectedValue(new Error('Error'));
@@ -589,6 +591,7 @@ describe('CircuitBreaker', () => {
 				failureThreshold: 2,
 				successThreshold: 2,
 				timeout: 100,
+				isErrorRetryable: () => true,
 			});
 
 			// Open circuit

@@ -5,14 +5,14 @@
 import PQueue from 'p-queue';
 import type { IService } from './base/IService';
 import type { Logger } from './Logger';
-import type {
+import {
 	QueuePriority,
-	QueueMetrics,
-	QueuedRequest,
-	QueueEvent,
-	QueueEventHandler,
-	QueueConfig,
-	DeduplicationKeyFn,
+	type QueueMetrics,
+	type QueuedRequest,
+	type QueueEvent,
+	type QueueEventHandler,
+	type QueueConfig,
+	type DeduplicationKeyFn,
 } from '@/types/queue';
 
 /**

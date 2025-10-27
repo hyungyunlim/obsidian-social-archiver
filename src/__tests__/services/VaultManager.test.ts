@@ -4,6 +4,15 @@ import type { Vault, TFile, TFolder } from 'obsidian';
 import type { PostData, Platform } from '@/types/post';
 import type { MarkdownResult } from '@/services/MarkdownConverter';
 
+// Mock Obsidian's normalizePath function
+vi.mock('obsidian', async () => {
+  const actual = await vi.importActual<typeof import('obsidian')>('obsidian');
+  return {
+    ...actual,
+    normalizePath: (path: string) => path.replace(/\\/g, '/').replace(/\/+/g, '/'),
+  };
+});
+
 // Mock Vault
 const createMockVault = () => {
   const files = new Map<string, TFile>();
