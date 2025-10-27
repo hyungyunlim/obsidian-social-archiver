@@ -3,6 +3,15 @@ import { MediaHandler } from '@/services/MediaHandler';
 import type { Vault, TFile, TFolder } from 'obsidian';
 import type { Media, Platform } from '@/types/post';
 
+// Mock Obsidian's normalizePath function
+vi.mock('obsidian', async () => {
+  const actual = await vi.importActual<typeof import('obsidian')>('obsidian');
+  return {
+    ...actual,
+    normalizePath: (path: string) => path.replace(/\\/g, '/').replace(/\/+/g, '/'),
+  };
+});
+
 // Mock fetch
 global.fetch = vi.fn();
 
