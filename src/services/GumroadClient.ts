@@ -142,7 +142,7 @@ export class GumroadClient implements IService {
 
       return validationResult;
     } catch (error) {
-      this.logger?.error('License verification failed', { error });
+      this.logger?.error('License verification failed', error instanceof Error ? error : undefined);
 
       return {
         valid: false,
@@ -175,7 +175,7 @@ export class GumroadClient implements IService {
       this.logger?.info('Gumroad API connection test successful');
       return true;
     } catch (error) {
-      this.logger?.error('Gumroad API connection test failed', { error });
+      this.logger?.error('Gumroad API connection test failed', error instanceof Error ? error : undefined);
       return false;
     }
   }
@@ -296,7 +296,7 @@ export class GumroadClient implements IService {
     if (purchase.variants && !initialCredits) {
       const variantMatch = purchase.variants.match(/(\d+)\s*credits?/i);
       if (variantMatch) {
-        initialCredits = parseInt(variantMatch[1], 10);
+        initialCredits = parseInt(variantMatch[1]!, 10);
         if (licenseType === 'subscription' && initialCredits) {
           // If credits found in variant but no explicit type, treat as credit pack
           licenseType = 'credit_pack';

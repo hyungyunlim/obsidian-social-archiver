@@ -139,7 +139,7 @@ export class GumroadWebhookHandler implements IService, IWebhookEventProcessor {
     // Verify signature
     const verification = await this.verifySignature(payload, signature);
     if (!verification.valid) {
-      this.logger?.error('Webhook signature verification failed', {
+      this.logger?.error('Webhook signature verification failed', undefined, {
         error: verification.error,
       });
 
@@ -157,7 +157,7 @@ export class GumroadWebhookHandler implements IService, IWebhookEventProcessor {
     try {
       webhookPayload = JSON.parse(payload);
     } catch (error) {
-      this.logger?.error('Failed to parse webhook payload', { error });
+      this.logger?.error('Failed to parse webhook payload', error instanceof Error ? error : undefined);
 
       return {
         success: false,
@@ -176,6 +176,9 @@ export class GumroadWebhookHandler implements IService, IWebhookEventProcessor {
       this.logger?.info('Event already processed (idempotent)', { eventId });
 
       const existingResult = this.handlerData!.processedEvents[eventId];
+      if (!existingResult) {
+        throw new Error(`Event ${eventId} marked as processed but result not found`);
+      }
       return existingResult;
     }
 
@@ -256,10 +259,9 @@ export class GumroadWebhookHandler implements IService, IWebhookEventProcessor {
 
       return result;
     } catch (error) {
-      this.logger?.error('Failed to process webhook event', {
+      this.logger?.error('Failed to process webhook event', error instanceof Error ? error : undefined, {
         eventId: event.id,
         eventType: event.type,
-        error,
       });
 
       event.status = event.attempts >= this.queueConfig.maxRetries ? 'failed' : 'pending';
@@ -640,8 +642,8 @@ export class GumroadWebhookHandler implements IService, IWebhookEventProcessor {
         this.handlerData = data.webhookHandler;
 
         this.logger?.debug('Webhook handler data loaded', {
-          processedEvents: Object.keys(this.handlerData.processedEvents).length,
-          queuedEvents: this.handlerData.eventQueue.length,
+          processedEvents: Object.keys(this.handlerData?.processedEvents || {}).length,
+          queuedEvents: this.handlerData?.eventQueue?.length || 0,
         });
       } else {
         // Initialize empty data
@@ -665,7 +667,7 @@ export class GumroadWebhookHandler implements IService, IWebhookEventProcessor {
       // Cleanup old processed events
       await this.cleanupOldEvents();
     } catch (error) {
-      this.logger?.error('Failed to load webhook handler data', { error });
+      this.logger?.error('Failed to load webhook handler data', error instanceof Error ? error : undefined);
 
       // Initialize empty data on error
       this.handlerData = {
@@ -697,7 +699,7 @@ export class GumroadWebhookHandler implements IService, IWebhookEventProcessor {
 
       this.logger?.debug('Webhook handler data saved');
     } catch (error) {
-      this.logger?.error('Failed to save webhook handler data', { error });
+      this.logger?.error('Failed to save webhook handler data', error instanceof Error ? error : undefined);
     }
   }
 
@@ -714,7 +716,7 @@ export class GumroadWebhookHandler implements IService, IWebhookEventProcessor {
 
     for (const eventId of processedEventIds) {
       const result = this.handlerData!.processedEvents[eventId];
-      if (result.processedAt < cutoff) {
+      if (result && result.processedAt < cutoff) {
         delete this.handlerData!.processedEvents[eventId];
         cleaned++;
       }

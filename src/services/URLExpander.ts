@@ -55,7 +55,7 @@ const SHORTENER_DOMAINS = new Set([
  *
  * Single Responsibility: URL expansion and redirect following
  */
-export class URLExpander implements IService<string> {
+export class URLExpander implements IService {
   private cache: Map<string, CacheEntry>;
   private maxHops: number;
   private timeout: number;
@@ -444,13 +444,13 @@ export class URLExpander implements IService<string> {
       oldestEntry: entries.length > 0
         ? entries.reduce((oldest, [, entry]) =>
             entry.timestamp < oldest ? entry.timestamp : oldest,
-            entries[0][1].timestamp
+            entries[0]![1].timestamp
           )
         : undefined,
       newestEntry: entries.length > 0
         ? entries.reduce((newest, [, entry]) =>
             entry.timestamp > newest ? entry.timestamp : newest,
-            entries[0][1].timestamp
+            entries[0]![1].timestamp
           )
         : undefined,
     };

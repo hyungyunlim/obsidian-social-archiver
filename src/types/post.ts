@@ -55,6 +55,7 @@ export interface PostMetadata {
     url: string;
   }>; // TikTok Fast API tagged_user
   externalLink?: string; // Threads external_link_title
+  downloadTime?: number; // Time taken to archive in seconds
 }
 
 // Comment types
@@ -158,7 +159,8 @@ export const PostDataSchema = z.object({
       id: z.string(),
       url: z.string()
     })).optional(),
-    externalLink: z.string().optional()
+    externalLink: z.string().optional(),
+    downloadTime: z.number().optional()
   }),
   ai: z.object({
     summary: z.string(),

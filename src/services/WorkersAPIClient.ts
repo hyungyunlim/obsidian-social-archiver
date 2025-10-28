@@ -291,6 +291,33 @@ export class WorkersAPIClient implements IService {
   }
 
   /**
+   * Submit anonymous download time statistics
+   * Fire-and-forget - does not throw errors
+   */
+  async submitStats(platform: string, downloadTime: number): Promise<void> {
+    // Don't block or throw errors - this is optional telemetry
+    try {
+      this.ensureInitialized();
+
+      await this.request('/api/stats/download-time', {
+        method: 'POST',
+        body: JSON.stringify({
+          platform,
+          downloadTime,
+          timestamp: Date.now(),
+        }),
+      });
+
+      console.log('[WorkersAPIClient] Stats submitted successfully');
+    } catch (error) {
+      // Silently fail - stats collection is not critical
+      console.debug('[WorkersAPIClient] Failed to submit stats (non-critical):', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /**
    * Ensure initialized
    */
   private ensureInitialized(): void {

@@ -891,6 +891,8 @@ export class BrightDataService {
       videosCount: data.videos?.length || 0,
       hasExternalImageUrls: !!data.external_image_urls,
       hasExternalVideoUrls: !!data.external_video_urls,
+      hasExternalUrl: !!data.external_url,
+      externalUrl: data.external_url,
     });
 
     // Process photos array
@@ -992,6 +994,7 @@ export class BrightDataService {
         shares: data.reposts || 0,
         views: data.views,
         timestamp: data.date_posted || new Date().toISOString(),
+        externalLink: data.external_url, // Link card URL
       },
       raw: data,
     };

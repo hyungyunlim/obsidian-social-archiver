@@ -188,8 +188,8 @@ export class Logger implements IService {
 			p50: this.percentile(sorted, 50),
 			p95: this.percentile(sorted, 95),
 			p99: this.percentile(sorted, 99),
-			min: sorted[0],
-			max: sorted[count - 1],
+			min: sorted[0] ?? 0,
+			max: sorted[count - 1] ?? 0,
 			mean: sorted.reduce((sum, val) => sum + val, 0) / count,
 			count,
 		};
@@ -363,7 +363,7 @@ export class Logger implements IService {
 	 */
 	private percentile(sorted: number[], p: number): number {
 		const index = Math.ceil((sorted.length * p) / 100) - 1;
-		return sorted[Math.max(0, index)];
+		return sorted[Math.max(0, index)] ?? 0;
 	}
 
 	/**

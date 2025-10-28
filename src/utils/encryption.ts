@@ -74,7 +74,7 @@ export async function encrypt(data: string, key: CryptoKey): Promise<EncryptionR
   // Convert to base64
   return {
     encrypted: arrayBufferToBase64(encrypted),
-    iv: arrayBufferToBase64(iv),
+    iv: arrayBufferToBase64(iv.buffer),
   };
 }
 
@@ -129,7 +129,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = '';
   for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+    binary += String.fromCharCode(bytes[i]!);
   }
   return btoa(binary);
 }

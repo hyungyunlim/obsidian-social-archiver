@@ -8,9 +8,25 @@ export * from './brightdata';
 export * from './circuit-breaker';
 export * from './retry';
 export * from './logger';
-export * from './brightdata-client';
+// Export only non-conflicting types from brightdata-client
+export type {
+  ScrapingOptions,
+  Reactions,
+  BrightDataResponse,
+  ScrapedPostData,
+  PlatformPostData,
+  CanonicalizedUrl,
+} from './brightdata-client';
 export * from './queue';
 export * from './cache';
-export * from './credit';
+// Export only non-conflicting types from credit
+export type {
+  CreditTransaction,
+  CostEstimate,
+  UsageStats,
+  CreditAlert,
+  CreditReservation,
+  OptimizationSuggestion,
+} from './credit';
 export * from './license';
 export * from './webhook';

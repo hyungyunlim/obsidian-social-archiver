@@ -6,7 +6,6 @@ import { Plugin } from 'obsidian';
 import {
   AppliedPromoCode,
   PromoCodeAnalytics,
-  PromoCodeType,
 } from '../../types/license';
 import { IService } from '../base/IService';
 import { Logger } from '../Logger';
@@ -316,7 +315,7 @@ export class PromoCodeStorage implements IService {
 
       this.logger?.info('Promo code data loaded successfully');
     } catch (error) {
-      this.logger?.error('Failed to load promo code data', { error });
+      this.logger?.error('Failed to load promo code data', error instanceof Error ? error : undefined);
       // Continue with empty data
     }
   }
@@ -344,7 +343,7 @@ export class PromoCodeStorage implements IService {
 
       this.logger?.debug('Promo code data saved successfully');
     } catch (error) {
-      this.logger?.error('Failed to save promo code data', { error });
+      this.logger?.error('Failed to save promo code data', error instanceof Error ? error : undefined);
       throw error;
     }
   }

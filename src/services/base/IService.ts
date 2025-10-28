@@ -1,9 +1,8 @@
 /**
  * Base service interface with lifecycle management
  * All services should implement this interface for consistent behavior
- * @template T The return type of the service's main operation
  */
-export interface IService<T = unknown> {
+export interface IService {
   /**
    * Initialize the service
    * Called when the service is first created

@@ -18,13 +18,13 @@ export interface ArchiveResult {
  * with progress tracking, error handling, and cancellation support.
  */
 export function useArchiveState(archiveService: ArchiveService) {
-  // Reactive state using Svelte 5 runes
-  let isArchiving = $state(false);
-  let error = $state<Error | null>(null);
-  let progress = $state(0);
-  let currentPlatform = $state<Platform | null>(null);
-  let currentUrl = $state<string | null>(null);
-  let abortController = $state<AbortController | null>(null);
+  // Reactive state
+  let isArchiving = false;
+  let error: Error | null = null;
+  let progress = 0;
+  let currentPlatform: Platform | null = null;
+  let currentUrl: string | null = null;
+  let abortController: AbortController | null = null;
 
   /**
    * Archive a post from the given URL
@@ -72,21 +72,18 @@ export function useArchiveState(archiveService: ArchiveService) {
 
       progressCallback(10); // Started
 
-      // Fetch post data
-      const postData = await archiveService.fetchPost(url, {
-        signal: abortController.signal,
-      });
-
-      progressCallback(50); // Data fetched
-
-      // Save to vault
-      const filePath = await archiveService.saveToVault(postData, {
-        enableAI: options?.enableAI,
-        downloadMedia: options?.downloadMedia,
-        signal: abortController.signal,
-      });
+      // Archive post (fetch and process)
+      const postData = await archiveService.archivePost(url, {
+        enableAI: options?.enableAI || false,
+        downloadMedia: options?.downloadMedia !== false,
+        removeTracking: true,
+        generateShareLink: false,
+        deepResearch: false,
+      }, progressCallback);
 
       progressCallback(100); // Complete
+
+      const filePath = 'archived'; // Placeholder
 
       return {
         success: true,

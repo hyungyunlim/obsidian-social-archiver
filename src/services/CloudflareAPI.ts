@@ -279,10 +279,7 @@ export class CloudflareAPI implements IService {
     }
 
     // All attempts failed
-    this.logger?.error('API request failed after all retries', {
-      url,
-      error: lastError,
-    });
+    this.logger?.error('API request failed after all retries', lastError instanceof Error ? lastError : undefined, { url });
     throw lastError;
   }
 

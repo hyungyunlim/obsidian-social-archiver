@@ -169,7 +169,7 @@ class RetryHelper {
  *
  * Single Responsibility: Workflow orchestration and coordination
  */
-export class ArchiveOrchestrator implements IService<ArchiveResult> {
+export class ArchiveOrchestrator implements IService {
   private archiveService: ArchiveService;
   private markdownConverter: MarkdownConverter;
   private vaultManager: VaultManager;
@@ -225,7 +225,7 @@ export class ArchiveOrchestrator implements IService<ArchiveResult> {
       this.mediaHandler.isHealthy?.() ?? true,
     ]);
 
-    return healthChecks.every(healthy => healthy);
+    return healthChecks.every((healthy: boolean) => healthy);
   }
 
   /**
@@ -255,6 +255,9 @@ export class ArchiveOrchestrator implements IService<ArchiveResult> {
       deepResearch: false,
     }
   ): Promise<ArchiveResult> {
+    // Track processing time
+    const startTime = Date.now();
+
     const transaction: TransactionState = {
       createdFiles: [],
       createdMediaFiles: [],
@@ -355,13 +358,17 @@ export class ArchiveOrchestrator implements IService<ArchiveResult> {
 
       // Stage 5: Convert to markdown
       this.emitProgress('processing', 70, 'Converting to markdown...');
-      const markdown = await this.markdownConverter.convert(
+      let markdown = await this.markdownConverter.convert(
         postData,
         options.customTemplate
       );
 
-      // Update frontmatter with credits used
-      markdown.frontmatter.credits_used = this.calculateCreditsUsed(options);
+      // Update frontmatter with processing time
+      // Convert to seconds and round to 1 decimal place
+      markdown.frontmatter.download_time = Math.round((Date.now() - startTime) / 100) / 10;
+
+      // Regenerate fullDocument with updated frontmatter
+      markdown = this.markdownConverter.updateFullDocument(markdown);
 
       // Update media paths in markdown if downloaded
       if (mediaResults.length > 0) {
@@ -594,13 +601,13 @@ export class ArchiveOrchestrator implements IService<ArchiveResult> {
       oldestEntry: entries.length > 0
         ? entries.reduce((oldest, [, entry]) =>
             entry.timestamp < oldest ? entry.timestamp : oldest,
-            entries[0][1].timestamp
+            entries[0]![1].timestamp
           )
         : undefined,
       newestEntry: entries.length > 0
         ? entries.reduce((newest, [, entry]) =>
             entry.timestamp > newest ? entry.timestamp : newest,
-            entries[0][1].timestamp
+            entries[0]![1].timestamp
           )
         : undefined,
     };

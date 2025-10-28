@@ -5,7 +5,7 @@ import { WorkersAPIClient } from './services/WorkersAPIClient';
 import { ArchiveOrchestrator } from './services/ArchiveOrchestrator';
 import { VaultManager } from './services/VaultManager';
 import { MarkdownConverter } from './services/MarkdownConverter';
-import { MediaHandler } from './services/MediaHandler';
+import type { Media } from './types/post';
 
 // Temporary ArchiveModal class until Svelte integration is complete
 class ArchiveModal extends Modal {
@@ -30,7 +30,7 @@ class ArchiveModal extends Modal {
     const container = contentEl.createDiv({ cls: 'social-archiver-modal' });
 
     // URL Input
-    const urlLabel = container.createEl('label', { text: 'Post URL' });
+    container.createEl('label', { text: 'Post URL' });
     const urlInput = container.createEl('input', {
       type: 'text',
       placeholder: 'Paste URL from Facebook, LinkedIn, Instagram, TikTok, X, or Threads',
@@ -101,7 +101,16 @@ export default class SocialArchiverPlugin extends Plugin {
   private orchestrator?: ArchiveOrchestrator;
 
   async onload(): Promise<void> {
-    console.log('Social Archiver plugin loaded');
+    // Disable verbose console logs in production for better performance
+    const originalConsoleLog = console.log;
+
+    if (process.env.NODE_ENV === 'production' || !('process' in globalThis && process.env.NODE_ENV === 'development')) {
+      console.log = () => {};
+      console.debug = () => {};
+      // Keep console.warn and console.error for important messages
+    }
+
+    originalConsoleLog('Social Archiver plugin loaded');
 
     await this.loadSettings();
 
@@ -187,15 +196,6 @@ export default class SocialArchiverPlugin extends Plugin {
       });
       await this.apiClient.initialize();
 
-      // Initialize orchestrator (for local operations)
-      const vaultManager = new VaultManager(this.app.vault, this.app.metadataCache);
-      const markdownConverter = new MarkdownConverter();
-      const mediaHandler = new MediaHandler({
-        vault: this.app.vault,
-        workersClient: this.apiClient,
-        basePath: 'attachments/social-archives',
-      });
-
       // Note: ArchiveService would need to be adapted for plugin use
       // For now, we'll primarily use the Workers API
 
@@ -264,7 +264,7 @@ export default class SocialArchiverPlugin extends Plugin {
 
       // Debug: Log media array
       if (result.postData.media && result.postData.media.length > 0) {
-        console.log('[Social Archiver] Media items:', result.postData.media.map(m => ({
+        console.log('[Social Archiver] Media items:', result.postData.media.map((m: { type: string; url: string }) => ({
           type: m.type,
           url: m.url?.substring(0, 100) + '...',
         })));
@@ -275,8 +275,7 @@ export default class SocialArchiverPlugin extends Plugin {
       // Save to vault using local services
       const vaultManager = new VaultManager({
         vault: this.app.vault,
-        basePath: this.settings.archivePath || 'Social Archives',
-        organizationStrategy: this.settings.organizationStrategy || 'platform'
+        basePath: this.settings.archivePath || 'Social Archives'
       });
       const markdownConverter = new MarkdownConverter();
 
@@ -339,7 +338,7 @@ export default class SocialArchiverPlugin extends Plugin {
         console.log(`[Social Archiver] Successfully downloaded ${downloadedMedia.length}/${result.postData.media.length} media files`);
 
         // Update PostData media URLs to local paths
-        result.postData.media = result.postData.media.map((media) => {
+        result.postData.media = result.postData.media.map((media: Media) => {
           const downloaded = downloadedMedia.find(d => d.originalUrl === media.url);
           if (downloaded) {
             return {
@@ -459,9 +458,11 @@ export default class SocialArchiverPlugin extends Plugin {
       const pathname = new URL(url).pathname;
       const parts = pathname.split('.');
       if (parts.length > 1) {
-        const ext = parts[parts.length - 1].toLowerCase();
-        // Remove query parameters
-        return ext.split('?')[0];
+        const ext = parts[parts.length - 1];
+        if (ext) {
+          // Remove query parameters
+          return ext.toLowerCase().split('?')[0] || null;
+        }
       }
     } catch {
       // Invalid URL

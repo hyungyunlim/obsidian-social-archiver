@@ -378,7 +378,7 @@ export class CreditManager implements IService {
     } catch (err) {
       transactionSuccess = false;
       error = err instanceof Error ? err.message : String(err);
-      this.logger?.error('Credit deduction failed', { error });
+      this.logger?.error('Credit deduction failed', err instanceof Error ? err : undefined, { error });
     }
 
     // Record transaction
@@ -459,7 +459,7 @@ export class CreditManager implements IService {
     } catch (err) {
       success = false;
       error = err instanceof Error ? err.message : String(err);
-      this.logger?.error('Credit refund failed', { error });
+      this.logger?.error('Credit refund failed', err instanceof Error ? err : undefined, { error });
     }
 
     // Record refund transaction
@@ -1000,7 +1000,7 @@ export class CreditManager implements IService {
         try {
           listener(event);
         } catch (error) {
-          this.logger?.error('Event listener error', { eventType: event.type, error });
+          this.logger?.error('Event listener error', error instanceof Error ? error : undefined, { eventType: event.type });
         }
       });
     }

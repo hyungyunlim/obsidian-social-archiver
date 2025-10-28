@@ -25,7 +25,7 @@ export interface YamlFrontmatter {
   originalUrl: string;
   archived: Date;
   lastModified: Date;
-  credits_used: number;
+  download_time?: number; // Time taken to archive in seconds
   tags: string[];
   ai_summary?: string;
   sentiment?: string;

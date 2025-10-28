@@ -198,7 +198,7 @@ export class RequestQueueManager<T = unknown> implements IService {
 		};
 
 		// Add to queue with priority
-		return this.queue.add(wrappedFn, { priority });
+		return this.queue.add(wrappedFn, { priority }) as Promise<R>;
 	}
 
 	/**

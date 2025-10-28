@@ -167,7 +167,7 @@ const PLATFORM_PATTERNS: URLPattern[] = [
  *
  * Single Responsibility: Platform detection and URL pattern matching
  */
-export class PlatformDetector implements IService<Platform> {
+export class PlatformDetector implements IService {
   private patterns: URLPattern[];
 
   constructor() {
@@ -387,7 +387,7 @@ export class PlatformDetector implements IService<Platform> {
   private extractFacebookPostId(urlObj: URL): string | null {
     // posts/123456
     const postsMatch = urlObj.pathname.match(/\/posts\/(\d+)/);
-    if (postsMatch) return postsMatch[1];
+    if (postsMatch) return postsMatch[1] || null;
 
     // story_fbid=123456
     const storyFbidMatch = urlObj.searchParams.get('story_fbid');
@@ -407,11 +407,11 @@ export class PlatformDetector implements IService<Platform> {
   private extractLinkedInPostId(urlObj: URL): string | null {
     // posts/username_activityId
     const postsMatch = urlObj.pathname.match(/\/posts\/[^_]+_([a-zA-Z0-9-]+)/);
-    if (postsMatch) return postsMatch[1];
+    if (postsMatch) return postsMatch[1] || null;
 
     // urn:li:activity:1234567890
     const activityMatch = urlObj.pathname.match(/urn:li:activity:(\d+)/);
-    if (activityMatch) return activityMatch[1];
+    if (activityMatch) return activityMatch[1] || null;
 
     return null;
   }
@@ -419,28 +419,28 @@ export class PlatformDetector implements IService<Platform> {
   private extractInstagramPostId(urlObj: URL): string | null {
     // /p/shortcode or /reel/shortcode
     const match = urlObj.pathname.match(/\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
-    return match ? match[1] : null;
+    return match ? (match[1] || null) : null;
   }
 
   private extractTikTokPostId(urlObj: URL): string | null {
     // /video/1234567890
     const match = urlObj.pathname.match(/\/video\/(\d+)/);
-    return match ? match[1] : null;
+    return match ? (match[1] || null) : null;
   }
 
   private extractXPostId(urlObj: URL): string | null {
     // /username/status/1234567890
     const match = urlObj.pathname.match(/\/status\/(\d+)/);
-    return match ? match[1] : null;
+    return match ? (match[1] || null) : null;
   }
 
   private extractThreadsPostId(urlObj: URL): string | null {
     // /@username/post/postId or /t/postId
     const postMatch = urlObj.pathname.match(/\/post\/([A-Za-z0-9_-]+)/);
-    if (postMatch) return postMatch[1];
+    if (postMatch) return postMatch[1] || null;
 
     const threadMatch = urlObj.pathname.match(/\/t\/([A-Za-z0-9_-]+)/);
-    return threadMatch ? threadMatch[1] : null;
+    return threadMatch ? (threadMatch[1] || null) : null;
   }
 
   /**

@@ -24,10 +24,11 @@ export interface ResilientHttpClientConfig extends HttpClientConfig {
 export class ResilientHttpClient implements IService {
 	private readonly httpClient: BrightDataHttpClient;
 	private readonly circuitBreaker: CircuitBreaker;
-	private readonly config: ResilientHttpClientConfig;
+	// Reserved for future use
+	// private readonly _config: ResilientHttpClientConfig;
 
 	constructor(config: ResilientHttpClientConfig) {
-		this.config = config;
+		// this._config = config;
 
 		// Initialize HTTP client
 		this.httpClient = new BrightDataHttpClient(config);

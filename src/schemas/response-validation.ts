@@ -199,7 +199,7 @@ export const ThreadsPostDataSchema = BaseScrapedPostDataSchema.extend({
 /**
  * Union schema for all platform responses
  */
-export const PlatformPostDataSchema = z.discriminatedUnion('platform', [
+export const PlatformPostDataSchema = z.union([
 	FacebookPostDataSchema,
 	InstagramPostDataSchema,
 	LinkedInPostDataSchema,

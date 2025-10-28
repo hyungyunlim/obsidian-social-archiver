@@ -195,7 +195,7 @@ export class LicenseStorage implements IService {
 
       return null;
     } catch (error) {
-      this.logger?.error('Failed to retrieve license', { error });
+      this.logger?.error('Failed to retrieve license', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -327,6 +327,9 @@ export class LicenseStorage implements IService {
       this.cachedData.license = backup.license;
 
       // Verify integrity after restore
+      if (!this.cachedData.license) {
+        throw new Error('License data is missing after restore');
+      }
       const isValid = await this.verifyIntegrity(this.cachedData.license);
       if (!isValid) {
         throw new Error('Restored license data failed integrity check');
@@ -337,7 +340,7 @@ export class LicenseStorage implements IService {
 
       this.logger?.info('License restored from backup successfully');
     } catch (error) {
-      this.logger?.error('Failed to restore license from backup', { error });
+      this.logger?.error('Failed to restore license from backup', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -375,13 +378,13 @@ export class LicenseStorage implements IService {
         this.cachedData = data.licenseStorage;
 
         // Check version and migrate if needed
-        if (this.cachedData.version < STORAGE_VERSION) {
+        if (this.cachedData?.version && this.cachedData.version < STORAGE_VERSION) {
           await this.migrate(this.cachedData.version);
         }
 
         this.logger?.debug('License storage data loaded', {
-          hasLicense: !!this.cachedData.license,
-          hasDeviceId: !!this.cachedData.deviceId,
+          hasLicense: !!this.cachedData?.license,
+          hasDeviceId: !!this.cachedData?.deviceId,
         });
       } else {
         // Initialize empty data
@@ -392,7 +395,7 @@ export class LicenseStorage implements IService {
         this.logger?.debug('Initialized empty license storage');
       }
     } catch (error) {
-      this.logger?.error('Failed to load license storage data', { error });
+      this.logger?.error('Failed to load license storage data', error instanceof Error ? error : undefined);
 
       // Initialize empty data on error
       this.cachedData = {
@@ -414,7 +417,7 @@ export class LicenseStorage implements IService {
 
       this.logger?.debug('License storage data saved');
     } catch (error) {
-      this.logger?.error('Failed to save license storage data', { error });
+      this.logger?.error('Failed to save license storage data', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -431,7 +434,7 @@ export class LicenseStorage implements IService {
       // If stored hash exists, verify against it
       if (stored.integrityHash) {
         if (computedHash !== stored.integrityHash) {
-          this.logger?.error('Integrity hash mismatch - data may be tampered', {
+          this.logger?.error('Integrity hash mismatch - data may be tampered', undefined, {
             expected: stored.integrityHash.substring(0, 16) + '...',
             computed: computedHash.substring(0, 16) + '...',
           });
@@ -444,7 +447,7 @@ export class LicenseStorage implements IService {
 
       return true;
     } catch (error) {
-      this.logger?.error('Integrity verification failed', { error });
+      this.logger?.error('Integrity verification failed', error instanceof Error ? error : undefined);
       return false;
     }
   }

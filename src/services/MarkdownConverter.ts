@@ -1,5 +1,5 @@
 import type { IService } from './base/IService';
-import type { PostData, Platform } from '@/types/post';
+import type { PostData, Platform, FactCheckResult } from '@/types/post';
 import type { YamlFrontmatter } from '@/types/archive';
 
 /**
@@ -35,7 +35,7 @@ class TemplateEngine {
    * Process conditional blocks
    */
   private static processConditionals(template: string, data: Record<string, any>): string {
-    return template.replace(CONDITIONAL_PATTERN, (match, condition, content) => {
+    return template.replace(CONDITIONAL_PATTERN, (_match, condition, content) => {
       const value = this.resolveValue(condition.trim(), data);
 
       // Truthy check
@@ -51,7 +51,7 @@ class TemplateEngine {
    * Process variable substitution
    */
   private static processVariables(template: string, data: Record<string, any>): string {
-    return template.replace(TEMPLATE_VAR_PATTERN, (match, path) => {
+    return template.replace(TEMPLATE_VAR_PATTERN, (_match, path) => {
       const value = this.resolveValue(path.trim(), data);
       return this.formatValue(value);
     });
@@ -280,6 +280,11 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 
   x: `{{content.text}}
 
+{{#if metadata.externalLink}}
+
+🔗 **Link:** [{{metadata.externalLink}}]({{metadata.externalLink}})
+{{/if}}
+
 {{#if media}}
 
 ---
@@ -381,7 +386,7 @@ export interface MarkdownResult {
  *
  * Single Responsibility: Markdown generation and template processing
  */
-export class MarkdownConverter implements IService<MarkdownResult> {
+export class MarkdownConverter implements IService {
   private templates: Map<Platform, string>;
   private customDateFormat?: (date: Date) => string;
 
@@ -395,6 +400,13 @@ export class MarkdownConverter implements IService<MarkdownResult> {
 
   async dispose(): Promise<void> {
     // No cleanup needed
+  }
+
+  /**
+   * Check if service is healthy
+   */
+  isHealthy(): boolean {
+    return true;
   }
 
   /**
@@ -438,6 +450,16 @@ export class MarkdownConverter implements IService<MarkdownResult> {
   }
 
   /**
+   * Update full document with modified frontmatter
+   */
+  updateFullDocument(markdown: MarkdownResult): MarkdownResult {
+    return {
+      ...markdown,
+      fullDocument: this.generateFullDocument(markdown.frontmatter, markdown.content),
+    };
+  }
+
+  /**
    * Generate YAML frontmatter
    */
   private generateFrontmatter(postData: PostData): YamlFrontmatter {
@@ -449,7 +471,7 @@ export class MarkdownConverter implements IService<MarkdownResult> {
       originalUrl: postData.url,
       archived: new Date(),
       lastModified: new Date(),
-      credits_used: 0, // Will be set by orchestrator
+      download_time: undefined, // Will be set by orchestrator
       tags: [
         `social/${postData.platform}`,
         ...(postData.ai?.topics || []).map(topic => `topic/${topic}`),
@@ -658,7 +680,7 @@ export class MarkdownConverter implements IService<MarkdownResult> {
 
     // Match @username (Instagram usernames can contain letters, numbers, underscores, periods)
     // Don't match if already in a markdown link
-    return processedText.replace(/@([\w.]+)(?!\])/g, (match, username) => {
+    return processedText.replace(/@([\w.]+)(?!\])/g, (_match, username) => {
       return `[@${username}](https://instagram.com/${username})`;
     });
   }
@@ -666,13 +688,13 @@ export class MarkdownConverter implements IService<MarkdownResult> {
   /**
    * Format fact checks for markdown
    */
-  private formatFactChecks(factChecks: PostData['ai']['factCheck']): string {
+  private formatFactChecks(factChecks: FactCheckResult[] | undefined): string {
     if (!factChecks || factChecks.length === 0) {
       return '';
     }
 
     return factChecks
-      .map((check, index) => {
+      .map((check: FactCheckResult, index: number) => {
         const icon = {
           true: '✅',
           false: '❌',

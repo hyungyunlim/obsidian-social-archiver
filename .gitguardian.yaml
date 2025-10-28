@@ -1,0 +1,15 @@
+# GitGuardian configuration
+version: 2
+
+# Paths to ignore
+paths-ignore:
+  - "**/*.md"
+  - "**/node_modules/**"
+  - "**/.git/**"
+  - "**/dist/**"
+  - "**/build/**"
+
+# Patterns to ignore (false positives)
+matches-ignore:
+  - name: Generic Bearer Token Pattern
+    match: 'Bearer \$\{.*\}'

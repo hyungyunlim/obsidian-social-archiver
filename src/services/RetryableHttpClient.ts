@@ -23,10 +23,11 @@ export interface RetryableHttpClientConfig extends ResilientHttpClientConfig {
 export class RetryableHttpClient implements IService {
 	private readonly resilientClient: ResilientHttpClient;
 	private readonly backoff: ExponentialBackoff;
-	private readonly config: RetryableHttpClientConfig;
+	// Reserved for future use
+	// private readonly _config: RetryableHttpClientConfig;
 
 	constructor(config: RetryableHttpClientConfig) {
-		this.config = config;
+		// this._config = config;
 
 		// Initialize resilient HTTP client (with circuit breaker)
 		this.resilientClient = new ResilientHttpClient(config);

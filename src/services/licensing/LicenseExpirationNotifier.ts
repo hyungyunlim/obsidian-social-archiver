@@ -239,7 +239,6 @@ export class LicenseExpirationNotifier implements IService {
       return;
     }
 
-    const now = new Date();
     const expiresAt = new Date(this.currentLicense.expiresAt);
     const daysUntilExpiration = this.getDaysUntilExpiration(expiresAt);
 

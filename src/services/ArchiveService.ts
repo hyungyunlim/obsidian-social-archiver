@@ -155,7 +155,7 @@ class ResponseTransformer {
  *
  * Single Responsibility: API communication and response transformation
  */
-export class ArchiveService implements IService<PostData> {
+export class ArchiveService implements IService {
   private apiClient: ApiClient;
   private licenseKey?: string;
 
@@ -189,6 +189,9 @@ export class ArchiveService implements IService<PostData> {
     options: ArchiveOptions,
     onProgress?: (progress: number) => void
   ): Promise<PostData> {
+    // Start timing
+    const startTime = Date.now();
+
     try {
       // Build request
       const request = RequestBuilder.buildRequest(
@@ -218,6 +221,15 @@ export class ArchiveService implements IService<PostData> {
 
       // Sanitize data
       const sanitized = ResponseTransformer.sanitize(postData);
+
+      // Calculate download time in seconds
+      const downloadTime = (Date.now() - startTime) / 1000;
+      sanitized.metadata.downloadTime = Math.round(downloadTime * 10) / 10; // Round to 1 decimal
+
+      // Submit anonymous stats (fire-and-forget)
+      this.apiClient.submitStats(sanitized.platform, sanitized.metadata.downloadTime).catch(() => {
+        // Silently ignore stats submission errors
+      });
 
       onProgress?.(100);
       return sanitized;

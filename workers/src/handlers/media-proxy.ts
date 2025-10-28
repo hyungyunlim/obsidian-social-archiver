@@ -41,9 +41,10 @@ export async function handleMediaProxy(c: Context<{ Bindings: Bindings }>): Prom
       'cdninstagram.com',
       'fbcdn.net',
       'twimg.com',
-      'tiktokcdn.com',
+      'tiktok.com',        // TikTok video CDN (v16-webapp-prime.tiktok.com, etc)
+      'tiktokcdn.com',     // TikTok static CDN
       'licdn.com',
-      'threads.net',
+      'threads.com',       // Threads (Meta)
     ];
 
     const isAllowed = allowedDomains.some(domain => url.hostname.includes(domain));

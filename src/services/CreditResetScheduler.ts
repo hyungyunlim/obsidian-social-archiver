@@ -139,7 +139,7 @@ export class CreditResetScheduler implements IService {
       };
       await this.saveSchedulerData();
       this.logger?.info('Activation date initialized', {
-        activationDate: new Date(this.schedulerData.activationDate).toISOString(),
+        activationDate: new Date(this.schedulerData.activationDate || Date.now()).toISOString(),
       });
     }
 
@@ -171,12 +171,12 @@ export class CreditResetScheduler implements IService {
         }
 
         this.logger?.info('Credits reset successfully', {
-          nextReset: new Date(this.schedulerData.nextResetDate).toISOString(),
+          nextReset: new Date(this.schedulerData.nextResetDate || Date.now()).toISOString(),
         });
 
         return true;
       } catch (error) {
-        this.logger?.error('Failed to reset credits', { error });
+        this.logger?.error('Failed to reset credits', error instanceof Error ? error : undefined);
         return false;
       }
     }
@@ -317,7 +317,7 @@ export class CreditResetScheduler implements IService {
       try {
         await this.checkAndResetCredits();
       } catch (error) {
-        this.logger?.error('Periodic reset check failed', { error });
+        this.logger?.error('Periodic reset check failed', error instanceof Error ? error : undefined);
       }
     }, this.config.checkInterval);
 
@@ -348,10 +348,10 @@ export class CreditResetScheduler implements IService {
         this.schedulerData = data.creditResetScheduler;
 
         this.logger?.debug('Scheduler data loaded', {
-          lastReset: this.schedulerData.lastResetDate
+          lastReset: this.schedulerData?.lastResetDate
             ? new Date(this.schedulerData.lastResetDate).toISOString()
             : 'never',
-          nextReset: this.schedulerData.nextResetDate
+          nextReset: this.schedulerData?.nextResetDate
             ? new Date(this.schedulerData.nextResetDate).toISOString()
             : 'not set',
         });
@@ -364,7 +364,7 @@ export class CreditResetScheduler implements IService {
         this.logger?.debug('Initialized empty scheduler data');
       }
     } catch (error) {
-      this.logger?.error('Failed to load scheduler data', { error });
+      this.logger?.error('Failed to load scheduler data', error instanceof Error ? error : undefined);
 
       // Initialize empty data on error
       this.schedulerData = {
@@ -386,7 +386,7 @@ export class CreditResetScheduler implements IService {
 
       this.logger?.debug('Scheduler data saved');
     } catch (error) {
-      this.logger?.error('Failed to save scheduler data', { error });
+      this.logger?.error('Failed to save scheduler data', error instanceof Error ? error : undefined);
     }
   }
 

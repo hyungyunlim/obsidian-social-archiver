@@ -71,7 +71,7 @@ class MediaTypeDetector {
   /**
    * Validate media type
    */
-  static validate(type: Media['type'], data: ArrayBuffer): boolean {
+  static validate(_type: Media['type'], data: ArrayBuffer): boolean {
     // Basic validation - check that data exists
     if (data.byteLength === 0) {
       return false;
@@ -89,7 +89,7 @@ class MediaTypeDetector {
     try {
       const pathname = new URL(url).pathname;
       const parts = pathname.split('.');
-      return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+      return parts.length > 1 ? parts[parts.length - 1]!.toLowerCase() : '';
     } catch {
       return '';
     }
@@ -148,9 +148,9 @@ class MediaPathGenerator {
       const pathname = new URL(url).pathname;
       const parts = pathname.split('.');
       if (parts.length > 1) {
-        const ext = parts[parts.length - 1].toLowerCase();
+        const ext = parts[parts.length - 1]!.toLowerCase();
         // Remove query parameters
-        return ext.split('?')[0];
+        return ext.split('?')[0] || null;
       }
     } catch {
       // Invalid URL
@@ -232,12 +232,13 @@ class DownloadQueue {
  *
  * Single Responsibility: Media file management
  */
-export class MediaHandler implements IService<MediaResult[]> {
+export class MediaHandler implements IService {
   private vault: Vault;
   private workersClient?: WorkersAPIClient;
   private pathGenerator: MediaPathGenerator;
   private downloadQueue: DownloadQueue;
-  private maxImageDimension: number;
+  // Reserved for future use: image dimension processing
+  // private _maxImageDimension: number;
   private timeout: number;
 
   constructor(config: MediaHandlerConfig) {
@@ -245,7 +246,7 @@ export class MediaHandler implements IService<MediaResult[]> {
     this.workersClient = config.workersClient;
     this.pathGenerator = new MediaPathGenerator(config.basePath);
     this.downloadQueue = new DownloadQueue(config.maxConcurrent || 3);
-    this.maxImageDimension = config.maxImageDimension || 2048;
+    // this._maxImageDimension = config.maxImageDimension || 2048;
     this.timeout = config.timeout || 30000;
   }
 
@@ -255,6 +256,18 @@ export class MediaHandler implements IService<MediaResult[]> {
 
   async dispose(): Promise<void> {
     // No cleanup needed
+  }
+
+  /**
+   * Check if service is healthy
+   */
+  isHealthy(): boolean {
+    try {
+      this.vault.getRoot();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -452,7 +465,7 @@ export class MediaHandler implements IService<MediaResult[]> {
    * Cleanup orphaned media files
    * (Media files that don't have corresponding notes)
    */
-  async cleanupOrphanedMedia(dryRun: boolean = true): Promise<TFile[]> {
+  async cleanupOrphanedMedia(_dryRun: boolean = true): Promise<TFile[]> {
     const mediaFolder = this.vault.getFolderByPath(this.pathGenerator['basePath']);
     if (!mediaFolder) {
       return [];

@@ -197,6 +197,31 @@ export class ApiClient implements IService {
   }
 
   /**
+   * Submit anonymous download time statistics
+   * Fire-and-forget - does not throw errors
+   */
+  async submitStats(platform: string, downloadTime: number): Promise<void> {
+    // Don't block or throw errors - this is optional telemetry
+    try {
+      await this.request<void>('/api/stats/download-time', {
+        method: 'POST',
+        body: JSON.stringify({
+          platform,
+          downloadTime,
+          timestamp: Date.now(),
+        }),
+      });
+
+      console.log('[ApiClient] Stats submitted successfully');
+    } catch (error) {
+      // Silently fail - stats collection is not critical
+      console.debug('[ApiClient] Failed to submit stats (non-critical):', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /**
    * Core HTTP request with retry logic
    */
   private async request<T>(

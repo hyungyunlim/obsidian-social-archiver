@@ -182,7 +182,7 @@ export class PromoCodeValidator implements IService {
         errorCode: PromoCodeErrorCode.INVALID_CODE,
       };
     } catch (error) {
-      this.logger?.error('Promo code validation failed', { error, code: normalizedCode });
+      this.logger?.error('Promo code validation failed', error instanceof Error ? error : undefined, { code: normalizedCode });
 
       return {
         valid: false,
@@ -314,7 +314,7 @@ export class PromoCodeValidator implements IService {
   getAppliedCodes(licenseKey: string): AppliedPromoCode[] {
     const applied: AppliedPromoCode[] = [];
 
-    this.appliedCodes.forEach((value, key) => {
+    this.appliedCodes.forEach((value, _key) => {
       if (value.licenseKey === licenseKey) {
         applied.push(value);
       }
@@ -459,7 +459,7 @@ export class PromoCodeValidator implements IService {
       // Validate the parsed code
       return this.validateSpecialCode(promoCode);
     } catch (error) {
-      this.logger?.error('Gumroad API validation failed', { error, code });
+      this.logger?.error('Gumroad API validation failed', error instanceof Error ? error : undefined, { code });
 
       return {
         valid: false,

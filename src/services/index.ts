@@ -46,8 +46,7 @@ export type {
 } from './MarkdownConverter';
 
 export type {
-  ApiClientConfig,
-  RetryConfig,
+  HttpClientConfig,
 } from './ApiClient';
 
 export type {

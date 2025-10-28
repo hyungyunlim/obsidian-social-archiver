@@ -123,7 +123,7 @@ export class ShareManager implements IService {
         content,
         metadata: {
           title: note.basename,
-          tags: metadata?.tags?.map(t => t.tag) || [],
+          tags: metadata?.tags?.map((t: { tag: string }) => t.tag) || [],
           created: note.stat.ctime,
           modified: note.stat.mtime
         },

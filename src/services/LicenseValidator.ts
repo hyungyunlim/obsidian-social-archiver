@@ -5,7 +5,6 @@
 import {
   LicenseInfo,
   LicenseValidationResult,
-  LicenseErrorCode,
   DeviceInfo,
   LicenseConfig,
   DEFAULT_LICENSE_CONFIG,
@@ -305,7 +304,7 @@ export class LicenseValidator implements IService {
     }
 
     const cacheAge = Date.now() - (cached.cachedAt || 0);
-    const offlineGracePeriod = this.config.licenseConfig.offlineGracePeriodDays * 24 * 60 * 60 * 1000;
+    const offlineGracePeriod = this.config.licenseConfig.offlineGracePeriodDays! * 24 * 60 * 60 * 1000;
 
     return cacheAge < offlineGracePeriod;
   }
@@ -330,7 +329,7 @@ export class LicenseValidator implements IService {
       lastSeenAt: new Date(),
     };
 
-    this.logger?.debug('Device info loaded', this.currentDeviceInfo);
+    this.logger?.debug('Device info loaded', this.currentDeviceInfo as unknown as Record<string, unknown>);
   }
 
   /**
@@ -356,7 +355,7 @@ export class LicenseValidator implements IService {
         this.logger?.debug('Auto-refreshing license');
         await this.refreshLicense();
       } catch (error) {
-        this.logger?.error('Auto-refresh failed', { error });
+        this.logger?.error('Auto-refresh failed', error instanceof Error ? error : undefined);
       }
     }, this.config.autoRefreshInterval);
 

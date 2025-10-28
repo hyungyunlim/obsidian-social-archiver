@@ -250,7 +250,7 @@ export class BrightDataHttpClient implements IService {
 	 */
 	private setupRequestInterceptor(): void {
 		this.axios.interceptors.request.use(
-			(config: AxiosRequestConfig) => {
+			(config) => {
 				const requestId = generateRequestId();
 				const timestamp = new Date();
 
@@ -428,7 +428,7 @@ export class BrightDataHttpClient implements IService {
 	/**
 	 * Log request (placeholder for proper logging implementation)
 	 */
-	private logRequest(metadata: RequestMetadata, config: AxiosRequestConfig): void {
+	private logRequest(metadata: RequestMetadata, _config: AxiosRequestConfig): void {
 		if (process.env.NODE_ENV === 'development') {
 			console.log('[HTTP Request]', {
 				requestId: metadata.requestId,
@@ -442,7 +442,7 @@ export class BrightDataHttpClient implements IService {
 	/**
 	 * Log response (placeholder for proper logging implementation)
 	 */
-	private logResponse(metadata: ResponseMetadata, response: AxiosResponse): void {
+	private logResponse(metadata: ResponseMetadata, _response: AxiosResponse): void {
 		if (process.env.NODE_ENV === 'development') {
 			console.log('[HTTP Response]', {
 				requestId: metadata.requestId,

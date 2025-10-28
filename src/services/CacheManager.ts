@@ -180,7 +180,7 @@ export class CacheManager implements IService, ICacheService {
 
       return entry.data;
     } catch (error) {
-      this.logger?.error('Cache get error', { key, error });
+      this.logger?.error('Cache get error', error instanceof Error ? error : undefined, { key });
       this.recordMiss(key);
       return null;
     }
@@ -272,7 +272,7 @@ export class CacheManager implements IService, ICacheService {
 
       this.logger?.debug('Cache entry stored', { key, cacheKey, ttl, size: finalSize, compressed });
     } catch (error) {
-      this.logger?.error('Cache set error', { key, error });
+      this.logger?.error('Cache set error', error instanceof Error ? error : undefined, { key });
       throw error;
     }
   }
@@ -292,7 +292,7 @@ export class CacheManager implements IService, ICacheService {
       this.emitEvent({ type: CacheEventType.DELETE, key: cacheKey, timestamp: Date.now() });
       this.logger?.debug('Cache entry deleted', { key, cacheKey });
     } catch (error) {
-      this.logger?.error('Cache delete error', { key, error });
+      this.logger?.error('Cache delete error', error instanceof Error ? error : undefined, { key });
       throw error;
     }
   }
@@ -308,7 +308,7 @@ export class CacheManager implements IService, ICacheService {
       const value = await this.kvStore.get(cacheKey);
       return value !== null;
     } catch (error) {
-      this.logger?.error('Cache has error', { key, error });
+      this.logger?.error('Cache has error', error instanceof Error ? error : undefined, { key });
       return false;
     }
   }
@@ -367,7 +367,7 @@ export class CacheManager implements IService, ICacheService {
       this.logger?.info('Cache invalidation complete', { pattern, invalidated });
       return invalidated;
     } catch (error) {
-      this.logger?.error('Cache invalidation error', { pattern, error });
+      this.logger?.error('Cache invalidation error', error instanceof Error ? error : undefined, { pattern });
       throw error;
     }
   }
@@ -445,7 +445,7 @@ export class CacheManager implements IService, ICacheService {
       this.resetStats();
       this.logger?.info('Cache cleared successfully');
     } catch (error) {
-      this.logger?.error('Cache clear error', { error });
+      this.logger?.error('Cache clear error', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -499,7 +499,7 @@ export class CacheManager implements IService, ICacheService {
         const decompressedString = decompressedBuffer.toString('utf-8');
         data = JSON.parse(decompressedString);
       } catch (error) {
-        this.logger?.error('Decompression error', { error });
+        this.logger?.error('Decompression error', error instanceof Error ? error : undefined);
         throw new Error('Failed to decompress cache entry');
       }
     } else {
@@ -522,7 +522,7 @@ export class CacheManager implements IService, ICacheService {
         await this.kvStore.put(cacheKey, JSON.stringify(entry), { expirationTtl: ttl });
       }
     } catch (error) {
-      this.logger?.error('Error updating metadata', { cacheKey, error });
+      this.logger?.error('Error updating metadata', error instanceof Error ? error : undefined, { cacheKey });
     }
   }
 
@@ -597,7 +597,7 @@ export class CacheManager implements IService, ICacheService {
         try {
           listener(event);
         } catch (error) {
-          this.logger?.error('Event listener error', { eventType: event.type, error });
+          this.logger?.error('Event listener error', error instanceof Error ? error : undefined, { eventType: event.type });
         }
       });
     }

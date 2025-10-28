@@ -147,7 +147,8 @@ export class ResponseValidator implements IService {
 
 		try {
 			// Use partial() to make all fields optional
-			const partialSchema = schema.partial();
+			// Type assertion needed as ZodType doesn't have partial() method
+			const partialSchema = (schema as any).partial();
 			const result = partialSchema.parse(data);
 			this.logger.debug('Partial validation successful', { platform });
 			return result;

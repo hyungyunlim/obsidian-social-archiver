@@ -1,8 +1,7 @@
 import type { IService } from './base/IService';
-import type { Vault, TFile, TFolder } from 'obsidian';
 import type { PostData } from '@/types/post';
 import type { MarkdownResult } from './MarkdownConverter';
-import { normalizePath } from 'obsidian';
+import { Vault, TFile, TFolder, normalizePath } from 'obsidian';
 
 /**
  * VaultManager configuration
@@ -59,13 +58,47 @@ class PathGenerator {
     const date = this.formatDate(postData.metadata.timestamp);
     const author = this.sanitizeFilename(postData.author.name);
 
-    // Try to extract title from first line of content
-    const firstLine = postData.content.text.split('\n')[0];
-    const title = this.sanitizeFilename(
-      firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine
-    );
+    // Extract meaningful title from content, skipping lines starting with symbols
+    const title = this.extractMeaningfulTitle(postData.content.text);
 
     return `${date} - ${author} - ${title}.md`;
+  }
+
+  /**
+   * Extract meaningful title from post content
+   * Skips lines starting with symbols (-, •, *, #, @, etc.) or emojis
+   */
+  private extractMeaningfulTitle(text: string): string {
+    const lines = text.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    // Regex to detect lines starting with common symbols or emojis
+    const symbolPattern = /^[-•*#@\[\](){}<>|\/\\`~!+=_.,:;'"…]+\s*/;
+    const emojiPattern = /^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
+
+    // Find first line that doesn't start with symbols or emojis
+    for (const line of lines) {
+      const cleanedLine = line.replace(symbolPattern, '').trim();
+
+      if (cleanedLine.length === 0) continue; // Skip if only symbols
+      if (emojiPattern.test(cleanedLine)) continue; // Skip if starts with emoji
+
+      // Found a meaningful line
+      const title = cleanedLine.length > 50
+        ? cleanedLine.substring(0, 50) + '...'
+        : cleanedLine;
+
+      return this.sanitizeFilename(title);
+    }
+
+    // Fallback: use first line if no meaningful line found
+    const firstLine = lines[0] || 'Untitled Post';
+    const title = firstLine.length > 50
+      ? firstLine.substring(0, 50) + '...'
+      : firstLine;
+
+    return this.sanitizeFilename(title);
   }
 
   /**
@@ -87,7 +120,7 @@ class PathGenerator {
    * Format: Social Archives/{year}/{month}/{day}/filename.md
    * Uses current time (archiving time) instead of posting time
    */
-  private generateDatePath(postData: PostData, filename: string): string {
+  private generateDatePath(_postData: PostData, filename: string): string {
     const now = new Date(); // Use current time (archiving time)
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -132,7 +165,7 @@ class PathGenerator {
  *
  * Single Responsibility: Vault file management
  */
-export class VaultManager implements IService<TFile> {
+export class VaultManager implements IService {
   private vault: Vault;
   private pathGenerator: PathGenerator;
 
@@ -155,6 +188,18 @@ export class VaultManager implements IService<TFile> {
 
   async dispose(): Promise<void> {
     // No cleanup needed
+  }
+
+  /**
+   * Check if service is healthy
+   */
+  isHealthy(): boolean {
+    try {
+      this.vault.getRoot();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**

@@ -175,7 +175,7 @@ export class ServerError extends HttpError {
 export class BrightDataError extends HttpError {
 	public readonly platform?: string;
 	public readonly userMessage: string;
-	public readonly recoverySuggestions: RecoverySuggestion[];
+	public recoverySuggestions: RecoverySuggestion[];
 
 	constructor(
 		message: string,
