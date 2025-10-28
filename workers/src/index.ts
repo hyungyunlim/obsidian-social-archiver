@@ -41,7 +41,7 @@ app.use('*', cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting (DDoS protection)
 app.use('/api/*', rateLimiter());
 
 // Error handling
