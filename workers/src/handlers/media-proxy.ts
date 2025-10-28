@@ -53,12 +53,25 @@ export async function handleMediaProxy(c: Context<{ Bindings: Bindings }>): Prom
       return c.json({ error: 'Unauthorized domain' }, 403);
     }
 
+    // Build headers based on platform
+    const headers: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    };
+
+    // TikTok requires specific headers to bypass 403
+    if (url.hostname.includes('tiktok.com') || url.hostname.includes('tiktokcdn.com')) {
+      headers['Referer'] = 'https://www.tiktok.com/';
+      headers['Accept'] = 'video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5';
+      headers['Accept-Language'] = 'en-US,en;q=0.9';
+      headers['Range'] = 'bytes=0-'; // Support partial content
+    } else {
+      // Images for other platforms
+      headers['Accept'] = 'image/webp,image/apng,image/*,*/*;q=0.8';
+    }
+
     // Fetch media from CDN (server-side, no CORS)
     const response = await fetch(mediaUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-      },
+      headers,
       cf: {
         // Cloudflare-specific options
         cacheTtl: 86400, // Cache for 24 hours
