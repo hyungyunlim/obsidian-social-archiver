@@ -606,11 +606,14 @@ export class BrightDataService {
   private parseLinkedInPost(data: any, url: string): PostData {
     // Extract username from author URL or author field
     const extractUsername = (authorData: any): string | undefined => {
+      // BrightData uses 'user_id' field for LinkedIn
+      if (authorData.user_id) return authorData.user_id;
       if (authorData.username) return authorData.username;
       if (authorData.author_username) return authorData.author_username;
       // Try to extract from URL: https://linkedin.com/in/username
-      if (authorData.author_url) {
-        const match = authorData.author_url.match(/\/in\/([^\/\?]+)/);
+      const authorUrl = authorData.use_url || authorData.author_url;
+      if (authorUrl) {
+        const match = authorUrl.match(/\/in\/([^\/\?]+)/);
         if (match) return match[1];
       }
       return undefined;
@@ -618,20 +621,26 @@ export class BrightDataService {
 
     const username = extractUsername(data);
 
+    // BrightData uses 'use_url' for author profile URL
+    const authorUrl = data.use_url || data.author_url || '';
+
+    // Extract author name from user_title if available
+    const authorName = data.user_name || data.author || data.author_name || username || 'Unknown';
+
     return {
       platform: 'linkedin',
-      id: data.post_id || this.extractIdFromUrl(url),
+      id: data.id || data.post_id || this.extractIdFromUrl(url),
       url,
       author: {
-        name: data.author || data.author_name || 'Unknown',
-        url: data.author_url || '',
-        avatar: data.author_avatar || data.author_profile_picture,
+        name: authorName,
+        url: authorUrl,
+        avatar: data.author_profile_pic || data.author_avatar || data.author_profile_picture,
         username,
         handle: username ? `@${username}` : undefined,
         verified: data.author_verified || data.is_verified,
       },
       content: {
-        text: data.text || data.commentary || data.content || '',
+        text: data.post_text || data.text || data.commentary || data.content || '',
       },
       media: (data.images || []).map((img: any) => ({
         type: 'image' as const,
@@ -641,7 +650,7 @@ export class BrightDataService {
         likes: data.num_likes || data.likes_count,
         comments: data.num_comments || data.comments_count,
         shares: data.num_shares || data.shares_count,
-        timestamp: data.published_date || data.date_posted || new Date().toISOString(),
+        timestamp: data.date_posted || data.published_date || new Date().toISOString(),
       },
       raw: data,
     };
