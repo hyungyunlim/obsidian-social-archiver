@@ -55,7 +55,7 @@ const DATASET_IDS: Record<Platform, string> = {
   facebook: 'gd_lyclm1571iy3mv57zw', // Facebook posts dataset - NEW API (2025-01-27)
   linkedin: 'gd_lyy3tktm25m4avu764', // LinkedIn posts dataset (supports /posts/ and /pulse/ URLs)
   instagram: 'gd_lk5ns7kz21pck8jpis', // Instagram posts dataset (confirmed)
-  tiktok: 'gd_m736hjp71lejc5dc0l', // TikTok posts dataset - Fast API (updated 2025-01-28)
+  tiktok: 'gd_lu702nij2f790tmv9h', // TikTok posts dataset - Posts by URL (updated 2025-01-28)
   x: 'gd_lwxkxvnf1cynvib9co', // X (Twitter) posts dataset (confirmed)
   threads: 'gd_md75myxy14rihbjksa', // Threads posts dataset (confirmed)
 };
@@ -341,7 +341,12 @@ export class BrightDataService {
       platform
     });
 
-    // All platforms use simple format: [{"url": "..."}]
+    // TikTok requires country parameter (can be empty string)
+    if (platform === 'tiktok') {
+      return [{ url: cleanUrl, country: '' }];
+    }
+
+    // All other platforms use simple format: [{"url": "..."}]
     // The new Facebook dataset (gd_lyclm1571iy3mv57zw) doesn't support
     // get_all_replies, limit_records, comments_sort parameters
     return [{ url: cleanUrl }];
