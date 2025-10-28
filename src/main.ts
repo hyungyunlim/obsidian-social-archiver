@@ -248,8 +248,8 @@ export default class SocialArchiverPlugin extends Plugin {
 
       // Wait for completion (longer timeout for BrightData scraping)
       const result = await this.apiClient.waitForJob(response.jobId, {
-        timeout: 300000, // 5 minutes (BrightData can take 2-4 minutes)
-        pollInterval: 3000, // 3 seconds (reduce API calls)
+        timeout: 2700000, // 45 minutes (TikTok can take 30 minutes, Threads ~7 minutes)
+        pollInterval: 5000, // 5 seconds (reduce API calls, webhook will complete faster)
       });
 
       console.log('[Social Archiver] Step 4: Job completed!');
