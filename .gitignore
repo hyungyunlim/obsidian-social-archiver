@@ -55,4 +55,7 @@ workers/.dev.vars
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
+
+# Test scripts (may contain API keys)
+test-*.js 
