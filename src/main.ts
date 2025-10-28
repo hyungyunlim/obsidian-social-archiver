@@ -302,10 +302,11 @@ export default class SocialArchiverPlugin extends Plugin {
           const media = result.postData.media[i];
           console.log(`[Social Archiver] Downloading media ${i + 1}/${result.postData.media.length}...`);
 
+          // Extract URL string from media.url (handle both string and object formats)
+          // Workers API may return video objects like: { video_url: "...", duration: 123 }
+          let mediaUrl: string = '';
+
           try {
-            // Extract URL string from media.url (handle both string and object formats)
-            // Workers API may return video objects like: { video_url: "...", duration: 123 }
-            let mediaUrl: string;
             if (typeof media.url === 'string') {
               mediaUrl = media.url;
             } else if (typeof media.url === 'object' && media.url !== null) {
@@ -361,7 +362,7 @@ export default class SocialArchiverPlugin extends Plugin {
 
           } catch (error) {
             // TikTok videos often fail due to DRM protection - use original URL as fallback
-            if (result.postData.platform === 'tiktok') {
+            if (result.postData.platform === 'tiktok' && mediaUrl) {
               console.warn(`[Social Archiver] ⚠️ TikTok video download failed, using original URL instead`);
 
               // Add original URL to downloaded list (will be used in markdown)
