@@ -170,6 +170,7 @@ describe('ArchiveOrchestrator', () => {
         mockPostData.media,
         'facebook',
         'post123',
+        'John Doe', // authorUsername
         expect.any(Function)
       );
       expect(mockMarkdownConverter.convert).toHaveBeenCalledWith(

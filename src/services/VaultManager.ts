@@ -71,12 +71,12 @@ class PathGenerator {
   /**
    * Generate path organized by platform
    * Format: Social Archives/{platform}/{year}/{month}/filename.md
+   * Uses current time (archiving time) instead of posting time
    */
   private generatePlatformPath(postData: PostData, filename: string): string {
-    const timestamp = postData.metadata.timestamp;
-    const dateObj = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const now = new Date(); // Use current time (archiving time)
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
     const platform = postData.platform.charAt(0).toUpperCase() + postData.platform.slice(1);
 
     return normalizePath(`${this.basePath}/${platform}/${year}/${month}/${filename}`);
@@ -85,13 +85,13 @@ class PathGenerator {
   /**
    * Generate path organized by date
    * Format: Social Archives/{year}/{month}/{day}/filename.md
+   * Uses current time (archiving time) instead of posting time
    */
   private generateDatePath(postData: PostData, filename: string): string {
-    const timestamp = postData.metadata.timestamp;
-    const dateObj = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
+    const now = new Date(); // Use current time (archiving time)
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
 
     return normalizePath(`${this.basePath}/${year}/${month}/${day}/${filename}`);
   }

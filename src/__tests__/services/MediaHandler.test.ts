@@ -94,7 +94,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results).toHaveLength(1);
@@ -128,7 +129,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results).toHaveLength(3);
@@ -154,6 +156,7 @@ describe('MediaHandler', () => {
         media,
         'facebook',
         'post-123',
+        'testuser',
         onProgress
       );
 
@@ -182,7 +185,7 @@ describe('MediaHandler', () => {
         } as Response;
       });
 
-      await mediaHandler.downloadMedia(media, 'facebook', 'post-123');
+      await mediaHandler.downloadMedia(media, 'facebook', 'post-123', 'testuser');
 
       expect(maxConcurrent).toBeLessThanOrEqual(2); // maxConcurrent = 2
     });
@@ -197,7 +200,7 @@ describe('MediaHandler', () => {
         arrayBuffer: async () => mockImageData,
       } as Response);
 
-      await mediaHandler.downloadMedia(media, 'facebook', 'post-123');
+      await mediaHandler.downloadMedia(media, 'facebook', 'post-123', 'testuser');
 
       expect(mockVault.createFolder).toHaveBeenCalled();
     });
@@ -214,7 +217,7 @@ describe('MediaHandler', () => {
       } as Response);
 
       await expect(
-        mediaHandler.downloadMedia(media, 'facebook', 'post-123')
+        mediaHandler.downloadMedia(media, 'facebook', 'post-123', 'testuser')
       ).rejects.toThrow(/Failed to download media/);
     });
 
@@ -226,7 +229,7 @@ describe('MediaHandler', () => {
       vi.mocked(fetch).mockRejectedValue(new Error('Network error'));
 
       await expect(
-        mediaHandler.downloadMedia(media, 'facebook', 'post-123')
+        mediaHandler.downloadMedia(media, 'facebook', 'post-123', 'testuser')
       ).rejects.toThrow(/Failed to download media/);
     });
 
@@ -247,7 +250,7 @@ describe('MediaHandler', () => {
       );
 
       await expect(
-        mediaHandler.downloadMedia(media, 'facebook', 'post-123')
+        mediaHandler.downloadMedia(media, 'facebook', 'post-123', 'testuser')
       ).rejects.toThrow(/Download timeout/);
     });
   });
@@ -266,7 +269,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].type).toBe('image');
@@ -285,7 +289,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].type).toBe('video');
@@ -304,7 +309,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].type).toBe('audio');
@@ -327,7 +333,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].type).toBe('image');
@@ -346,7 +353,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].type).toBe('document');
@@ -367,12 +375,13 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].localPath).toContain('attachments/social-archives');
       expect(results[0].localPath).toContain('facebook');
-      expect(results[0].localPath).toContain('post-123');
+      expect(results[0].localPath).toContain('testuser');
     });
 
     it('should use custom base path', async () => {
@@ -393,7 +402,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].localPath).toContain('custom/media');
@@ -412,7 +422,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].localPath).not.toContain(':');
@@ -433,7 +444,8 @@ describe('MediaHandler', () => {
       const results = await mediaHandler.downloadMedia(
         media,
         'facebook',
-        'post-123'
+        'post-123',
+        'testuser'
       );
 
       expect(results[0].localPath).toMatch(/media-\d+/);

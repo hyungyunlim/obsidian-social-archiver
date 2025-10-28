@@ -106,30 +106,33 @@ class MediaPathGenerator {
 
   /**
    * Generate path for media file
+   * Format: {basePath}/{platform}/{authorUsername}/
    */
-  generatePath(platform: Platform, postId: string, filename: string): string {
+  generatePath(platform: Platform, authorUsername: string, filename: string): string {
     const sanitized = this.sanitizeFilename(filename);
-    return normalizePath(`${this.basePath}/${platform}/${postId}/${sanitized}`);
+    const sanitizedAuthor = this.sanitizeFilename(authorUsername || 'unknown');
+    return normalizePath(`${this.basePath}/${platform}/${sanitizedAuthor}/${sanitized}`);
   }
 
   /**
    * Generate filename from URL
+   * Format: {date}-{authorUsername}-{postId}-{index}.{extension}
    */
-  generateFilename(url: string, index: number): string {
+  generateFilename(url: string, index: number, postId: string, authorUsername: string): string {
     try {
-      const urlObj = new URL(url);
-      const pathname = urlObj.pathname;
-      const parts = pathname.split('/');
-      const lastPart = parts[parts.length - 1];
+      // Get current date for archiving timestamp
+      const now = new Date();
+      const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 
-      // If we have a meaningful filename, use it
-      if (lastPart && lastPart.includes('.')) {
-        return lastPart;
-      }
-
-      // Generate filename from URL hash or index
+      // Get extension
       const extension = this.getExtensionFromUrl(url) || 'bin';
-      return `media-${index + 1}.${extension}`;
+
+      // Sanitize author username and postId
+      const sanitizedAuthor = this.sanitizeFilename(authorUsername || 'unknown');
+      const sanitizedPostId = this.sanitizeFilename(postId);
+
+      // Format: YYYYMMDD-username-postId-index.ext
+      return `${date}-${sanitizedAuthor}-${sanitizedPostId}-${index + 1}.${extension}`;
     } catch {
       return `media-${index + 1}.bin`;
     }
@@ -257,6 +260,7 @@ export class MediaHandler implements IService<MediaResult[]> {
     media: Media[],
     platform: Platform,
     postId: string,
+    authorUsername: string,
     onProgress?: DownloadProgressCallback
   ): Promise<MediaResult[]> {
     const results: MediaResult[] = [];
@@ -266,7 +270,7 @@ export class MediaHandler implements IService<MediaResult[]> {
     // Download all media files
     const downloadPromises = media.map((item, index) =>
       this.downloadQueue.add(async () => {
-        const result = await this.downloadSingleMedia(item, platform, postId, index);
+        const result = await this.downloadSingleMedia(item, platform, postId, authorUsername, index);
         results.push(result);
         completed++;
         onProgress?.(completed, total);
@@ -286,6 +290,7 @@ export class MediaHandler implements IService<MediaResult[]> {
     media: Media,
     platform: Platform,
     postId: string,
+    authorUsername: string,
     index: number
   ): Promise<MediaResult> {
     try {
@@ -307,8 +312,8 @@ export class MediaHandler implements IService<MediaResult[]> {
       }
 
       // Generate path and save
-      const filename = this.pathGenerator.generateFilename(media.url, index);
-      const path = this.pathGenerator.generatePath(platform, postId, filename);
+      const filename = this.pathGenerator.generateFilename(media.url, index, postId, authorUsername);
+      const path = this.pathGenerator.generatePath(platform, authorUsername, filename);
 
       // Ensure parent folder exists
       await this.ensureFolderExists(this.getParentPath(path));

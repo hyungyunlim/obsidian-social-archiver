@@ -313,11 +313,17 @@ export class ArchiveOrchestrator implements IService<ArchiveResult> {
       if (options.downloadMedia && postData.media.length > 0) {
         this.emitProgress('downloading', 50, 'Downloading media files...');
 
+        // Extract author username (prefer username, fallback to handle without @, or name)
+        const authorUsername = postData.author.username
+          || (postData.author.handle ? postData.author.handle.replace('@', '') : null)
+          || postData.author.name;
+
         mediaResults = await RetryHelper.withRetry(
           () => this.mediaHandler.downloadMedia(
             postData.media,
             platform,
             postData.id,
+            authorUsername,
             (downloaded, total) => {
               const progress = 50 + ((downloaded / total) * 20);
               this.emitProgress(
