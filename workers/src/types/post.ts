@@ -8,17 +8,21 @@ export interface Author {
   name: string;
   url: string;
   avatar?: string;
-  handle?: string;
+  handle?: string; // @username format (e.g., @johndoe)
+  username?: string; // Plain username (for compatibility with plugin)
+  verified?: boolean;
 }
 
 export interface Media {
-  type: 'image' | 'video' | 'audio';
+  type: 'image' | 'video' | 'audio' | 'document';
   url: string;
   thumbnail?: string;
   width?: number;
   height?: number;
   duration?: number;
   altText?: string;
+  size?: number; // File size in bytes
+  mimeType?: string; // MIME type (for compatibility with plugin)
 }
 
 export interface PostMetadata {
@@ -45,6 +49,15 @@ export interface FactCheck {
   explanation: string;
 }
 
+export interface Comment {
+  id: string;
+  author: Author;
+  content: string;
+  timestamp: string;
+  likes?: number;
+  replies?: Comment[];
+}
+
 export interface PostData {
   platform: Platform;
   id: string;
@@ -56,6 +69,7 @@ export interface PostData {
   };
   media: Media[];
   metadata: PostMetadata;
+  comments?: Comment[]; // Optional comments array for future support
   ai?: AIAnalysis;
   raw?: any; // Original API response for debugging
 }

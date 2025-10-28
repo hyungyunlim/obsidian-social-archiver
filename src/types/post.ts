@@ -7,13 +7,15 @@ export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 
 export interface Media {
   type: 'image' | 'video' | 'audio' | 'document';
   url: string;
-  thumbnailUrl?: string;
+  thumbnail?: string; // Use 'thumbnail' to match workers
+  thumbnailUrl?: string; // Keep for backward compatibility
   width?: number;
   height?: number;
   duration?: number;
   size?: number;
   mimeType?: string;
-  alt?: string;
+  altText?: string; // Use 'altText' to match workers
+  alt?: string; // Keep for backward compatibility
 }
 
 // Author information
@@ -21,7 +23,8 @@ export interface Author {
   name: string;
   url: string;
   avatar?: string;
-  username?: string;
+  handle?: string; // @username format (e.g., @johndoe) - from workers
+  username?: string; // Plain username (backward compatibility)
   verified?: boolean;
 }
 
@@ -34,6 +37,16 @@ export interface PostMetadata {
   timestamp: Date | string; // Support both Date objects and ISO strings
   editedAt?: Date | string;
   location?: string;
+}
+
+// Comment types
+export interface Comment {
+  id: string;
+  author: Author;
+  content: string;
+  timestamp: string;
+  likes?: number;
+  replies?: Comment[];
 }
 
 // AI analysis results
@@ -66,6 +79,7 @@ export interface PostData {
   };
   media: Media[];
   metadata: PostMetadata;
+  comments?: Comment[]; // Optional comments array
   ai?: AIAnalysis;
   raw?: unknown; // Original API response
 }
