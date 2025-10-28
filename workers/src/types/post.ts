@@ -11,6 +11,8 @@ export interface Author {
   handle?: string; // @username format (e.g., @johndoe)
   username?: string; // Plain username (for compatibility with plugin)
   verified?: boolean;
+  bio?: string; // TikTok Fast API profile_biography
+  followers?: number; // TikTok Fast API profile_followers
 }
 
 export interface Media {
@@ -30,8 +32,24 @@ export interface PostMetadata {
   comments?: number;
   shares?: number;
   views?: number;
+  bookmarks?: number; // TikTok collect_count
   timestamp: string; // ISO 8601 format
   editedAt?: string;
+  music?: {
+    title: string;
+    author: string;
+    url: string;
+    cover?: string;
+    isOriginal?: boolean;
+  }; // TikTok music info
+  originalSound?: string; // TikTok original sound text
+  taggedUsers?: Array<{
+    handle: string;
+    name: string;
+    id: string;
+    url: string;
+  }>; // TikTok Fast API tagged_user
+  externalLink?: string; // Threads external_link_title
 }
 
 export interface AIAnalysis {
@@ -66,6 +84,7 @@ export interface PostData {
   content: {
     text: string;
     html?: string;
+    hashtags?: string[]; // TikTok/X hashtags
   };
   media: Media[];
   metadata: PostMetadata;

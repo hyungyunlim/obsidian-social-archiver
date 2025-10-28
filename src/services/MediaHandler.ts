@@ -2,12 +2,14 @@ import type { IService } from './base/IService';
 import type { Vault, TFile } from 'obsidian';
 import type { Media, Platform } from '@/types/post';
 import { normalizePath } from 'obsidian';
+import type { WorkersAPIClient } from './WorkersAPIClient';
 
 /**
  * MediaHandler configuration
  */
 export interface MediaHandlerConfig {
   vault: Vault;
+  workersClient?: WorkersAPIClient; // Optional for proxy download
   basePath?: string;
   maxConcurrent?: number;
   maxImageDimension?: number;
@@ -232,6 +234,7 @@ class DownloadQueue {
  */
 export class MediaHandler implements IService<MediaResult[]> {
   private vault: Vault;
+  private workersClient?: WorkersAPIClient;
   private pathGenerator: MediaPathGenerator;
   private downloadQueue: DownloadQueue;
   private maxImageDimension: number;
@@ -239,6 +242,7 @@ export class MediaHandler implements IService<MediaResult[]> {
 
   constructor(config: MediaHandlerConfig) {
     this.vault = config.vault;
+    this.workersClient = config.workersClient;
     this.pathGenerator = new MediaPathGenerator(config.basePath);
     this.downloadQueue = new DownloadQueue(config.maxConcurrent || 3);
     this.maxImageDimension = config.maxImageDimension || 2048;
@@ -339,8 +343,22 @@ export class MediaHandler implements IService<MediaResult[]> {
 
   /**
    * Download from URL with timeout
+   * Uses Workers proxy if available (required for Instagram, TikTok, Threads due to CORS)
    */
   private async downloadFromUrl(url: string): Promise<ArrayBuffer> {
+    // Use Workers proxy if available (bypasses CORS)
+    if (this.workersClient) {
+      try {
+        console.log('[MediaHandler] Using Workers proxy for download:', url.substring(0, 100) + '...');
+        return await this.workersClient.proxyMedia(url);
+      } catch (error) {
+        console.warn('[MediaHandler] Proxy download failed, falling back to direct fetch:', error);
+        // Fall through to direct fetch
+      }
+    }
+
+    // Fallback to direct fetch (may fail due to CORS)
+    console.log('[MediaHandler] Using direct fetch for download:', url.substring(0, 100) + '...');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 

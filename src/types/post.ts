@@ -26,6 +26,8 @@ export interface Author {
   handle?: string; // @username format (e.g., @johndoe) - from workers
   username?: string; // Plain username (backward compatibility)
   verified?: boolean;
+  bio?: string; // TikTok Fast API profile_biography
+  followers?: number; // TikTok Fast API profile_followers
 }
 
 // Post metadata
@@ -34,9 +36,25 @@ export interface PostMetadata {
   comments?: number;
   shares?: number;
   views?: number;
+  bookmarks?: number; // TikTok collect_count
   timestamp: Date | string; // Support both Date objects and ISO strings
   editedAt?: Date | string;
   location?: string;
+  music?: {
+    title: string;
+    author: string;
+    url: string;
+    cover?: string;
+    isOriginal?: boolean;
+  }; // TikTok music info
+  originalSound?: string; // TikTok original sound text
+  taggedUsers?: Array<{
+    handle: string;
+    name: string;
+    id: string;
+    url: string;
+  }>; // TikTok Fast API tagged_user
+  externalLink?: string; // Threads external_link_title
 }
 
 // Comment types
@@ -76,6 +94,7 @@ export interface PostData {
     text: string;
     html?: string;
     markdown?: string;
+    hashtags?: string[]; // TikTok/X hashtags
   };
   media: Media[];
   metadata: PostMetadata;
@@ -95,12 +114,15 @@ export const PostDataSchema = z.object({
     url: z.string().url(),
     avatar: z.string().url().optional(),
     username: z.string().optional(),
-    verified: z.boolean().optional()
+    verified: z.boolean().optional(),
+    bio: z.string().optional(),
+    followers: z.number().optional()
   }),
   content: z.object({
     text: z.string(),
     html: z.string().optional(),
-    markdown: z.string().optional()
+    markdown: z.string().optional(),
+    hashtags: z.array(z.string()).optional()
   }),
   media: z.array(z.object({
     type: z.enum(['image', 'video', 'audio', 'document']),
@@ -118,9 +140,25 @@ export const PostDataSchema = z.object({
     comments: z.number().optional(),
     shares: z.number().optional(),
     views: z.number().optional(),
+    bookmarks: z.number().optional(),
     timestamp: z.date(),
     editedAt: z.date().optional(),
-    location: z.string().optional()
+    location: z.string().optional(),
+    music: z.object({
+      title: z.string(),
+      author: z.string(),
+      url: z.string(),
+      cover: z.string().optional(),
+      isOriginal: z.boolean().optional()
+    }).optional(),
+    originalSound: z.string().optional(),
+    taggedUsers: z.array(z.object({
+      handle: z.string(),
+      name: z.string(),
+      id: z.string(),
+      url: z.string()
+    })).optional(),
+    externalLink: z.string().optional()
   }),
   ai: z.object({
     summary: z.string(),

@@ -1,17 +1,19 @@
 import { z } from 'zod';
+import { canonicalizeUrl } from '../../utils/url';
 
 /**
  * Threads URL validation schema
  * Validates Meta's Threads platform post URLs
+ * Automatically removes tracking parameters
  */
 
 // Threads domain validation
 const threadsDomainSchema = z
 	.string()
 	.regex(
-		/^(https?:\/\/)?(www\.)?threads\.net/i,
+		/^(https?:\/\/)?(www\.)?(threads\.net|threads\.com)/i,
 		{
-			message: 'URL must be from a valid Threads domain (threads.net)',
+			message: 'URL must be from a valid Threads domain (threads.net or threads.com)',
 		}
 	);
 
@@ -47,12 +49,14 @@ const threadsDirectUrlSchema = z
 /**
  * Comprehensive Threads URL schema
  * Accepts any valid Threads post/content URL format
+ * Automatically sanitizes URLs by removing tracking parameters
  */
 export const ThreadsURLSchema = z
 	.string()
 	.trim()
 	.min(1, { message: 'URL cannot be empty' })
 	.url({ message: 'Invalid URL format' })
+	.transform((url) => canonicalizeUrl(url)) // Sanitize URL
 	.refine(
 		(url) => threadsDomainSchema.safeParse(url).success,
 		{

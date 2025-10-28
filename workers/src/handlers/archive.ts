@@ -66,7 +66,7 @@ archiveRouter.post('/', async (c) => {
     // Trigger BrightData collection with webhook delivery (non-blocking)
     logger.info('Triggering BrightData webhook collection', { jobId });
 
-    const webhookUrl = `${new URL(c.req.url).origin}/api/webhook/brightdata`;
+    const webhookUrl = `${new URL(c.req.url).origin}/webhook/brightdata`;
 
     const backgroundTask = triggerWebhookCollection(
       c.env,
@@ -246,10 +246,17 @@ async function triggerWebhookCollection(
     // Initialize ArchiveService
     const archiveService = new ArchiveService(env, logger);
 
-    // Trigger collection
-    const snapshotId = await archiveService.triggerArchive(request.url, request.options);
+    // Build webhook URL with jobId for tracking
+    const webhookUrlWithJobId = `${webhookUrl}?jobId=${jobId}`;
 
-    logger.info('✅ Collection triggered, trying fast path (30s)', { jobId, snapshotId });
+    // Trigger collection with webhook (Option 3: Webhook + Polling hybrid)
+    const snapshotId = await archiveService.triggerArchiveViaWebhook(
+      request.url,
+      webhookUrlWithJobId,
+      request.options
+    );
+
+    logger.info('✅ Collection triggered with webhook, trying fast path (30s)', { jobId, snapshotId, webhookUrl: webhookUrlWithJobId });
 
     // Store snapshot info in job
     const job = await env.ARCHIVE_CACHE.get(`job:${jobId}`, 'json') as any;

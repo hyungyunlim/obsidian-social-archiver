@@ -27,7 +27,7 @@ const PLATFORM_PATTERNS: Array<[Platform, RegExp]> = [
   ['instagram', /instagram\.com/i],
   ['tiktok', /tiktok\.com/i],
   ['x', /(?:x\.com|twitter\.com)/i],
-  ['threads', /threads\.net/i],
+  ['threads', /(?:threads\.net|threads\.com)/i],
 ];
 
 export class ArchiveService {

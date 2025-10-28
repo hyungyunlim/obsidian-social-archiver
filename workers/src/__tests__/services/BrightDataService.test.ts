@@ -526,4 +526,411 @@ describe('BrightDataService', () => {
       );
     });
   });
+
+  describe('TikTok Post Parsing', () => {
+    it('should parse TikTok post with BrightData response format', () => {
+      const parseTikTokPost = (service as any).parseTikTokPost.bind(service);
+
+      const mockTikTokData = {
+        post_id: '7420361159435439367',
+        url: 'https://www.tiktok.com/@user7926174510021/video/7420361159435439367',
+        description: 'ตำนานศิลปินเเห่งฝรั่งเศส david ginola💔🇨🇵#ginola #football #france🇫🇷 #fyp ',
+        create_time: '2024-09-30T09:11:11.000Z',
+        digg_count: 3598,
+        share_count: '124',
+        collect_count: 387,
+        comment_count: 39,
+        play_count: 146700,
+        video_duration: 70,
+        hashtags: ['ginola', 'football', 'france🇫🇷', 'fyp'],
+        original_sound: 'ปู7ตู: เสียงต้นฉบับ - ปู7ตู',
+        profile_id: '7141523785241068546',
+        profile_username: 'user7926174510021',
+        profile_url: 'https://www.tiktok.com/@user7926174510021',
+        profile_avatar: 'https://p16-common-sign.tiktokcdn-us.com/avatar.jpeg',
+        preview_image: 'https://p16-common-sign.tiktokcdn-us.com/preview.image',
+        video_url: 'https://v16-webapp-prime.us.tiktok.com/video.mp4',
+        cdn_url: 'https://v19-webapp-prime.us.tiktok.com/video_cdn.mp4',
+        music: {
+          authorname: 'ปู7ตู',
+          covermedium: 'https://p16-common-sign.tiktokcdn-us.com/music_cover.jpeg',
+          id: '7420361197403605776',
+          original: true,
+          playurl: 'https://v16m.tiktokcdn-us.com/music.mp3',
+          title: 'เสียงต้นฉบับ - ปู7ตู',
+        },
+        is_verified: false,
+        width: 576,
+        ratio: '540p',
+      };
+
+      const result = parseTikTokPost(mockTikTokData, mockTikTokData.url);
+
+      expect(result).toMatchObject({
+        platform: 'tiktok',
+        id: '7420361159435439367',
+        url: 'https://www.tiktok.com/@user7926174510021/video/7420361159435439367',
+        author: {
+          name: 'user7926174510021',
+          url: 'https://www.tiktok.com/@user7926174510021',
+          avatar: 'https://p16-common-sign.tiktokcdn-us.com/avatar.jpeg',
+          handle: 'user7926174510021',
+          username: 'user7926174510021',
+          verified: false,
+        },
+        content: {
+          text: 'ตำนานศิลปินเเห่งฝรั่งเศส david ginola💔🇨🇵#ginola #football #france🇫🇷 #fyp ',
+          hashtags: ['ginola', 'football', 'france🇫🇷', 'fyp'],
+        },
+        metadata: {
+          likes: 3598,
+          comments: 39,
+          shares: 124,
+          views: 146700,
+          bookmarks: 387,
+          timestamp: '2024-09-30T09:11:11.000Z',
+          originalSound: 'ปู7ตู: เสียงต้นฉบับ - ปู7ตู',
+        },
+      });
+
+      expect(result.media).toHaveLength(1);
+      expect(result.media[0]).toMatchObject({
+        type: 'video',
+        url: 'https://v16-webapp-prime.us.tiktok.com/video.mp4',
+        thumbnail: 'https://p16-common-sign.tiktokcdn-us.com/preview.image',
+        duration: 70,
+        width: 576,
+      });
+
+      expect(result.metadata.music).toMatchObject({
+        title: 'เสียงต้นฉบับ - ปู7ตู',
+        author: 'ปู7ตู',
+        url: 'https://v16m.tiktokcdn-us.com/music.mp3',
+        cover: 'https://p16-common-sign.tiktokcdn-us.com/music_cover.jpeg',
+        isOriginal: true,
+      });
+    });
+
+    it('should handle TikTok post with cdn_url fallback', () => {
+      const parseTikTokPost = (service as any).parseTikTokPost.bind(service);
+
+      const mockTikTokDataCdn = {
+        post_id: '7420361159435439368',
+        url: 'https://www.tiktok.com/@user/video/7420361159435439368',
+        description: 'Test video',
+        create_time: '2024-09-30T09:11:11.000Z',
+        digg_count: 100,
+        share_count: 10,
+        comment_count: 5,
+        play_count: 1000,
+        video_duration: 30,
+        profile_username: 'testuser',
+        profile_url: 'https://www.tiktok.com/@testuser',
+        preview_image: 'https://example.com/preview.jpg',
+        cdn_url: 'https://cdn.tiktok.com/video.mp4', // Only cdn_url, no video_url
+        is_verified: false,
+        width: 720,
+      };
+
+      const result = parseTikTokPost(mockTikTokDataCdn, mockTikTokDataCdn.url);
+
+      expect(result.media[0]).toMatchObject({
+        type: 'video',
+        url: 'https://cdn.tiktok.com/video.mp4', // Should use cdn_url as fallback
+      });
+    });
+
+    it('should handle TikTok post without music', () => {
+      const parseTikTokPost = (service as any).parseTikTokPost.bind(service);
+
+      const mockTikTokDataNoMusic = {
+        post_id: '7420361159435439369',
+        url: 'https://www.tiktok.com/@user/video/7420361159435439369',
+        description: 'Video without music',
+        create_time: '2024-09-30T09:11:11.000Z',
+        digg_count: 50,
+        share_count: '5',
+        comment_count: 2,
+        play_count: 500,
+        video_duration: 15,
+        profile_username: 'testuser',
+        profile_url: 'https://www.tiktok.com/@testuser',
+        preview_image: 'https://example.com/preview.jpg',
+        video_url: 'https://example.com/video.mp4',
+        is_verified: false,
+        width: 480,
+      };
+
+      const result = parseTikTokPost(mockTikTokDataNoMusic, mockTikTokDataNoMusic.url);
+
+      expect(result.metadata.music).toBeUndefined();
+    });
+
+    it('should handle string share_count conversion', () => {
+      const parseTikTokPost = (service as any).parseTikTokPost.bind(service);
+
+      const mockTikTokDataStringShares = {
+        post_id: '7420361159435439370',
+        url: 'https://www.tiktok.com/@user/video/7420361159435439370',
+        description: 'Test',
+        create_time: '2024-09-30T09:11:11.000Z',
+        digg_count: 100,
+        share_count: '999', // String format
+        comment_count: 10,
+        play_count: 5000,
+        video_duration: 20,
+        profile_username: 'testuser',
+        video_url: 'https://example.com/video.mp4',
+        is_verified: false,
+      };
+
+      const result = parseTikTokPost(mockTikTokDataStringShares, mockTikTokDataStringShares.url);
+
+      expect(result.metadata.shares).toBe(999);
+      expect(typeof result.metadata.shares).toBe('number');
+    });
+
+    it('should log TikTok music and hashtags information', () => {
+      const parseTikTokPost = (service as any).parseTikTokPost.bind(service);
+
+      const mockTikTokDataLogging = {
+        post_id: '7420361159435439371',
+        url: 'https://www.tiktok.com/@user/video/7420361159435439371',
+        description: 'Test with logging',
+        create_time: '2024-09-30T09:11:11.000Z',
+        digg_count: 100,
+        share_count: 10,
+        comment_count: 5,
+        play_count: 1000,
+        video_duration: 25,
+        profile_username: 'testuser',
+        video_url: 'https://example.com/video.mp4',
+        hashtags: ['viral', 'trending'],
+        music: {
+          title: 'Test Song',
+          authorname: 'Test Artist',
+          original: false,
+        },
+        is_verified: false,
+      };
+
+      parseTikTokPost(mockTikTokDataLogging, mockTikTokDataLogging.url);
+
+      // Verify logger was called for parsing
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '🎵 Parsing TikTok post',
+        expect.objectContaining({
+          postId: '7420361159435439371',
+          username: 'testuser',
+          hasMusic: true,
+          hashtags: 2,
+        })
+      );
+
+      // Verify logger was called for music
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '🎼 Music detected',
+        expect.objectContaining({
+          title: 'Test Song',
+          author: 'Test Artist',
+          isOriginal: false,
+        })
+      );
+
+      // Verify logger was called for hashtags
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '🏷️ Hashtags',
+        expect.objectContaining({
+          tags: ['viral', 'trending'],
+        })
+      );
+    });
+  });
+
+  describe('Threads Post Parsing', () => {
+    it('should parse Threads post with BrightData response format', () => {
+      const parseThreadsPost = (service as any).parseThreadsPost.bind(service);
+
+      const mockThreadsData = {
+        post_id: 'DQP5KgIke17',
+        url: 'https://www.threads.com/@okeijw9194/post/DQP5KgIke17',
+        post_time: '2025-10-25T22:05:07.000Z',
+        profile_name: 'okeijw9194',
+        profile_url: 'https://www.threads.com/@okeijw9194',
+        post_content: '3年目になって、やっと昇給の話が。',
+        number_of_likes: 166,
+        number_of_comments: 16,
+        number_of_reshares: 0,
+        number_of_shares: null,
+        comments: [
+          {
+            comment_content: 'Great post!',
+            commentor_profile_name: 'testuser',
+            commentor_profile_url: 'https://www.threads.com/@testuser',
+            number_of_likes: 5,
+            number_of_replies: 0,
+            number_of_reshares: '0',
+            number_of_shares: 0,
+          },
+        ],
+        images: null,
+        videos: null,
+        quoted_post: {
+          date_posted: null,
+          images: null,
+          post_content: null,
+          post_id: null,
+          profile_name: null,
+          profile_url: null,
+          url: null,
+          videos: null,
+        },
+        external_link_title: null,
+      };
+
+      const result = parseThreadsPost(mockThreadsData, mockThreadsData.url);
+
+      expect(result).toMatchObject({
+        platform: 'threads',
+        id: 'DQP5KgIke17',
+        url: 'https://www.threads.com/@okeijw9194/post/DQP5KgIke17',
+        author: {
+          name: 'okeijw9194',
+          url: 'https://www.threads.com/@okeijw9194',
+          handle: 'okeijw9194',
+          username: 'okeijw9194',
+        },
+        content: {
+          text: '3年目になって、やっと昇給の話が。',
+        },
+        metadata: {
+          likes: 166,
+          comments: 16,
+          shares: 0,
+          timestamp: '2025-10-25T22:05:07.000Z',
+        },
+      });
+
+      expect(result.comments).toHaveLength(1);
+      expect(result.comments?.[0]).toMatchObject({
+        author: {
+          name: 'testuser',
+          url: 'https://www.threads.com/@testuser',
+        },
+        content: 'Great post!',
+        likes: 5,
+      });
+    });
+
+    it('should handle Threads post with images', () => {
+      const parseThreadsPost = (service as any).parseThreadsPost.bind(service);
+
+      const mockThreadsDataImages = {
+        post_id: 'ABC123',
+        url: 'https://www.threads.com/@user/post/ABC123',
+        post_time: '2025-01-01T00:00:00.000Z',
+        profile_name: 'testuser',
+        post_content: 'Post with images',
+        number_of_likes: 50,
+        number_of_comments: 5,
+        number_of_reshares: 2,
+        images: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'],
+        videos: null,
+      };
+
+      const result = parseThreadsPost(mockThreadsDataImages, mockThreadsDataImages.url);
+
+      expect(result.media).toHaveLength(2);
+      expect(result.media[0]).toMatchObject({
+        type: 'image',
+        url: 'https://example.com/image1.jpg',
+      });
+    });
+
+    it('should handle Threads post with videos', () => {
+      const parseThreadsPost = (service as any).parseThreadsPost.bind(service);
+
+      const mockThreadsDataVideos = {
+        post_id: 'XYZ789',
+        url: 'https://www.threads.com/@user/post/XYZ789',
+        post_time: '2025-01-01T00:00:00.000Z',
+        profile_name: 'videouser',
+        post_content: 'Post with video',
+        number_of_likes: 100,
+        number_of_comments: 10,
+        number_of_reshares: 5,
+        images: null,
+        videos: [
+          {
+            url: 'https://example.com/video1.mp4',
+            width: 1920,
+            height: 1080,
+            duration: 30,
+          },
+        ],
+      };
+
+      const result = parseThreadsPost(mockThreadsDataVideos, mockThreadsDataVideos.url);
+
+      expect(result.media).toHaveLength(1);
+      expect(result.media[0]).toMatchObject({
+        type: 'video',
+        url: 'https://example.com/video1.mp4',
+        width: 1920,
+        height: 1080,
+        duration: 30,
+      });
+    });
+
+    it('should log quoted post when present', () => {
+      const parseThreadsPost = (service as any).parseThreadsPost.bind(service);
+
+      const mockThreadsDataQuoted = {
+        post_id: 'QUOTED123',
+        url: 'https://www.threads.com/@user/post/QUOTED123',
+        post_time: '2025-01-01T00:00:00.000Z',
+        profile_name: 'testuser',
+        post_content: 'Quoting another post',
+        number_of_likes: 20,
+        number_of_comments: 3,
+        number_of_reshares: 1,
+        quoted_post: {
+          post_id: 'ORIGINAL456',
+          url: 'https://www.threads.com/@original/post/ORIGINAL456',
+          profile_name: 'original_user',
+          post_content: 'Original post content',
+        },
+      };
+
+      parseThreadsPost(mockThreadsDataQuoted, mockThreadsDataQuoted.url);
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '🔗 Post contains quoted thread',
+        expect.objectContaining({
+          quotedPostId: 'ORIGINAL456',
+          quotedPostUrl: 'https://www.threads.com/@original/post/ORIGINAL456',
+        })
+      );
+    });
+
+    it('should handle external link title', () => {
+      const parseThreadsPost = (service as any).parseThreadsPost.bind(service);
+
+      const mockThreadsDataLink = {
+        post_id: 'LINK123',
+        url: 'https://www.threads.com/@user/post/LINK123',
+        post_time: '2025-01-01T00:00:00.000Z',
+        profile_name: 'linkuser',
+        post_content: 'Check this out',
+        number_of_likes: 75,
+        number_of_comments: 8,
+        number_of_reshares: 3,
+        external_link_title: 'Amazing Article Title',
+      };
+
+      const result = parseThreadsPost(mockThreadsDataLink, mockThreadsDataLink.url);
+
+      expect(result.metadata.externalLink).toBe('Amazing Article Title');
+    });
+  });
 });

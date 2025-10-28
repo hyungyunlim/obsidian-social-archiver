@@ -1,8 +1,10 @@
 import { z } from 'zod';
+import { canonicalizeUrl } from '../../utils/url';
 
 /**
  * TikTok URL validation schema
  * Validates TikTok video, live, and photo post URLs
+ * Automatically removes tracking parameters
  */
 
 // TikTok domain validation
@@ -76,12 +78,14 @@ const tiktokPhotoUrlSchema = z
 /**
  * Comprehensive TikTok URL schema
  * Accepts any valid TikTok video/content URL format
+ * Automatically sanitizes URLs by removing tracking parameters
  */
 export const TikTokURLSchema = z
 	.string()
 	.trim()
 	.min(1, { message: 'URL cannot be empty' })
 	.url({ message: 'Invalid URL format' })
+	.transform((url) => canonicalizeUrl(url)) // Sanitize URL
 	.refine(
 		(url) => tiktokDomainSchema.safeParse(url).success,
 		{

@@ -190,8 +190,10 @@ export default class SocialArchiverPlugin extends Plugin {
       // Initialize orchestrator (for local operations)
       const vaultManager = new VaultManager(this.app.vault, this.app.metadataCache);
       const markdownConverter = new MarkdownConverter();
-      const mediaHandler = new MediaHandler(this.app.vault, {
-        defaultImagePath: 'attachments/social-archives',
+      const mediaHandler = new MediaHandler({
+        vault: this.app.vault,
+        workersClient: this.apiClient,
+        basePath: 'attachments/social-archives',
       });
 
       // Note: ArchiveService would need to be adapted for plugin use

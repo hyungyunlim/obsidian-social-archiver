@@ -55,7 +55,7 @@ const DATASET_IDS: Record<Platform, string> = {
   facebook: 'gd_lyclm1571iy3mv57zw', // Facebook posts dataset - NEW API (2025-01-27)
   linkedin: 'gd_lyy3tktm25m4avu764', // LinkedIn posts dataset (supports /posts/ and /pulse/ URLs)
   instagram: 'gd_lk5ns7kz21pck8jpis', // Instagram posts dataset (confirmed)
-  tiktok: 'gd_lu702nij2f790tmv9h', // TikTok posts dataset (confirmed)
+  tiktok: 'gd_m736hjp71lejc5dc0l', // TikTok posts dataset - Fast API (updated 2025-01-28)
   x: 'gd_lwxkxvnf1cynvib9co', // X (Twitter) posts dataset (confirmed)
   threads: 'gd_md75myxy14rihbjksa', // Threads posts dataset (confirmed)
 };
@@ -789,33 +789,87 @@ export class BrightDataService {
   }
 
   private parseTikTokPost(data: any, url: string): PostData {
+    // BrightData TikTok response format (Fast API)
+    // account_id has the actual username, profile_username is display name
+    const username = data.account_id || data.profile_username || 'unknown';
+
+    this.logger.info('🎵 Parsing TikTok post', {
+      postId: data.post_id,
+      username,
+      accountId: data.account_id,
+      followers: data.profile_followers,
+      hasVideo: !!data.video_url,
+      hasCdnUrl: !!data.cdn_url,
+      hasMusic: !!data.music,
+      hashtags: data.hashtags?.length || 0,
+      taggedUsers: data.tagged_user?.length || 0,
+    });
+
+    // Use video_url or cdn_url as fallback
+    const videoUrl = data.video_url || data.cdn_url || '';
+
+    // Log music information if present
+    if (data.music) {
+      this.logger.info('🎼 Music detected', {
+        title: data.music.title,
+        author: data.music.authorname,
+        isOriginal: data.music.original,
+      });
+    }
+
+    // Log hashtags if present
+    if (data.hashtags && data.hashtags.length > 0) {
+      this.logger.info('🏷️ Hashtags', { tags: data.hashtags });
+    }
+
     return {
       platform: 'tiktok',
-      id: data.id || this.extractIdFromUrl(url),
-      url,
+      id: data.post_id || this.extractIdFromUrl(url),
+      url: data.url || url,
       author: {
-        name: data.author_name || data.author?.nickname || 'Unknown',
-        url: `https://tiktok.com/@${data.author_username || data.author?.unique_id}`,
-        avatar: data.author_avatar || data.author?.avatar_thumb?.url_list?.[0],
-        handle: data.author_username || data.author?.unique_id,
+        name: data.profile_username || username, // Display name or username
+        url: data.profile_url || `https://tiktok.com/@${username}`,
+        avatar: data.profile_avatar,
+        handle: username,
+        username,
+        verified: data.is_verified || false,
+        bio: data.profile_biography,
+        followers: data.profile_followers,
       },
       content: {
-        text: data.description || data.desc || '',
+        text: data.description || '',
+        hashtags: data.hashtags,
       },
       media: [
         {
           type: 'video',
-          url: data.video_url || data.video?.play_addr?.url_list?.[0] || '',
-          thumbnail: data.thumbnail_url || data.video?.cover?.url_list?.[0],
-          duration: data.duration || data.video?.duration,
+          url: videoUrl,
+          thumbnail: data.preview_image,
+          duration: data.video_duration,
+          width: data.width,
         },
       ],
       metadata: {
-        likes: data.likes_count || data.statistics?.digg_count,
-        comments: data.comments_count || data.statistics?.comment_count,
-        shares: data.shares_count || data.statistics?.share_count,
-        views: data.views_count || data.statistics?.play_count,
-        timestamp: data.create_time ? new Date(data.create_time * 1000).toISOString() : new Date().toISOString(),
+        likes: data.digg_count || 0,
+        comments: data.comment_count || 0,
+        shares: typeof data.share_count === 'string' ? parseInt(data.share_count, 10) : data.share_count || 0,
+        views: data.play_count || 0,
+        bookmarks: data.collect_count,
+        timestamp: data.create_time || new Date().toISOString(),
+        music: data.music ? {
+          title: data.music.title,
+          author: data.music.authorname,
+          url: data.music.playurl,
+          cover: data.music.covermedium,
+          isOriginal: data.music.original,
+        } : undefined,
+        originalSound: data.original_sound,
+        taggedUsers: data.tagged_user?.map((user: any) => ({
+          handle: user.user_handle,
+          name: user.user_name,
+          id: user.user_id,
+          url: user.user_url,
+        })),
       },
       raw: data,
     };
@@ -939,29 +993,104 @@ export class BrightDataService {
   }
 
   private parseThreadsPost(data: any, url: string): PostData {
+    // BrightData Threads response format
+    const username = data.profile_name || 'unknown';
+
+    this.logger.info('🧵 Parsing Threads post', {
+      postId: data.post_id,
+      username,
+      hasImages: !!data.images,
+      hasVideos: !!data.videos,
+      hasQuotedPost: !!data.quoted_post?.post_id,
+      comments: data.comments?.length || 0,
+    });
+
+    // Parse media (images and videos)
+    const media: Media[] = [];
+
+    // Add images
+    if (data.images && Array.isArray(data.images)) {
+      this.logger.info('📸 Processing Threads images', { count: data.images.length });
+      data.images.forEach((image: any) => {
+        if (typeof image === 'string') {
+          media.push({ type: 'image', url: image });
+        } else if (image?.url) {
+          media.push({
+            type: 'image',
+            url: image.url,
+            width: image.width,
+            height: image.height,
+          });
+        }
+      });
+    }
+
+    // Add videos
+    if (data.videos && Array.isArray(data.videos)) {
+      this.logger.info('🎥 Processing Threads videos', { count: data.videos.length });
+      data.videos.forEach((video: any) => {
+        if (typeof video === 'string') {
+          media.push({ type: 'video', url: video });
+        } else if (video?.url) {
+          media.push({
+            type: 'video',
+            url: video.url,
+            width: video.width,
+            height: video.height,
+            duration: video.duration,
+          });
+        }
+      });
+    }
+
+    // Log quoted post if present
+    if (data.quoted_post && data.quoted_post.post_id) {
+      this.logger.info('🔗 Post contains quoted thread', {
+        quotedPostId: data.quoted_post.post_id,
+        quotedPostUrl: data.quoted_post.url,
+      });
+    }
+
+    // Parse comments
+    const comments: Comment[] = [];
+    if (data.comments && Array.isArray(data.comments)) {
+      data.comments.forEach((comment: any) => {
+        comments.push({
+          id: `${data.post_id}-${comment.commentor_profile_name}`,
+          author: {
+            name: comment.commentor_profile_name || 'Unknown',
+            url: comment.commentor_profile_url || '',
+            username: comment.commentor_profile_name,
+          },
+          content: comment.comment_content || '',
+          timestamp: new Date().toISOString(), // BrightData doesn't provide comment timestamp
+          likes: comment.number_of_likes,
+        });
+      });
+    }
+
     return {
       platform: 'threads',
-      id: data.code || this.extractIdFromUrl(url),
-      url,
+      id: data.post_id || this.extractIdFromUrl(url),
+      url: data.url || url,
       author: {
-        name: data.user?.username || 'Unknown',
-        url: `https://threads.net/@${data.user?.username}`,
-        avatar: data.user?.profile_pic_url,
-        handle: data.user?.username,
+        name: username,
+        url: data.profile_url || `https://threads.net/@${username}`,
+        handle: username,
+        username,
       },
       content: {
-        text: data.caption?.text || '',
+        text: data.post_content || '',
       },
-      media: (data.image_versions2?.candidates || []).map((m: any) => ({
-        type: 'image' as const,
-        url: m.url,
-        width: m.width,
-        height: m.height,
-      })),
+      media,
       metadata: {
-        likes: data.like_count,
-        timestamp: data.taken_at ? new Date(data.taken_at * 1000).toISOString() : new Date().toISOString(),
+        likes: data.number_of_likes || 0,
+        comments: data.number_of_comments || 0,
+        shares: (data.number_of_reshares || 0) + (data.number_of_shares || 0),
+        timestamp: data.post_time || new Date().toISOString(),
+        externalLink: data.external_link_title,
       },
+      comments: comments.length > 0 ? comments : undefined,
       raw: data,
     };
   }

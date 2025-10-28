@@ -454,6 +454,18 @@ webhookRouter.post('/brightdata', async (c) => {
   const logger = new Logger('webhook:brightdata', { requestId: c.var.requestId });
 
   try {
+    // Verify Authorization header (BrightData sends this)
+    const authHeader = c.req.header('Authorization');
+    const expectedAuth = c.env.BRIGHTDATA_WEBHOOK_AUTH || 'Basic am90bGIlZUc1czFLOTBiNy1KJXBiTTVN';
+
+    if (authHeader !== expectedAuth) {
+      logger.warn('⚠️ Invalid webhook authorization', {
+        received: authHeader ? authHeader.substring(0, 20) + '...' : 'none',
+        expected: expectedAuth.substring(0, 20) + '...'
+      });
+      return c.json({ success: false, error: 'Unauthorized' }, 401);
+    }
+
     // BrightData webhook payload (notification only, no data)
     const payload = await c.req.json() as any;
 
@@ -464,9 +476,14 @@ webhookRouter.post('/brightdata', async (c) => {
 
     const snapshotId = payload.snapshot_id;
 
+    // Handle test webhook (BrightData's "Test Webhook" button sends dummy data)
     if (!snapshotId) {
-      logger.error('Missing snapshot_id in webhook payload');
-      return c.json({ success: false, error: 'Missing snapshot_id' }, 400);
+      logger.info('✅ Test webhook received (no snapshot_id)', { payload });
+      return c.json({
+        success: true,
+        message: 'Test webhook received successfully',
+        note: 'This is a test webhook without snapshot_id'
+      });
     }
 
     // Snapshot ID에서 Job ID 찾기
