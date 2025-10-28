@@ -822,30 +822,117 @@ export class BrightDataService {
   }
 
   private parseXPost(data: any, url: string): PostData {
+    // Parse media from photos and videos arrays
+    const media: Media[] = [];
+
+    this.logger.info('🔍 Parsing X.com post', {
+      hasPhotos: !!data.photos,
+      photosCount: data.photos?.length || 0,
+      hasVideos: !!data.videos,
+      videosCount: data.videos?.length || 0,
+      hasExternalImageUrls: !!data.external_image_urls,
+      hasExternalVideoUrls: !!data.external_video_urls,
+    });
+
+    // Process photos array
+    if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
+      this.logger.info('📸 Processing photos', { count: data.photos.length });
+      data.photos.forEach((photoUrl: string, index: number) => {
+        if (photoUrl) {
+          media.push({
+            type: 'image',
+            url: photoUrl,
+          });
+          this.logger.info(`✅ Added photo ${index + 1}`);
+        }
+      });
+    }
+
+    // Process videos array
+    if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
+      this.logger.info('🎥 Processing videos', { count: data.videos.length });
+      data.videos.forEach((videoUrl: string, index: number) => {
+        if (videoUrl) {
+          media.push({
+            type: 'video',
+            url: videoUrl,
+          });
+          this.logger.info(`✅ Added video ${index + 1}`);
+        }
+      });
+    }
+
+    // Fallback to external image/video URLs
+    if (media.length === 0) {
+      if (data.external_image_urls && Array.isArray(data.external_image_urls)) {
+        this.logger.info('🔄 Using external_image_urls fallback');
+        data.external_image_urls.forEach((imgUrl: string) => {
+          if (imgUrl) {
+            media.push({ type: 'image', url: imgUrl });
+          }
+        });
+      }
+      if (data.external_video_urls && Array.isArray(data.external_video_urls)) {
+        this.logger.info('🔄 Using external_video_urls fallback');
+        data.external_video_urls.forEach((videoData: any) => {
+          // Handle both string format and object format
+          const videoUrl = typeof videoData === 'string' ? videoData : videoData?.video_url;
+          const duration = typeof videoData === 'object' ? videoData?.duration : undefined;
+
+          if (videoUrl) {
+            media.push({
+              type: 'video',
+              url: videoUrl,
+              duration: duration,
+            });
+          }
+        });
+      }
+    }
+
+    this.logger.info('✨ X.com media parsing complete', { totalMedia: media.length });
+
+    // Log quoted_post if present
+    if (data.quoted_post && data.quoted_post.post_id) {
+      this.logger.info('🔗 Post contains quoted tweet', {
+        quotedPostId: data.quoted_post.post_id,
+        quotedPostUrl: data.quoted_post.url,
+      });
+    }
+
+    // Log parent_post_details if this is a reply
+    if (data.parent_post_details && data.parent_post_details.post_id !== data.id) {
+      this.logger.info('💬 Post is a reply', {
+        parentPostId: data.parent_post_details.post_id,
+        parentProfileName: data.parent_post_details.profile_name,
+      });
+    }
+
+    // Extract username from user_posted (remove masking if present)
+    const username = data.user_posted || data.author_username || 'unknown';
+
     return {
       platform: 'x',
-      id: data.id_str || data.id || this.extractIdFromUrl(url),
-      url,
+      id: data.id || this.extractIdFromUrl(url),
+      url: data.url || url,
       author: {
-        name: data.user?.name || data.author_name || 'Unknown',
-        url: `https://x.com/${data.user?.screen_name || data.author_username}`,
-        avatar: data.user?.profile_image_url_https || data.author_avatar,
-        handle: data.user?.screen_name || data.author_username,
+        name: data.name || 'Unknown',
+        url: `https://x.com/${username}`,
+        avatar: data.profile_image_link,
+        handle: username,
+        username,
+        verified: data.is_verified || false,
       },
       content: {
-        text: data.full_text || data.text || '',
+        text: data.description || '',
       },
-      media: (data.extended_entities?.media || data.media || []).map((m: any) => ({
-        type: m.type === 'video' || m.type === 'animated_gif' ? 'video' : 'image' as const,
-        url: m.media_url_https || m.url,
-        thumbnail: m.media_url_https,
-      })),
+      media,
       metadata: {
-        likes: data.favorite_count,
-        comments: data.reply_count,
-        shares: data.retweet_count,
-        views: data.view_count,
-        timestamp: data.created_at || new Date().toISOString(),
+        likes: data.likes || 0,
+        comments: data.replies || 0,
+        shares: data.reposts || 0,
+        views: data.views,
+        timestamp: data.date_posted || new Date().toISOString(),
       },
       raw: data,
     };
