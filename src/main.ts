@@ -382,14 +382,12 @@ export default class SocialArchiverPlugin extends Plugin {
         // Update PostData media URLs to local paths
         result.postData.media = result.postData.media.map((media: Media) => {
           // Extract URL string for comparison (same logic as above)
-          let mediaUrl: string;
+          let mediaUrl: string = '';
           if (typeof media.url === 'string') {
             mediaUrl = media.url;
           } else if (typeof media.url === 'object' && media.url !== null) {
             const urlObj = media.url as any;
             mediaUrl = urlObj.video_url || urlObj.url || urlObj.image_url || urlObj.thumbnail_url || '';
-          } else {
-            mediaUrl = '';
           }
 
           const downloaded = downloadedMedia.find(d => d.originalUrl === mediaUrl);
