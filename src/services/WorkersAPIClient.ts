@@ -256,12 +256,13 @@ export class WorkersAPIClient implements IService {
   async proxyMedia(mediaUrl: string): Promise<ArrayBuffer> {
     this.ensureInitialized();
 
-    const encodedUrl = encodeURIComponent(mediaUrl);
+    const urlString = String(mediaUrl);
+    const encodedUrl = encodeURIComponent(urlString);
     const path = `/api/proxy-media?url=${encodedUrl}`;
     const url = `${this.config.endpoint}${path}`;
 
     console.log('[WorkersAPIClient] Proxying media download', {
-      originalUrl: mediaUrl.substring(0, 100) + '...',
+      originalUrl: typeof urlString === 'string' && urlString.length > 100 ? urlString.substring(0, 100) + '...' : urlString,
       proxyUrl: url,
     });
 
@@ -281,7 +282,7 @@ export class WorkersAPIClient implements IService {
 
     } catch (error) {
       console.error('[WorkersAPIClient] Media proxy failed:', {
-        url: mediaUrl.substring(0, 100) + '...',
+        url: typeof urlString === 'string' && urlString.length > 100 ? urlString.substring(0, 100) + '...' : urlString,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new Error(

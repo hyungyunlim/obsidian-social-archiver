@@ -211,6 +211,9 @@ export default class SocialArchiverPlugin extends Plugin {
    * Archive a social media post
    */
   async archivePost(url: string): Promise<void> {
+    // Track processing time
+    const startTime = Date.now();
+
     console.log('[Social Archiver] ========== ARCHIVE STARTED ==========');
     console.log('[Social Archiver] URL:', url);
     console.log('[Social Archiver] Plugin version:', this.manifest.version);
@@ -264,10 +267,16 @@ export default class SocialArchiverPlugin extends Plugin {
 
       // Debug: Log media array
       if (result.postData.media && result.postData.media.length > 0) {
-        console.log('[Social Archiver] Media items:', result.postData.media.map((m: { type: string; url: string }) => ({
-          type: m.type,
-          url: m.url?.substring(0, 100) + '...',
-        })));
+        console.log('[Social Archiver] Media count:', result.postData.media.length);
+        result.postData.media.forEach((m: any, idx: number) => {
+          console.log(`[Social Archiver] Media ${idx}:`, {
+            type: m.type,
+            hasUrl: !!m.url,
+            urlType: typeof m.url,
+            url: m.url,
+            keys: Object.keys(m),
+          });
+        });
       } else {
         console.warn('[Social Archiver] No media found in postData!');
       }
@@ -294,8 +303,29 @@ export default class SocialArchiverPlugin extends Plugin {
           console.log(`[Social Archiver] Downloading media ${i + 1}/${result.postData.media.length}...`);
 
           try {
+            // Extract URL string from media.url (handle both string and object formats)
+            // Workers API may return video objects like: { video_url: "...", duration: 123 }
+            let mediaUrl: string;
+            if (typeof media.url === 'string') {
+              mediaUrl = media.url;
+            } else if (typeof media.url === 'object' && media.url !== null) {
+              // Try to extract URL from object (video_url, url, or other common fields)
+              const urlObj = media.url as any;
+              mediaUrl = urlObj.video_url || urlObj.url || urlObj.image_url || urlObj.thumbnail_url || '';
+              console.log('[Social Archiver] Extracted URL from object:', {
+                originalObject: media.url,
+                extractedUrl: mediaUrl,
+              });
+            } else {
+              throw new Error(`Invalid media URL type: ${typeof media.url}`);
+            }
+
+            if (!mediaUrl) {
+              throw new Error('No valid URL found in media object');
+            }
+
             // Generate filename
-            const extension = this.getFileExtension(media.url) || 'jpg';
+            const extension = this.getFileExtension(mediaUrl) || 'jpg';
             const filename = `media-${i + 1}.${extension}`;
             const basePath = `attachments/social-archives/${result.postData.platform}/${result.postData.id}`;
             const fullPath = `${basePath}/${filename}`;
@@ -308,12 +338,12 @@ export default class SocialArchiverPlugin extends Plugin {
               console.log(`[Social Archiver] ♻️ Media ${i + 1}: Already exists, reusing ${fullPath}`);
 
               downloadedMedia.push({
-                originalUrl: media.url,
+                originalUrl: mediaUrl,
                 localPath: fullPath,
               });
             } else {
               // Download via Workers proxy to bypass CORS
-              const arrayBuffer = await this.apiClient!.proxyMedia(media.url);
+              const arrayBuffer = await this.apiClient!.proxyMedia(mediaUrl);
 
               // Ensure folder exists
               await this.ensureFolderExists(basePath);
@@ -322,11 +352,11 @@ export default class SocialArchiverPlugin extends Plugin {
               const file = await this.app.vault.createBinary(fullPath, arrayBuffer);
 
               downloadedMedia.push({
-                originalUrl: media.url,
+                originalUrl: mediaUrl,
                 localPath: file.path,
               });
 
-              console.log(`[Social Archiver] ✅ Media ${i + 1}: ${media.url.substring(0, 60)}... -> ${file.path}`);
+              console.log(`[Social Archiver] ✅ Media ${i + 1}: ${mediaUrl.substring(0, 60)}... -> ${file.path}`);
             }
 
           } catch (error) {
@@ -339,7 +369,18 @@ export default class SocialArchiverPlugin extends Plugin {
 
         // Update PostData media URLs to local paths
         result.postData.media = result.postData.media.map((media: Media) => {
-          const downloaded = downloadedMedia.find(d => d.originalUrl === media.url);
+          // Extract URL string for comparison (same logic as above)
+          let mediaUrl: string;
+          if (typeof media.url === 'string') {
+            mediaUrl = media.url;
+          } else if (typeof media.url === 'object' && media.url !== null) {
+            const urlObj = media.url as any;
+            mediaUrl = urlObj.video_url || urlObj.url || urlObj.image_url || urlObj.thumbnail_url || '';
+          } else {
+            mediaUrl = '';
+          }
+
+          const downloaded = downloadedMedia.find(d => d.originalUrl === mediaUrl);
           if (downloaded) {
             return {
               ...media,
@@ -359,7 +400,13 @@ export default class SocialArchiverPlugin extends Plugin {
       }
 
       console.log('[Social Archiver] Step 5: Converting to markdown...');
-      const markdown = await markdownConverter.convert(result.postData);
+      let markdown = await markdownConverter.convert(result.postData);
+
+      // Add processing time to frontmatter (convert to seconds, 1 decimal place)
+      markdown.frontmatter.download_time = Math.round((Date.now() - startTime) / 100) / 10;
+
+      // Regenerate fullDocument with updated frontmatter
+      markdown = markdownConverter.updateFullDocument(markdown);
 
       console.log('[Social Archiver] Markdown generated successfully!');
       console.log('[Social Archiver] Content length:', markdown.content.length);
