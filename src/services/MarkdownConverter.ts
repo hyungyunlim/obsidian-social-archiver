@@ -463,14 +463,17 @@ export class MarkdownConverter implements IService {
    * Generate YAML frontmatter
    */
   private generateFrontmatter(postData: PostData): YamlFrontmatter {
+    // Format as YYYY-MM-DD (split always returns valid string at index 0)
+    const today = new Date().toISOString().split('T')[0]!;
+
     return {
       share: false,
       platform: postData.platform,
       author: postData.author.name,
       authorUrl: postData.author.url,
       originalUrl: postData.url,
-      archived: new Date(),
-      lastModified: new Date(),
+      archived: today,
+      lastModified: today,
       download_time: undefined, // Will be set by orchestrator
       tags: [
         `social/${postData.platform}`,

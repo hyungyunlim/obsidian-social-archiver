@@ -23,8 +23,8 @@ export interface YamlFrontmatter {
   author: string;
   authorUrl: string;
   originalUrl: string;
-  archived: Date;
-  lastModified: Date;
+  archived: string; // YYYY-MM-DD format
+  lastModified: string; // YYYY-MM-DD format
   download_time?: number; // Time taken to archive in seconds
   tags: string[];
   ai_summary?: string;
