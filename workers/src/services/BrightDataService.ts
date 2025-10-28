@@ -607,16 +607,23 @@ export class BrightDataService {
     // Extract username from author URL or author field
     const extractUsername = (authorData: any): string | undefined => {
       // BrightData uses 'user_id' field for LinkedIn
-      if (authorData.user_id) return authorData.user_id;
-      if (authorData.username) return authorData.username;
-      if (authorData.author_username) return authorData.author_username;
-      // Try to extract from URL: https://linkedin.com/in/username
-      const authorUrl = authorData.use_url || authorData.author_url;
-      if (authorUrl) {
-        const match = authorUrl.match(/\/in\/([^\/\?]+)/);
-        if (match) return match[1];
+      let username = authorData.user_id || authorData.username || authorData.author_username;
+
+      // If not found, try to extract from URL: https://linkedin.com/in/username
+      if (!username) {
+        const authorUrl = authorData.use_url || authorData.author_url;
+        if (authorUrl) {
+          const match = authorUrl.match(/\/in\/([^\/\?]+)/);
+          if (match) username = match[1];
+        }
       }
-      return undefined;
+
+      // Remove LinkedIn's numeric ID suffix (e.g., -77906aa1, -8a643a24)
+      if (username) {
+        username = username.replace(/-[a-z0-9]+$/, '');
+      }
+
+      return username;
     };
 
     const username = extractUsername(data);
