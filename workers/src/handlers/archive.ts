@@ -148,26 +148,9 @@ archiveRouter.get('/:jobId', async (c) => {
         const platform = (job as any).platform || detectPlatformFromUrl((job as any).url);
         const url = (job as any).url;
 
-        const postData = {
-          platform,
-          id: rawData.post_id || rawData.id || `post-${Date.now()}`,
-          url,
-          author: {
-            name: rawData.user_username_raw || rawData.author_name || rawData.author || rawData.user_name || 'Unknown',
-            url: rawData.user_url || rawData.page_url || rawData.author_url || '',
-          },
-          content: {
-            text: rawData.content || rawData.text || rawData.caption || rawData.comment_text || '',
-          },
-          media: [], // TODO: Parse media from rawData
-          metadata: {
-            likes: rawData.likes || rawData.likes_count || rawData.num_likes || 0,
-            comments: rawData.num_comments || rawData.comments_count || 0,
-            shares: rawData.num_shares || rawData.shares_count || 0,
-            timestamp: rawData.date_posted || rawData.created_time || rawData.published_date || rawData.date_created || new Date().toISOString(),
-          },
-          raw: rawData,
-        };
+        // Use ArchiveService to parse the data properly
+        const archiveService = new ArchiveService(c.env, logger);
+        const postData = await archiveService.parsePostData(rawData, platform, url);
 
         // Update job to completed
         const updatedJob: JobStatusResponse = {
@@ -368,27 +351,9 @@ async function pollSnapshotWithTimeout(
 
         const platform = request.platform || detectPlatformFromUrl(request.url);
 
-        // Simple PostData creation
-        const postData = {
-          platform,
-          id: rawData.post_id || rawData.id || `post-${Date.now()}`,
-          url: request.url,
-          author: {
-            name: rawData.user_username_raw || rawData.author_name || rawData.author || rawData.user_name || 'Unknown',
-            url: rawData.user_url || rawData.page_url || rawData.author_url || '',
-          },
-          content: {
-            text: rawData.content || rawData.text || rawData.caption || rawData.comment_text || '',
-          },
-          media: [], // TODO: Parse media from rawData
-          metadata: {
-            likes: rawData.likes || rawData.likes_count || rawData.num_likes || 0,
-            comments: rawData.num_comments || rawData.comments_count || 0,
-            shares: rawData.num_shares || rawData.shares_count || 0,
-            timestamp: rawData.date_posted || rawData.created_time || rawData.published_date || rawData.date_created || new Date().toISOString(),
-          },
-          raw: rawData,
-        };
+        // Use ArchiveService to parse the data properly
+        const archiveService = new ArchiveService(env, logger);
+        const postData = await archiveService.parsePostData(rawData, platform, request.url);
 
         // Complete job
         await updateJobStatus(env, jobId, 'completed', {

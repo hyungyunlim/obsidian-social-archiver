@@ -102,31 +102,29 @@ class TemplateEngine {
  * Default markdown templates for each platform
  */
 const DEFAULT_TEMPLATES: Record<Platform, string> = {
-  facebook: `# {{author.name}}
-
-**Platform:** Facebook
-**Published:** {{metadata.timestamp}}
-**Original URL:** [View Post]({{url}})
-
-{{#if author.verified}}✓ Verified Account{{/if}}
-
----
-
-{{content.text}}
+  facebook: `{{content.text}}
 
 {{#if media}}
-## Media
+
+---
 
 {{media}}
 {{/if}}
 
-{{#if metadata.likes}}
-**Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}{{#if metadata.shares}} | **Shares:** {{metadata.shares}}{{/if}}
+{{#if comments}}
 
-{{#if ai}}
 ---
 
-## AI Analysis
+## 💬 Comments
+
+{{comments}}
+{{/if}}
+
+{{#if ai}}
+
+---
+
+## 🤖 AI Analysis
 
 **Summary:** {{ai.summary}}
 
@@ -135,180 +133,237 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Topics:** {{ai.topics}}
 
 {{#if ai.factCheck}}
+
 ### Fact Checks
 {{ai.factCheck}}
 {{/if}}
 {{/if}}
-`,
-
-  linkedin: `# {{author.name}}
-
-**Platform:** LinkedIn
-**Published:** {{metadata.timestamp}}
-**Original URL:** [View Post]({{url}})
-
-{{#if author.verified}}✓ Verified Account{{/if}}
 
 ---
 
-{{content.text}}
+**Platform:** Facebook{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}{{#if metadata.shares}} | **Shares:** {{metadata.shares}}{{/if}}
+
+**Original URL:** {{url}}
+`,
+
+  linkedin: `{{content.text}}
 
 {{#if media}}
-## Media
+
+---
 
 {{media}}
 {{/if}}
 
-{{#if metadata.likes}}
-**Reactions:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
+{{#if comments}}
 
-{{#if ai}}
 ---
 
-## AI Analysis
+## 💬 Comments
+
+{{comments}}
+{{/if}}
+
+{{#if ai}}
+
+---
+
+## 🤖 AI Analysis
 
 **Summary:** {{ai.summary}}
 
 **Sentiment:** {{ai.sentiment}}
 
 **Topics:** {{ai.topics}}
+
+{{#if ai.factCheck}}
+
+### Fact Checks
+{{ai.factCheck}}
 {{/if}}
-`,
-
-  instagram: `# {{author.name}}
-
-**Platform:** Instagram
-**Published:** {{metadata.timestamp}}
-**Original URL:** [View Post]({{url}})
-
-{{#if author.verified}}✓ Verified Account{{/if}}
+{{/if}}
 
 ---
 
-{{content.text}}
+**Platform:** LinkedIn{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Reactions:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
+
+**Original URL:** {{url}}
+`,
+
+  instagram: `{{content.text}}
 
 {{#if media}}
-## Media
+
+---
 
 {{media}}
 {{/if}}
 
-{{#if metadata.likes}}
-**Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
+{{#if comments}}
 
-{{#if ai}}
 ---
 
-## AI Analysis
+## 💬 Comments
+
+{{comments}}
+{{/if}}
+
+{{#if ai}}
+
+---
+
+## 🤖 AI Analysis
 
 **Summary:** {{ai.summary}}
 
 **Sentiment:** {{ai.sentiment}}
 
 **Topics:** {{ai.topics}}
+
+{{#if ai.factCheck}}
+
+### Fact Checks
+{{ai.factCheck}}
 {{/if}}
-`,
-
-  tiktok: `# {{author.name}}
-
-**Platform:** TikTok
-**Published:** {{metadata.timestamp}}
-**Original URL:** [View Post]({{url}})
-
-{{#if author.verified}}✓ Verified Account{{/if}}
+{{/if}}
 
 ---
 
-{{content.text}}
+**Platform:** Instagram{{#if author.verified}} ✓{{/if}} | **Author:** {{authorMention}} | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
+
+**Original URL:** {{url}}
+`,
+
+  tiktok: `{{content.text}}
 
 {{#if media}}
-## Media
+
+---
 
 {{media}}
 {{/if}}
 
-{{#if metadata.views}}
-**Views:** {{metadata.views}}{{/if}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
+{{#if comments}}
 
-{{#if ai}}
 ---
 
-## AI Analysis
+## 💬 Comments
+
+{{comments}}
+{{/if}}
+
+{{#if ai}}
+
+---
+
+## 🤖 AI Analysis
 
 **Summary:** {{ai.summary}}
 
 **Sentiment:** {{ai.sentiment}}
 
 **Topics:** {{ai.topics}}
+
+{{#if ai.factCheck}}
+
+### Fact Checks
+{{ai.factCheck}}
 {{/if}}
-`,
-
-  x: `# {{author.name}}
-
-**Platform:** X (Twitter)
-**Published:** {{metadata.timestamp}}
-**Original URL:** [View Post]({{url}})
-
-{{#if author.verified}}✓ Verified Account{{/if}}
+{{/if}}
 
 ---
 
-{{content.text}}
+**Platform:** TikTok{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.views}} | **Views:** {{metadata.views}}{{/if}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
+
+**Original URL:** {{url}}
+`,
+
+  x: `{{content.text}}
 
 {{#if media}}
-## Media
+
+---
 
 {{media}}
 {{/if}}
 
-{{#if metadata.likes}}
-**Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Replies:** {{metadata.comments}}{{/if}}{{#if metadata.shares}} | **Retweets:** {{metadata.shares}}{{/if}}
+{{#if comments}}
 
-{{#if ai}}
 ---
 
-## AI Analysis
+## 💬 Comments
+
+{{comments}}
+{{/if}}
+
+{{#if ai}}
+
+---
+
+## 🤖 AI Analysis
 
 **Summary:** {{ai.summary}}
 
 **Sentiment:** {{ai.sentiment}}
 
 **Topics:** {{ai.topics}}
+
+{{#if ai.factCheck}}
+
+### Fact Checks
+{{ai.factCheck}}
 {{/if}}
-`,
-
-  threads: `# {{author.name}}
-
-**Platform:** Threads
-**Published:** {{metadata.timestamp}}
-**Original URL:** [View Post]({{url}})
-
-{{#if author.verified}}✓ Verified Account{{/if}}
+{{/if}}
 
 ---
 
-{{content.text}}
+**Platform:** X (Twitter){{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Replies:** {{metadata.comments}}{{/if}}{{#if metadata.shares}} | **Retweets:** {{metadata.shares}}{{/if}}
+
+**Original URL:** {{url}}
+`,
+
+  threads: `{{content.text}}
 
 {{#if media}}
-## Media
+
+---
 
 {{media}}
 {{/if}}
 
-{{#if metadata.likes}}
-**Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Replies:** {{metadata.comments}}{{/if}}
+{{#if comments}}
 
-{{#if ai}}
 ---
 
-## AI Analysis
+## 💬 Comments
+
+{{comments}}
+{{/if}}
+
+{{#if ai}}
+
+---
+
+## 🤖 AI Analysis
 
 **Summary:** {{ai.summary}}
 
 **Sentiment:** {{ai.sentiment}}
 
 **Topics:** {{ai.topics}}
+
+{{#if ai.factCheck}}
+
+### Fact Checks
+{{ai.factCheck}}
 {{/if}}
+{{/if}}
+
+---
+
+**Platform:** Threads{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Replies:** {{metadata.comments}}{{/if}}
+
+**Original URL:** {{url}}
 `,
 };
 
@@ -409,19 +464,42 @@ export class MarkdownConverter implements IService<MarkdownResult> {
    * Prepare data for template engine
    */
   private prepareTemplateData(postData: PostData): Record<string, any> {
+    // Generate author mention for Instagram
+    const authorMention = postData.platform === 'instagram' && postData.author.handle
+      ? `[@${postData.author.handle}](https://instagram.com/${postData.author.handle})`
+      : postData.author.name;
+
     return {
       ...postData,
+      authorMention,
+      content: {
+        ...postData.content,
+        text: postData.platform === 'instagram'
+          ? this.linkifyInstagramMentions(postData.content.text)
+          : postData.content.text,
+      },
       metadata: {
-        ...postData.metadata,
         timestamp: this.formatDate(postData.metadata.timestamp),
         editedAt: postData.metadata.editedAt ? this.formatDate(postData.metadata.editedAt) : undefined,
+        likes: postData.metadata.likes ? this.formatNumber(postData.metadata.likes) : undefined,
+        comments: postData.metadata.comments ? this.formatNumber(postData.metadata.comments) : undefined,
+        shares: postData.metadata.shares ? this.formatNumber(postData.metadata.shares) : undefined,
+        views: postData.metadata.views ? this.formatNumber(postData.metadata.views) : undefined,
       },
       media: this.formatMedia(postData.media),
+      comments: this.formatComments(postData.comments, postData.platform),
       ai: postData.ai ? {
         ...postData.ai,
         factCheck: this.formatFactChecks(postData.ai.factCheck),
       } : undefined,
     };
+  }
+
+  /**
+   * Format number with thousand separators
+   */
+  private formatNumber(num: number): string {
+    return num.toLocaleString('en-US');
   }
 
   /**
@@ -450,20 +528,139 @@ export class MarkdownConverter implements IService<MarkdownResult> {
 
     return media
       .map((item, index) => {
-        const alt = item.alt || `${item.type} ${index + 1}`;
+        // Support both altText and alt for backward compatibility
+        const alt = item.altText || item.alt || `${item.type} ${index + 1}`;
 
         if (item.type === 'image') {
+          // Display image inline
           return `![${this.escapeMarkdown(alt)}](${item.url})`;
         } else if (item.type === 'video') {
-          const thumbnail = item.thumbnailUrl ? `![Thumbnail](${item.thumbnailUrl})` : '';
-          return `${thumbnail}\n[🎥 Video](${item.url})`;
+          // Embed video inline (Obsidian supports video embedding)
+          const duration = item.duration ? ` (${this.formatDuration(item.duration)})` : '';
+          return `![🎥 Video${duration}](${item.url})`;
         } else if (item.type === 'audio') {
-          return `[🎵 Audio](${item.url})`;
+          // Embed audio inline
+          const duration = item.duration ? ` (${this.formatDuration(item.duration)})` : '';
+          return `![🎵 Audio${duration}](${item.url})`;
         } else {
           return `[📄 Document](${item.url})`;
         }
       })
       .join('\n\n');
+  }
+
+  /**
+   * Format duration in seconds to human-readable format (e.g., "1:23" or "12:34:56")
+   */
+  private formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Format comments for markdown (nested style with indentation)
+   */
+  private formatComments(comments: PostData['comments'], platform: Platform): string {
+    if (!comments || comments.length === 0) {
+      return '';
+    }
+
+    try {
+      return comments
+        .map((comment) => {
+          // Defensive checks
+          if (!comment || !comment.author || !comment.content) {
+            return '';
+          }
+
+          // Main comment - support both handle and username
+          const authorHandle = comment.author.handle || comment.author.username;
+          const authorName = authorHandle
+            ? `@${authorHandle}`
+            : comment.author.name;
+
+          // Convert author name to link for Instagram
+          const authorDisplay = authorHandle && platform === 'instagram'
+            ? `[@${authorHandle}](https://instagram.com/${authorHandle})`
+            : authorName;
+
+          const timestamp = this.formatDate(comment.timestamp);
+          const likes = comment.likes ? ` · ${comment.likes} likes` : '';
+
+          // Convert @mentions in comment content to links for Instagram
+          const commentContent = platform === 'instagram'
+            ? this.linkifyInstagramMentions(comment.content)
+            : comment.content;
+
+          let result = `**${authorDisplay}** · ${timestamp}${likes}\n${commentContent}`;
+
+          // Nested replies with indentation
+          if (comment.replies && comment.replies.length > 0) {
+            const formattedReplies = comment.replies
+              .map((reply) => {
+                if (!reply || !reply.author || !reply.content) {
+                  return '';
+                }
+                const replyHandle = reply.author.handle || reply.author.username;
+                const replyAuthor = replyHandle
+                  ? `@${replyHandle}`
+                  : reply.author.name;
+
+                // Convert reply author to link for Instagram
+                const replyAuthorDisplay = replyHandle && platform === 'instagram'
+                  ? `[@${replyHandle}](https://instagram.com/${replyHandle})`
+                  : replyAuthor;
+
+                const replyTime = this.formatDate(reply.timestamp);
+                const replyLikes = reply.likes ? ` · ${reply.likes} likes` : '';
+
+                // Convert @mentions in reply content to links for Instagram
+                // Pass isReply=true to remove redundant first @mention
+                const replyContent = platform === 'instagram'
+                  ? this.linkifyInstagramMentions(reply.content, true)
+                  : reply.content;
+
+                return `  ↳ **${replyAuthorDisplay}** · ${replyTime}${replyLikes}\n  ${replyContent}`;
+              })
+              .filter(r => r.length > 0)
+              .join('\n\n');
+
+            if (formattedReplies.length > 0) {
+              result += '\n\n' + formattedReplies;
+            }
+          }
+
+          return result;
+        })
+        .filter(c => c.length > 0)
+        .join('\n\n---\n\n');
+    } catch (error) {
+      console.error('[MarkdownConverter] Error formatting comments:', error);
+      return '';
+    }
+  }
+
+  /**
+   * Convert @mentions to Instagram profile links
+   */
+  private linkifyInstagramMentions(text: string, isReply: boolean = false): string {
+    // For replies, remove the first @mention if it's at the start (it's redundant)
+    let processedText = text;
+    if (isReply) {
+      processedText = text.replace(/^@[\w.]+\s*/, '');
+    }
+
+    // Match @username (Instagram usernames can contain letters, numbers, underscores, periods)
+    // Don't match if already in a markdown link
+    return processedText.replace(/@([\w.]+)(?!\])/g, (match, username) => {
+      return `[@${username}](https://instagram.com/${username})`;
+    });
   }
 
   /**

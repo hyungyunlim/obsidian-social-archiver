@@ -209,7 +209,9 @@ export default class SocialArchiverPlugin extends Plugin {
    * Archive a social media post
    */
   async archivePost(url: string): Promise<void> {
-    console.log('[Social Archiver] archivePost called', { url });
+    console.log('[Social Archiver] ========== ARCHIVE STARTED ==========');
+    console.log('[Social Archiver] URL:', url);
+    console.log('[Social Archiver] Plugin version:', this.manifest.version);
 
     if (!this.apiClient) {
       console.error('[Social Archiver] apiClient not initialized!');
@@ -217,14 +219,15 @@ export default class SocialArchiverPlugin extends Plugin {
       return;
     }
 
-    console.log('[Social Archiver] apiClient initialized, submitting request');
+    console.log('[Social Archiver] Settings:', {
+      apiEndpoint: this.settings.apiEndpoint,
+      enableAI: this.settings.enableAI,
+      deepResearch: this.settings.enableDeepResearch,
+      archivePath: this.settings.archivePath,
+    });
 
     try {
-      console.log('[Social Archiver] Calling submitArchive', {
-        url,
-        enableAI: this.settings.enableAI,
-        deepResearch: this.settings.enableDeepResearch,
-      });
+      console.log('[Social Archiver] Step 1: Submitting archive request...');
 
       // Submit archive request
       const response = await this.apiClient.submitArchive({
@@ -237,11 +240,35 @@ export default class SocialArchiverPlugin extends Plugin {
         licenseKey: this.settings.licenseKey,
       });
 
-      // Wait for completion (no progress notifications)
+      console.log('[Social Archiver] Step 2: Job submitted, jobId:', response.jobId);
+
+      console.log('[Social Archiver] Step 3: Waiting for job completion...');
+
+      // Wait for completion (longer timeout for BrightData scraping)
       const result = await this.apiClient.waitForJob(response.jobId, {
-        timeout: 120000, // 2 minutes
-        pollInterval: 2000, // 2 seconds
+        timeout: 300000, // 5 minutes (BrightData can take 2-4 minutes)
+        pollInterval: 3000, // 3 seconds (reduce API calls)
       });
+
+      console.log('[Social Archiver] Step 4: Job completed!');
+      console.log('[Social Archiver] PostData received:', {
+        platform: result.postData.platform,
+        id: result.postData.id,
+        mediaCount: result.postData.media?.length || 0,
+        hasContent: !!result.postData.content?.text,
+        contentLength: result.postData.content?.text?.length || 0,
+        contentPreview: result.postData.content?.text?.substring(0, 100),
+      });
+
+      // Debug: Log media array
+      if (result.postData.media && result.postData.media.length > 0) {
+        console.log('[Social Archiver] Media items:', result.postData.media.map(m => ({
+          type: m.type,
+          url: m.url?.substring(0, 100) + '...',
+        })));
+      } else {
+        console.warn('[Social Archiver] No media found in postData!');
+      }
 
       // Save to vault using local services
       const vaultManager = new VaultManager({
@@ -254,8 +281,95 @@ export default class SocialArchiverPlugin extends Plugin {
       await vaultManager.initialize();
       await markdownConverter.initialize();
 
+      // Step 4.5: Download media files to local vault via Workers proxy
+      if (result.postData.media && result.postData.media.length > 0) {
+        console.log('[Social Archiver] Step 4.5: Downloading media files via proxy...');
+        console.log(`[Social Archiver] Found ${result.postData.media.length} media items to download`);
+
+        const downloadedMedia: Array<{ originalUrl: string; localPath: string }> = [];
+
+        for (let i = 0; i < result.postData.media.length; i++) {
+          const media = result.postData.media[i];
+          console.log(`[Social Archiver] Downloading media ${i + 1}/${result.postData.media.length}...`);
+
+          try {
+            // Generate filename
+            const extension = this.getFileExtension(media.url) || 'jpg';
+            const filename = `media-${i + 1}.${extension}`;
+            const basePath = `attachments/social-archives/${result.postData.platform}/${result.postData.id}`;
+            const fullPath = `${basePath}/${filename}`;
+
+            // Check if file already exists
+            const existingFile = this.app.vault.getAbstractFileByPath(fullPath);
+
+            if (existingFile) {
+              // File already exists, reuse it
+              console.log(`[Social Archiver] ♻️ Media ${i + 1}: Already exists, reusing ${fullPath}`);
+
+              downloadedMedia.push({
+                originalUrl: media.url,
+                localPath: fullPath,
+              });
+            } else {
+              // Download via Workers proxy to bypass CORS
+              const arrayBuffer = await this.apiClient!.proxyMedia(media.url);
+
+              // Ensure folder exists
+              await this.ensureFolderExists(basePath);
+
+              // Save to vault
+              const file = await this.app.vault.createBinary(fullPath, arrayBuffer);
+
+              downloadedMedia.push({
+                originalUrl: media.url,
+                localPath: file.path,
+              });
+
+              console.log(`[Social Archiver] ✅ Media ${i + 1}: ${media.url.substring(0, 60)}... -> ${file.path}`);
+            }
+
+          } catch (error) {
+            console.error(`[Social Archiver] ❌ Failed to download media ${i + 1}:`, error);
+            // Continue with next media item
+          }
+        }
+
+        console.log(`[Social Archiver] Successfully downloaded ${downloadedMedia.length}/${result.postData.media.length} media files`);
+
+        // Update PostData media URLs to local paths
+        result.postData.media = result.postData.media.map((media) => {
+          const downloaded = downloadedMedia.find(d => d.originalUrl === media.url);
+          if (downloaded) {
+            return {
+              ...media,
+              url: downloaded.localPath, // Replace CDN URL with local path
+            };
+          }
+          return media; // Keep original URL if download failed
+        });
+
+        console.log('[Social Archiver] Media URLs updated to local paths');
+
+        if (downloadedMedia.length < result.postData.media.length) {
+          new Notice(`⚠️ Downloaded ${downloadedMedia.length}/${result.postData.media.length} media files`, 5000);
+        }
+      } else {
+        console.log('[Social Archiver] No media to download');
+      }
+
+      console.log('[Social Archiver] Step 5: Converting to markdown...');
       const markdown = await markdownConverter.convert(result.postData);
+
+      console.log('[Social Archiver] Markdown generated successfully!');
+      console.log('[Social Archiver] Content length:', markdown.content.length);
+      console.log('[Social Archiver] Content preview (first 300 chars):\n', markdown.content.substring(0, 300));
+
+      console.log('[Social Archiver] Step 6: Saving to vault...');
       const filePath = await vaultManager.savePost(result.postData, markdown);
+
+      console.log('[Social Archiver] Step 7: File saved successfully!');
+      console.log('[Social Archiver] File path:', filePath);
+      console.log('[Social Archiver] ========== ARCHIVE COMPLETED ==========');
 
       new Notice(`✅ Archived successfully! Credits used: ${result.creditsUsed}`, 5000);
 
@@ -333,5 +447,48 @@ export default class SocialArchiverPlugin extends Plugin {
       modal.setUrl(url);
       modal.open();
     });
+  }
+
+  /**
+   * Get file extension from URL
+   */
+  private getFileExtension(url: string): string | null {
+    try {
+      const pathname = new URL(url).pathname;
+      const parts = pathname.split('.');
+      if (parts.length > 1) {
+        const ext = parts[parts.length - 1].toLowerCase();
+        // Remove query parameters
+        return ext.split('?')[0];
+      }
+    } catch {
+      // Invalid URL
+    }
+    return null;
+  }
+
+  /**
+   * Ensure folder exists in vault
+   */
+  private async ensureFolderExists(path: string): Promise<void> {
+    const parts = path.split('/');
+    let currentPath = '';
+
+    for (const part of parts) {
+      currentPath = currentPath ? `${currentPath}/${part}` : part;
+
+      const existing = this.app.vault.getFolderByPath(currentPath);
+      if (!existing) {
+        try {
+          await this.app.vault.createFolder(currentPath);
+        } catch (error) {
+          // Folder might have been created by another operation
+          const folder = this.app.vault.getFolderByPath(currentPath);
+          if (!folder) {
+            throw error;
+          }
+        }
+      }
+    }
   }
 }

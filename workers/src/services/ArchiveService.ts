@@ -60,6 +60,24 @@ export class ArchiveService {
   }
 
   /**
+   * Parse raw BrightData response into PostData
+   * This delegates to BrightDataService's parsing logic
+   */
+  async parsePostData(rawData: any, platform: Platform, url: string): Promise<PostData> {
+    this.logger.info('🔄 Parsing post data', { platform, url });
+
+    // BrightDataService has platform-specific parsing logic
+    // We need to access it, but parseResponse is private
+    // So we'll create a new method or make it public
+
+    // For now, let's use BrightDataService's fetchPost which includes parsing
+    // But we already have the raw data, so we need a different approach
+
+    // Let's call the private method through a public wrapper
+    return (this.brightData as any).parseResponse(rawData, platform, url);
+  }
+
+  /**
    * Validate URL format
    */
   validateUrl(url: string): boolean {

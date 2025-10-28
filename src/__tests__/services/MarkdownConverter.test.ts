@@ -21,12 +21,12 @@ describe('MarkdownConverter', () => {
       {
         type: 'image',
         url: 'https://example.com/image.jpg',
-        alt: 'Test image',
+        altText: 'Test image',
       },
       {
         type: 'video',
         url: 'https://example.com/video.mp4',
-        thumbnailUrl: 'https://example.com/thumb.jpg',
+        thumbnail: 'https://example.com/thumb.jpg',
       },
     ],
     metadata: {
@@ -81,16 +81,10 @@ describe('MarkdownConverter', () => {
       expect(result.frontmatter.sentiment).toBe('positive');
     });
 
-    it('should include author name in content', async () => {
+    it('should include platform in metadata footer', async () => {
       const result = await converter.convert(mockPostData);
 
-      expect(result.content).toContain('Test User');
-    });
-
-    it('should include platform in content', async () => {
-      const result = await converter.convert(mockPostData);
-
-      expect(result.content).toContain('Facebook');
+      expect(result.content).toContain('**Platform:** Facebook');
     });
 
     it('should include post text in content', async () => {
@@ -117,10 +111,10 @@ describe('MarkdownConverter', () => {
     it('should include AI analysis', async () => {
       const result = await converter.convert(mockPostData);
 
-      expect(result.content).toContain('AI Analysis');
-      expect(result.content).toContain('Summary:** This is a summary of the post');
-      expect(result.content).toContain('Sentiment:** positive');
-      expect(result.content).toContain('Topics:** tech, innovation');
+      expect(result.content).toContain('🤖 AI Analysis');
+      expect(result.content).toContain('**Summary:** This is a summary of the post');
+      expect(result.content).toContain('**Sentiment:** positive');
+      expect(result.content).toContain('**Topics:** tech, innovation');
     });
 
     it('should format fact checks correctly', async () => {
@@ -136,7 +130,7 @@ describe('MarkdownConverter', () => {
     it('should show verified badge for verified accounts', async () => {
       const result = await converter.convert(mockPostData);
 
-      expect(result.content).toContain('✓ Verified Account');
+      expect(result.content).toContain('✓');
     });
 
     it('should generate full document with frontmatter', async () => {
@@ -145,7 +139,7 @@ describe('MarkdownConverter', () => {
       expect(result.fullDocument).toMatch(/^---\n/);
       expect(result.fullDocument).toContain('platform: facebook');
       expect(result.fullDocument).toContain('author: Test User');
-      expect(result.fullDocument).toMatch(/---\n\n# Test User/);
+      expect(result.fullDocument).toMatch(/---\n\nThis is a test post/);
     });
   });
 
@@ -215,16 +209,16 @@ describe('MarkdownConverter', () => {
 
   describe('custom templates', () => {
     it('should use custom template when provided', async () => {
-      const customTemplate = '# Custom: {{author.name}}\n\n{{content.text}}';
+      const customTemplate = 'Custom: {{author.name}}\n\n{{content.text}}';
 
       const result = await converter.convert(mockPostData, customTemplate);
 
       expect(result.content).toContain('Custom: Test User');
-      expect(result.content).not.toContain('Platform:');
+      expect(result.content).not.toContain('**Platform:**');
     });
 
     it('should allow setting platform-specific custom template', async () => {
-      const customTemplate = '# My Custom Template\n\n{{content.text}}';
+      const customTemplate = 'My Custom Template\n\n{{content.text}}';
       converter.setTemplate('facebook', customTemplate);
 
       const result = await converter.convert(mockPostData);
@@ -242,7 +236,85 @@ describe('MarkdownConverter', () => {
 
       const result = await converter.convert(postWithoutMedia);
 
-      expect(result.content).not.toContain('## Media');
+      // Content should start with text when no media
+      expect(result.content).toMatch(/^This is a test post/);
+    });
+
+    it('should show comments section when comments exist', async () => {
+      const postWithComments = {
+        ...mockPostData,
+        comments: [
+          {
+            id: 'comment-1',
+            author: {
+              name: 'Commenter',
+              url: 'https://facebook.com/commenter',
+              handle: 'commenter',
+            },
+            content: 'Great post!',
+            timestamp: '2024-01-01T12:30:00Z',
+            likes: 5,
+          },
+        ],
+      };
+
+      const result = await converter.convert(postWithComments);
+
+      expect(result.content).toContain('💬 Comments');
+      expect(result.content).toContain('@commenter');
+      expect(result.content).toContain('Great post!');
+      expect(result.content).toContain('5 likes');
+    });
+
+    it('should format nested comment replies with indentation', async () => {
+      const postWithNestedComments = {
+        ...mockPostData,
+        comments: [
+          {
+            id: 'comment-1',
+            author: {
+              name: 'First Commenter',
+              url: 'https://facebook.com/first',
+              handle: 'first',
+            },
+            content: 'Original comment',
+            timestamp: '2024-01-01T12:30:00Z',
+            likes: 10,
+            replies: [
+              {
+                id: 'reply-1',
+                author: {
+                  name: 'Replier',
+                  url: 'https://facebook.com/replier',
+                  handle: 'replier',
+                },
+                content: 'Reply to comment',
+                timestamp: '2024-01-01T12:35:00Z',
+                likes: 3,
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = await converter.convert(postWithNestedComments);
+
+      expect(result.content).toContain('💬 Comments');
+      expect(result.content).toContain('@first');
+      expect(result.content).toContain('Original comment');
+      expect(result.content).toContain('↳ **@replier**');
+      expect(result.content).toContain('Reply to comment');
+    });
+
+    it('should not show comments section when no comments', async () => {
+      const postWithoutComments = {
+        ...mockPostData,
+        comments: undefined,
+      };
+
+      const result = await converter.convert(postWithoutComments);
+
+      expect(result.content).not.toContain('💬 Comments');
     });
 
     it('should show AI section only if AI data exists', async () => {
@@ -253,7 +325,7 @@ describe('MarkdownConverter', () => {
 
       const result = await converter.convert(postWithoutAI);
 
-      expect(result.content).not.toContain('## AI Analysis');
+      expect(result.content).not.toContain('🤖 AI Analysis');
     });
 
     it('should not show verified badge for unverified accounts', async () => {
@@ -267,7 +339,8 @@ describe('MarkdownConverter', () => {
 
       const result = await converter.convert(unverifiedPost);
 
-      expect(result.content).not.toContain('✓ Verified Account');
+      // Should not have verified checkmark in platform line
+      expect(result.content).not.toMatch(/Facebook\s*✓/);
     });
   });
 
@@ -295,7 +368,7 @@ describe('MarkdownConverter', () => {
           {
             type: 'image' as const,
             url: 'https://example.com/image.jpg',
-            alt: 'Image with *asterisks* and [brackets]',
+            altText: 'Image with *asterisks* and [brackets]',
           },
         ],
       };

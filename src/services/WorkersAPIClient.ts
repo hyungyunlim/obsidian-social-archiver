@@ -251,6 +251,46 @@ export class WorkersAPIClient implements IService {
   }
 
   /**
+   * Proxy media download to bypass CORS
+   */
+  async proxyMedia(mediaUrl: string): Promise<ArrayBuffer> {
+    this.ensureInitialized();
+
+    const encodedUrl = encodeURIComponent(mediaUrl);
+    const path = `/api/proxy-media?url=${encodedUrl}`;
+    const url = `${this.config.endpoint}${path}`;
+
+    console.log('[WorkersAPIClient] Proxying media download', {
+      originalUrl: mediaUrl.substring(0, 100) + '...',
+      proxyUrl: url,
+    });
+
+    try {
+      const response = await requestUrl({
+        url,
+        method: 'GET',
+        throw: false,
+      });
+
+      if (response.status !== 200) {
+        throw new Error(`Proxy returned ${response.status}: ${response.text}`);
+      }
+
+      // Return binary data
+      return response.arrayBuffer;
+
+    } catch (error) {
+      console.error('[WorkersAPIClient] Media proxy failed:', {
+        url: mediaUrl.substring(0, 100) + '...',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error(
+        `Failed to proxy media: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  /**
    * Ensure initialized
    */
   private ensureInitialized(): void {
