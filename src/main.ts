@@ -361,14 +361,15 @@ export default class SocialArchiverPlugin extends Plugin {
             }
 
           } catch (error) {
-            // TikTok videos often fail due to DRM protection - use original URL as fallback
+            // TikTok videos often fail due to DRM protection - use original post URL as fallback
             if (result.postData.platform === 'tiktok' && mediaUrl) {
-              console.warn(`[Social Archiver] ⚠️ TikTok video download failed, using original URL instead`);
+              console.warn(`[Social Archiver] ⚠️ TikTok video download failed, using original post URL`);
 
-              // Add original URL to downloaded list (will be used in markdown)
+              // TikTok CDN URLs don't work in browsers (Access Denied)
+              // Use the original TikTok post URL instead, which always works
               downloadedMedia.push({
                 originalUrl: mediaUrl,
-                localPath: mediaUrl, // Use original CDN URL
+                localPath: result.postData.url, // Use original TikTok post URL
               });
             } else {
               console.error(`[Social Archiver] ❌ Failed to download media ${i + 1}:`, error);
