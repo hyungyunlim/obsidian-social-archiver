@@ -360,7 +360,18 @@ export default class SocialArchiverPlugin extends Plugin {
             }
 
           } catch (error) {
-            console.error(`[Social Archiver] ❌ Failed to download media ${i + 1}:`, error);
+            // TikTok videos often fail due to DRM protection - use original URL as fallback
+            if (result.postData.platform === 'tiktok') {
+              console.warn(`[Social Archiver] ⚠️ TikTok video download failed, using original URL instead`);
+
+              // Add original URL to downloaded list (will be used in markdown)
+              downloadedMedia.push({
+                originalUrl: mediaUrl,
+                localPath: mediaUrl, // Use original CDN URL
+              });
+            } else {
+              console.error(`[Social Archiver] ❌ Failed to download media ${i + 1}:`, error);
+            }
             // Continue with next media item
           }
         }
