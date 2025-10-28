@@ -1060,6 +1060,11 @@ export class BrightDataService {
     }
 
     // Parse comments
+    // NOTE: Disabled for Threads - BrightData returns incorrect comments from other posts
+    // BrightData API bug: comments array contains content from completely different posts
+    // Example: Post about "LLM in 5 years" gets comments about Amy Rigby concert, Porsche, etc.
+    // See: https://github.com/hyungyunlim/obsidian-social-archiver/issues/...
+    /*
     const comments: Comment[] = [];
     if (data.comments && Array.isArray(data.comments)) {
       data.comments.forEach((comment: any) => {
@@ -1076,6 +1081,7 @@ export class BrightDataService {
         });
       });
     }
+    */
 
     return {
       platform: 'threads',
@@ -1098,7 +1104,7 @@ export class BrightDataService {
         timestamp: data.post_time || new Date().toISOString(),
         externalLink: data.external_link_title,
       },
-      comments: comments.length > 0 ? comments : undefined,
+      comments: undefined, // Always undefined - BrightData returns incorrect data
       raw: data,
     };
   }
