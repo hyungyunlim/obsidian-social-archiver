@@ -269,7 +269,7 @@ export class TimelineContainer {
 
     // Sort controls container (group dropdown and toggle tightly)
     const sortControls = leftButtons.createDiv();
-    sortControls.style.cssText = 'display: flex; align-items: center; gap: 2px;';
+    sortControls.style.cssText = 'display: flex; align-items: center; gap: 0;';
 
     // Sort by dropdown (Published / Archived)
     const sortByBtn = sortControls.createDiv();
