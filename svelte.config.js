@@ -3,10 +3,8 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 export default {
   preprocess: vitePreprocess(),
   compilerOptions: {
-    // Enable Svelte 5 Runes mode
-    runes: true,
-    // Enable HMR (Svelte 5 integrated)
-    hmr: true,
+    // Disable Runes for CJS compatibility
+    runes: false,
     // CSS handling
     css: 'injected'
   }

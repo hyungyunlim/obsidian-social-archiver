@@ -247,3 +247,74 @@
     justify-content: center;
   }
 }
+/* ========================================
+   Timeline View Styles
+   ======================================== */
+
+/* Loading spinner animation */
+.timeline-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--background-modifier-border);
+  border-top-color: var(--interactive-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Platform badge colors */
+.timeline-platform-badge[data-platform="facebook"] {
+  background: #1877f2;
+  color: white;
+}
+
+.timeline-platform-badge[data-platform="linkedin"] {
+  background: #0077b5;
+  color: white;
+}
+
+.timeline-platform-badge[data-platform="instagram"] {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  color: white;
+}
+
+.timeline-platform-badge[data-platform="tiktok"] {
+  background: #000000;
+  color: white;
+}
+
+.timeline-platform-badge[data-platform="x"] {
+  background: #000000;
+  color: white;
+}
+
+.timeline-platform-badge[data-platform="threads"] {
+  background: #000000;
+  color: white;
+}
+
+.timeline-platform-badge[data-platform="youtube"] {
+  background: #ff0000;
+  color: white;
+}
+
+/* Line clamp utility (fallback for Tailwind) */
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  /* Ensure touch targets are at least 44px */
+  .timeline-post-card {
+    min-height: 44px;
+  }
+}

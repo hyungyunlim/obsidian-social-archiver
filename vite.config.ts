@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [
     svelte({
       compilerOptions: {
-        // Enable Svelte 5 Runes mode
-        runes: true
+        // Disable Runes for CJS compatibility
+        runes: false
       }
     })
   ],
