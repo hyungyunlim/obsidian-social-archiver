@@ -13,17 +13,7 @@ import {
 import { MediaGalleryRenderer } from './MediaGalleryRenderer';
 import { CommentRenderer } from './CommentRenderer';
 import { YouTubeEmbedRenderer } from './YouTubeEmbedRenderer';
-
-/**
- * YouTube Player Controller interface
- */
-export interface YouTubePlayerController {
-  seekTo(seconds: number): void;
-  play(): void;
-  pause(): void;
-  mute(): void;
-  unmute(): void;
-}
+import { YouTubePlayerController } from '../controllers/YouTubePlayerController';
 
 /**
  * PostCardRenderer - Renders individual post cards

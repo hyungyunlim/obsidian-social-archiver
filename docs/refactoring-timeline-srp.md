@@ -18,7 +18,10 @@
 - ✅ `MediaGalleryRenderer.ts` (218줄) - 미디어 갤러리 렌더링 (Commit: b484df1)
 - ✅ `CommentRenderer.ts` (168줄) - 댓글 렌더링 (Commit: 38f8e86)
 - ✅ `YouTubeEmbedRenderer.ts` (75줄) - YouTube/TikTok 임베드 (Commit: 69a46bb)
-- ✅ `PostCardRenderer.ts` (966줄) - 포스트 카드 렌더링 (Phase 3.4 완료)
+- ✅ `PostCardRenderer.ts` (966줄) - 포스트 카드 렌더링 (Commit: e96559c)
+
+#### Phase 4: Controller 분리 (완료) ✅
+- ✅ `YouTubePlayerController.ts` (67줄) - YouTube iframe 제어 (Phase 4 완료)
 
 ### 📉 TimelineContainer.ts 축소 현황
 ```
@@ -30,16 +33,16 @@ Phase 3.2: -107줄 → 1464줄 (CommentRenderer)
 Phase 3.3: -64줄 → 1400줄 (YouTubeEmbedRenderer)
 Phase 3.4: -615줄 → 798줄 (PostCardRenderer)
 Cleanup: -249줄 → 549줄 (미사용 메서드 제거, TypeScript strict 적용)
+Phase 4: -30줄 → 519줄 (YouTubePlayerController)
 
-현재: 549줄 (-1213줄, -68.8% 감소) ✅
-목표: ~200줄 (Phase 4-5 완료 후)
+현재: 519줄 (-1243줄, -70.5% 감소) ✅
+목표: ~200줄 (Phase 5 완료 후)
 
 ✨ TypeScript strict mode 통과
 ✨ 빌드 사이즈 최적화: 7.46 MB → 7.44 MB
 ```
 
 ### 🎯 남은 작업
-- ⏳ Phase 4: YouTubePlayerController 분리 (~80줄 예상)
 - ⏳ Phase 5: 테스트 작성
 
 ---
@@ -83,11 +86,11 @@ export class VaultManager {
 
 ```
 src/components/timeline/
-├── TimelineContainer.ts              # 메인 컨테이너 (조율만, ~200줄)
+├── TimelineContainer.ts              # 메인 컨테이너 (조율만, 519줄) ✅
 │   └── 역할: 생명주기 관리, 컴포넌트 조립, 전체 조율
 │
 ├── controllers/
-│   └── YouTubePlayerController.ts    # YouTube iframe 제어 (~80줄)
+│   └── YouTubePlayerController.ts    # YouTube iframe 제어 (67줄) ✅
 │       └── 역할: postMessage API를 통한 YouTube 플레이어 제어
 │
 ├── renderers/
