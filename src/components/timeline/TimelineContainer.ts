@@ -1329,9 +1329,9 @@ export class TimelineContainer {
         thumbnailElements.push(thumbnail);
       }
 
-      // Counter indicator (top-right)
+      // Counter indicator (bottom-right)
       const counter = carouselContainer.createDiv();
-      counter.style.cssText = 'position: absolute; top: 12px; right: 12px; padding: 4px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.5); color: white; font-size: 12px; z-index: 10;';
+      counter.style.cssText = 'position: absolute; bottom: 12px; right: 12px; padding: 4px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.5); color: white; font-size: 12px; z-index: 10;';
       counter.setText(`1/${media.length}`);
 
       // Navigation functions
