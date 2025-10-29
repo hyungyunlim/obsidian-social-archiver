@@ -452,7 +452,7 @@ export class TimelineContainer {
     const panel = header.createDiv({ cls: 'filter-panel' });
     panel.style.cssText = `
       position: absolute;
-      top: 56px;
+      top: 48px;
       left: 0;
       z-index: 1000;
       background: var(--background-primary);
@@ -499,12 +499,12 @@ export class TimelineContainer {
 
       // Use actual platform icon (same as card)
       const iconWrapper = checkbox.createDiv();
-      iconWrapper.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+      iconWrapper.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-accent);';
       const icon = this.getPlatformSimpleIcon(platform.id);
       if (icon) {
-        // Use Simple Icon
+        // Use Simple Icon with Obsidian theme color
         iconWrapper.innerHTML = `
-          <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: #${icon.hex}; width: 100%; height: 100%;">
+          <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: var(--text-accent); width: 100%; height: 100%;">
             <title>${icon.title}</title>
             <path d="${icon.path}"/>
           </svg>
@@ -639,18 +639,23 @@ export class TimelineContainer {
     // Remove existing panels
     header.querySelectorAll('.filter-panel').forEach(el => el.remove());
 
+    // Calculate dropdown position based on button position
+    const btnRect = sortByBtn.getBoundingClientRect();
+    const headerRect = header.getBoundingClientRect();
+    const leftOffset = btnRect.left - headerRect.left;
+
     const dropdown = header.createDiv({ cls: 'sort-dropdown' });
     dropdown.style.cssText = `
       position: absolute;
-      top: 56px;
-      left: 100px;
+      top: 48px;
+      left: ${leftOffset}px;
       z-index: 1000;
       background: var(--background-primary);
       border: 1px solid var(--background-modifier-border);
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       padding: 8px;
-      min-width: 160px;
+      min-width: 140px;
     `;
 
     const sortOptions = [
@@ -666,7 +671,7 @@ export class TimelineContainer {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 10px 12px;
+        padding: 8px;
         border-radius: 6px;
         cursor: pointer;
         transition: all 0.2s;
@@ -681,12 +686,6 @@ export class TimelineContainer {
 
       const label = item.createSpan({ text: option.label });
       label.style.cssText = 'font-size: 13px; flex: 1;';
-
-      if (isActive) {
-        const checkIcon = item.createDiv();
-        checkIcon.style.cssText = 'width: 16px; height: 16px;';
-        setIcon(checkIcon, 'check');
-      }
 
       item.addEventListener('click', async () => {
         this.sortState.by = option.by;
@@ -792,12 +791,12 @@ export class TimelineContainer {
     });
 
     const iconWrapper = avatarContainer.createDiv();
-    iconWrapper.style.cssText = 'width: 24px; height: 24px;';
+    iconWrapper.style.cssText = 'width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: var(--text-accent);';
     const icon = this.getPlatformSimpleIcon(post.platform);
     if (icon) {
-      // Use Simple Icon
+      // Use Simple Icon with Obsidian theme color
       iconWrapper.innerHTML = `
-        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: #${icon.hex}; width: 100%; height: 100%;">
+        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: var(--text-accent); width: 100%; height: 100%;">
           <title>${icon.title}</title>
           <path d="${icon.path}"/>
         </svg>
@@ -805,7 +804,9 @@ export class TimelineContainer {
     } else {
       // Use Lucide icon for platforms not in simple-icons (e.g., LinkedIn)
       const lucideIconName = this.getLucideIcon(post.platform);
-      setIcon(iconWrapper, lucideIconName);
+      const lucideWrapper = iconWrapper.createDiv();
+      lucideWrapper.style.cssText = 'width: 100%; height: 100%;';
+      setIcon(lucideWrapper, lucideIconName);
     }
 
     // Content area
@@ -2121,7 +2122,12 @@ export class TimelineContainer {
       threads: siThreads,
       youtube: siYoutube
     };
-    return iconMap[platform.toLowerCase()] || siX; // Default fallback
+    const key = platform.toLowerCase();
+    // Check if key exists in map (including null values)
+    if (key in iconMap) {
+      return iconMap[key];
+    }
+    return siX; // Default fallback for unknown platforms
   }
 
   /**
