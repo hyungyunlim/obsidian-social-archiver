@@ -14,11 +14,11 @@
 - ✅ `SortDropdown.ts` (263줄) - 정렬 UI
 - Commit: 4e508f9
 
-#### Phase 3: Renderer 분리 (진행 중 - 3/4 완료)
+#### Phase 3: Renderer 분리 (완료) ✅
 - ✅ `MediaGalleryRenderer.ts` (218줄) - 미디어 갤러리 렌더링 (Commit: b484df1)
-- ✅ `CommentRenderer.ts` (125줄) - 댓글 렌더링 (Commit: 38f8e86)
+- ✅ `CommentRenderer.ts` (168줄) - 댓글 렌더링 (Commit: 38f8e86)
 - ✅ `YouTubeEmbedRenderer.ts` (75줄) - YouTube/TikTok 임베드 (Commit: 69a46bb)
-- ⏳ `PostCardRenderer.ts` - 포스트 카드 렌더링 (다음)
+- ✅ `PostCardRenderer.ts` (966줄) - 포스트 카드 렌더링 (Phase 3.4 완료)
 
 ### 📉 TimelineContainer.ts 축소 현황
 ```
@@ -28,14 +28,18 @@ Phase 2: -533줄 → 1760줄 → 1464줄 (필터/정렬 분리, 헤더 리팩토
 Phase 3.1: -191줄 → 1571줄 (MediaGalleryRenderer)
 Phase 3.2: -107줄 → 1464줄 (CommentRenderer)
 Phase 3.3: -64줄 → 1400줄 (YouTubeEmbedRenderer)
+Phase 3.4: -615줄 → 798줄 (PostCardRenderer)
+Cleanup: -249줄 → 549줄 (미사용 메서드 제거, TypeScript strict 적용)
 
-현재: 1400줄 (-362줄, -20.5% 감소)
-목표: ~200줄 (Phase 3-5 완료 후)
+현재: 549줄 (-1213줄, -68.8% 감소) ✅
+목표: ~200줄 (Phase 4-5 완료 후)
+
+✨ TypeScript strict mode 통과
+✨ 빌드 사이즈 최적화: 7.46 MB → 7.44 MB
 ```
 
 ### 🎯 남은 작업
-- ⏳ Phase 3.4: PostCardRenderer 분리 (~380줄 예상)
-- ⏳ Phase 4: YouTubePlayerController 분리 (~80줄)
+- ⏳ Phase 4: YouTubePlayerController 분리 (~80줄 예상)
 - ⏳ Phase 5: 테스트 작성
 
 ---

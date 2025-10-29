@@ -6,8 +6,44 @@ import type { Comment } from '../../../types/post';
  */
 export class CommentRenderer {
   constructor(
-    private getRelativeTime: (date: Date) => string
+    private getRelativeTimeCallback?: (date: Date) => string
   ) {}
+
+  /**
+   * Format relative time (e.g., "2h ago", "Yesterday", "Mar 15")
+   */
+  private getRelativeTime(timestamp: Date): string {
+    // Use callback if provided, otherwise use built-in implementation
+    if (this.getRelativeTimeCallback) {
+      return this.getRelativeTimeCallback(timestamp);
+    }
+
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffSec < 60) {
+      return 'Just now';
+    } else if (diffMin < 60) {
+      return `${diffMin}m ago`;
+    } else if (diffHour < 24) {
+      return `${diffHour}h ago`;
+    } else if (diffDay === 1) {
+      return 'Yesterday';
+    } else if (diffDay < 7) {
+      return `${diffDay}d ago`;
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    }
+  }
 
   /**
    * Render comments section (Instagram style)
