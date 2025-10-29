@@ -172,7 +172,34 @@ export class TimelineContainer {
   }
 
   private renderPostCard(container: HTMLElement, post: PostData): void {
-    const card = container.createDiv({
+    // If comment exists, create wrapper for entire card
+    let cardContainer = container;
+
+    if (post.comment) {
+      const wrapper = container.createDiv({ cls: 'mb-4' });
+
+      const userName = this.plugin.settings.userName || 'You';
+
+      // Comment header: "Jun commented on this post"
+      const commentHeader = wrapper.createDiv({ cls: 'mb-2' });
+      commentHeader.style.cssText = 'font-size: 13px; color: var(--text-muted);';
+
+      const userNameSpan = commentHeader.createSpan({ text: userName });
+      userNameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal);';
+
+      commentHeader.createSpan({ text: ' commented on this post' });
+
+      // Comment text
+      const commentTextDiv = wrapper.createDiv({ cls: 'mb-3' });
+      commentTextDiv.style.cssText = 'font-size: 14px; line-height: 1.5; color: var(--text-normal);';
+      this.renderMarkdownLinks(commentTextDiv, post.comment);
+
+      // Create nested container for the actual card
+      cardContainer = wrapper.createDiv();
+      cardContainer.style.cssText = 'padding-left: 16px; border-left: 2px solid var(--background-modifier-border); margin-left: 4px;';
+    }
+
+    const card = cardContainer.createDiv({
       cls: 'relative p-4 rounded-lg bg-[var(--background-secondary)] transition-all duration-200'
     });
 
@@ -250,30 +277,6 @@ export class TimelineContainer {
       cls: 'text-xs text-[var(--text-muted)]'
     });
     timeSpan.setText(this.getRelativeTime(post.metadata.timestamp));
-
-    // User comment (if exists) - Social media style with nested appearance
-    if (post.comment) {
-      const userName = this.plugin.settings.userName || 'You';
-
-      // Comment header: "Jun commented on this post"
-      const commentHeader = contentArea.createDiv({ cls: 'mb-2' });
-      commentHeader.style.cssText = 'font-size: 13px; color: var(--text-muted);';
-
-      const userNameSpan = commentHeader.createSpan({ text: userName });
-      userNameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal);';
-
-      commentHeader.createSpan({ text: ' commented on this post' });
-
-      // Comment content with left border (nested appearance)
-      const commentSection = contentArea.createDiv({ cls: 'mb-4' });
-      commentSection.style.cssText = 'padding-left: 12px; border-left: 2px solid var(--background-modifier-border); margin-left: 4px;';
-
-      const commentText = commentSection.createDiv({
-        cls: 'text-sm text-[var(--text-normal)]'
-      });
-      commentText.style.cssText = 'padding: 4px 0; line-height: 1.5;';
-      this.renderMarkdownLinks(commentText, post.comment);
-    }
 
     // Content (full text with expand/collapse)
     const contentContainer = contentArea.createDiv({ cls: 'mb-3' });
