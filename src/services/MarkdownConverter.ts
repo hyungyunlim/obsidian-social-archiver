@@ -551,6 +551,8 @@ export class MarkdownConverter implements IService {
         ...postData.content,
         text: postData.platform === 'instagram'
           ? this.linkifyInstagramMentions(postData.content.text)
+          : postData.platform === 'youtube' && postData.videoId
+          ? this.linkifyYouTubeTimestamps(postData.content.text, postData.videoId)
           : postData.content.text,
       },
       metadata: {
@@ -825,6 +827,32 @@ export class MarkdownConverter implements IService {
     // Don't match if already in a markdown link
     return processedText.replace(/@([\w.]+)(?!\])/g, (_match, username) => {
       return `[@${username}](https://instagram.com/${username})`;
+    });
+  }
+
+  /**
+   * Convert YouTube timestamps to clickable links
+   * Example: "00:00 Introduction" -> "[00:00](https://www.youtube.com/watch?v=VIDEO_ID&t=0s) Introduction"
+   */
+  private linkifyYouTubeTimestamps(text: string, videoId: string): string {
+    // Match timestamps at the beginning of lines: HH:MM:SS or MM:SS
+    // Pattern: line start, optional whitespace, timestamp, space, description text
+    return text.replace(/^(\s*)(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/gm, (_match, whitespace, timestamp, description) => {
+      // Convert timestamp to seconds
+      const parts = timestamp.split(':').map(Number);
+      let seconds: number;
+
+      if (parts.length === 3) {
+        // HH:MM:SS format
+        seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      } else {
+        // MM:SS format
+        seconds = parts[0] * 60 + parts[1];
+      }
+
+      // Create YouTube timestamp link (only timestamp is clickable, not description)
+      const url = `https://www.youtube.com/watch?v=${videoId}&t=${seconds}s`;
+      return `${whitespace}[${timestamp}](${url}) ${description}`;
     });
   }
 
