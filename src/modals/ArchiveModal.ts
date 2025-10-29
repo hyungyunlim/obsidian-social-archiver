@@ -15,10 +15,15 @@ export class ArchiveModal extends Modal {
   private archiveBtn!: HTMLButtonElement;
   private platformBadge!: HTMLElement;
   private youtubeOptions!: HTMLElement;
+  private commentContainer!: HTMLElement;
 
   // YouTube options
   private includeTranscript: boolean = true;
   private includeFormattedTranscript: boolean = false;
+
+  // User comment
+  private comment: string = '';
+  private commentTextarea!: HTMLTextAreaElement;
 
   constructor(app: App, plugin: SocialArchiverPlugin, initialUrl?: string) {
     super(app);
@@ -80,6 +85,22 @@ export class ArchiveModal extends Modal {
             this.includeFormattedTranscript = value;
           })
       );
+
+    // Comment section (shown when URL is detected)
+    this.commentContainer = contentEl.createDiv({ cls: 'archive-comment-container' });
+    this.commentContainer.style.display = 'none';
+
+    const commentLabel = this.commentContainer.createDiv({ cls: 'archive-comment-label' });
+    commentLabel.setText('💭 My Notes (optional)');
+
+    this.commentTextarea = this.commentContainer.createEl('textarea', {
+      cls: 'archive-comment-textarea',
+      placeholder: 'Add your thoughts, tags, or reminders about this post...'
+    });
+    this.commentTextarea.addEventListener('input', (e) => {
+      const target = e.target as HTMLTextAreaElement;
+      this.comment = target.value;
+    });
 
     // Disclaimer as subtle helper text
     const disclaimer = contentEl.createDiv({ cls: 'archive-disclaimer' });
@@ -188,6 +209,13 @@ export class ArchiveModal extends Modal {
       this.youtubeOptions.style.display = 'none';
     }
 
+    // Show/hide comment section (show when URL is valid)
+    if (this.isValidUrl) {
+      this.commentContainer.style.display = 'block';
+    } else {
+      this.commentContainer.style.display = 'none';
+    }
+
     // Update archive button
     this.updateArchiveButton();
   }
@@ -219,13 +247,21 @@ export class ArchiveModal extends Modal {
     new Notice('📡 Archiving post...');
 
     try {
-      // Pass YouTube options if platform is YouTube
-      const options = this.detectedPlatform === 'youtube' ? {
-        includeTranscript: this.includeTranscript,
-        includeFormattedTranscript: this.includeFormattedTranscript,
-      } : undefined;
+      // Pass options including comment
+      const options: any = {};
 
-      await this.plugin.archivePost(this.url, options);
+      // YouTube-specific options
+      if (this.detectedPlatform === 'youtube') {
+        options.includeTranscript = this.includeTranscript;
+        options.includeFormattedTranscript = this.includeFormattedTranscript;
+      }
+
+      // Add comment if provided
+      if (this.comment && this.comment.trim()) {
+        options.comment = this.comment.trim();
+      }
+
+      await this.plugin.archivePost(this.url, Object.keys(options).length > 0 ? options : undefined);
     } catch (error) {
       console.error('[ArchiveModal] Archive failed:', error);
       new Notice(

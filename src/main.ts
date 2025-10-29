@@ -373,6 +373,11 @@ export default class SocialArchiverPlugin extends Plugin {
       // Add processing time to frontmatter (convert to seconds, 1 decimal place)
       markdown.frontmatter.download_time = Math.round((Date.now() - startTime) / 100) / 10;
 
+      // Add user comment to frontmatter if provided
+      if (options?.comment) {
+        markdown.frontmatter.comment = options.comment;
+      }
+
       // Regenerate fullDocument with updated frontmatter
       markdown = markdownConverter.updateFullDocument(markdown);
 
@@ -395,9 +400,26 @@ export default class SocialArchiverPlugin extends Plugin {
         await this.app.workspace.getLeaf().openFile(file as any);
       }
 
+      // Refresh Timeline View if it's open
+      this.refreshTimelineView();
+
     } catch (error) {
       // Error will be handled by the modal's catch block
       throw error;
+    }
+  }
+
+  /**
+   * Refresh Timeline View if it exists
+   */
+  private refreshTimelineView(): void {
+    const leaves = this.app.workspace.getLeavesOfType('social-archiver-timeline');
+    if (leaves.length > 0) {
+      const timelineView = leaves[0].view as any;
+      if (timelineView && typeof timelineView.refresh === 'function') {
+        timelineView.refresh();
+        console.log('[Social Archiver] Timeline View refreshed');
+      }
     }
   }
 

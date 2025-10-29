@@ -6,6 +6,7 @@ export interface ArchiveOptions {
   deepResearch: boolean;
   includeTranscript?: boolean;           // YouTube: include full transcript
   includeFormattedTranscript?: boolean;  // YouTube: include formatted transcript with timestamps
+  comment?: string;                      // User's personal note/comment
 }
 
 export interface ArchiveResult {
@@ -30,6 +31,7 @@ export interface YamlFrontmatter {
   lastModified: string; // YYYY-MM-DD format
   download_time?: number; // Time taken to archive in seconds
   archive?: boolean; // Whether the post is archived (hidden from timeline)
+  comment?: string; // User's personal note/comment
   hasTranscript?: boolean; // YouTube: has full transcript text
   hasFormattedTranscript?: boolean; // YouTube: has formatted transcript with timestamps
   videoId?: string; // YouTube video ID

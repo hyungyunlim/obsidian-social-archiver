@@ -262,8 +262,19 @@ export class TimelineContainer {
     contentText.style.wordBreak = 'break-word';
 
     if (isLongContent) {
-      const preview = cleanContent.substring(0, previewLength);
-      contentText.setText(preview + '...');
+      // Smart preview truncation - don't cut markdown links in half
+      let preview = cleanContent.substring(0, previewLength);
+
+      // Check if we cut off in the middle of a markdown link
+      const lastOpenBracket = preview.lastIndexOf('[');
+      const lastCloseBracket = preview.lastIndexOf(']');
+
+      // If there's an unclosed link at the end, truncate before it
+      if (lastOpenBracket > lastCloseBracket) {
+        preview = cleanContent.substring(0, lastOpenBracket);
+      }
+
+      this.renderMarkdownLinks(contentText, preview + '...');
 
       const seeMoreBtn = contentContainer.createEl('button', {
         text: 'See more'
@@ -283,15 +294,15 @@ export class TimelineContainer {
         e.stopPropagation();
         expanded = !expanded;
         if (expanded) {
-          contentText.setText(cleanContent);
+          this.renderMarkdownLinks(contentText, cleanContent);
           seeMoreBtn.setText('See less');
         } else {
-          contentText.setText(preview + '...');
+          this.renderMarkdownLinks(contentText, preview + '...');
           seeMoreBtn.setText('See more');
         }
       });
     } else {
-      contentText.setText(cleanContent);
+      this.renderMarkdownLinks(contentText, cleanContent);
     }
 
     // Debug: Log post platform and url
@@ -1287,6 +1298,105 @@ export class TimelineContainer {
       return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
     }
     return num.toString();
+  }
+
+  /**
+   * Render text with markdown links and plain URLs converted to HTML
+   * Converts [text](url) and plain URLs to clickable <a> tags
+   */
+  private renderMarkdownLinks(container: HTMLElement, text: string): void {
+    container.empty();
+
+    // First, replace markdown links with a placeholder to avoid processing them again
+    const markdownLinks: Array<{ text: string; url: string }> = [];
+    const markdownPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+    let processedText = text.replace(markdownPattern, (match, linkText, linkUrl) => {
+      const index = markdownLinks.length;
+      markdownLinks.push({ text: linkText, url: linkUrl });
+      return `__MDLINK${index}__`;
+    });
+
+    // Now find plain URLs (not already in markdown format)
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    const parts: Array<{ type: 'text' | 'markdown' | 'url'; content: string; url?: string }> = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = urlPattern.exec(processedText)) !== null) {
+      // Add text before the URL
+      if (match.index > lastIndex) {
+        const textBefore = processedText.substring(lastIndex, match.index);
+        parts.push({ type: 'text', content: textBefore });
+      }
+
+      // Add the URL
+      const url = match[1];
+      parts.push({ type: 'url', content: url, url });
+
+      lastIndex = urlPattern.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < processedText.length) {
+      const textAfter = processedText.substring(lastIndex);
+      parts.push({ type: 'text', content: textAfter });
+    }
+
+    // Render all parts
+    for (const part of parts) {
+      if (part.type === 'text') {
+        // Check for markdown link placeholders
+        const placeholderPattern = /__MDLINK(\d+)__/g;
+        let textLastIndex = 0;
+        let placeholderMatch: RegExpExecArray | null;
+
+        while ((placeholderMatch = placeholderPattern.exec(part.content)) !== null) {
+          // Add text before placeholder
+          if (placeholderMatch.index > textLastIndex) {
+            const textBefore = part.content.substring(textLastIndex, placeholderMatch.index);
+            container.appendText(textBefore);
+          }
+
+          // Add markdown link
+          const linkIndex = parseInt(placeholderMatch[1]);
+          const linkData = markdownLinks[linkIndex];
+          const link = container.createEl('a', {
+            text: linkData.text,
+            attr: {
+              href: linkData.url,
+              target: '_blank',
+              rel: 'noopener noreferrer'
+            }
+          });
+          link.style.cssText = 'color: var(--interactive-accent); text-decoration: underline; cursor: pointer;';
+          link.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
+
+          textLastIndex = placeholderPattern.lastIndex;
+        }
+
+        // Add remaining text
+        if (textLastIndex < part.content.length) {
+          const textAfter = part.content.substring(textLastIndex);
+          container.appendText(textAfter);
+        }
+      } else if (part.type === 'url' && part.url) {
+        // Create clickable link for plain URL
+        const link = container.createEl('a', {
+          text: part.content,
+          attr: {
+            href: part.url,
+            target: '_blank',
+            rel: 'noopener noreferrer'
+          }
+        });
+        link.style.cssText = 'color: var(--interactive-accent); text-decoration: underline; cursor: pointer;';
+        link.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+      }
+    }
   }
 
   public destroy(): void {
