@@ -1,5 +1,5 @@
 import { setIcon, type TFile, type Vault, type App } from 'obsidian';
-import type { PostData, Comment } from '../../types/post';
+import type { PostData, Comment, TranscriptEntry } from '../../types/post';
 import type { YamlFrontmatter } from '../../types/archive';
 import type SocialArchiverPlugin from '../../main';
 
@@ -8,6 +8,76 @@ export interface TimelineContainerProps {
   app: App;
   archivePath: string;
   plugin: SocialArchiverPlugin;
+}
+
+/**
+ * YouTube Player Controller - Controls YouTube iframe via postMessage API
+ * @see https://medium.com/@mihauco/youtube-iframe-api-without-youtube-iframe-api-f0ac5fcf7c74
+ */
+class YouTubePlayerController {
+  private iframe: HTMLIFrameElement;
+  private ready = false;
+
+  constructor(iframe: HTMLIFrameElement) {
+    this.iframe = iframe;
+
+    // Wait for iframe to load
+    this.iframe.addEventListener('load', () => {
+      this.ready = true;
+      // Enable listening mode to receive player state updates
+      this.sendCommand('listening');
+    });
+  }
+
+  private sendCommand(func: string, args: any[] = []): void {
+    if (!this.ready) {
+      console.warn('[YouTubePlayer] Not ready yet');
+      return;
+    }
+
+    const message = JSON.stringify({
+      event: func === 'listening' ? 'listening' : 'command',
+      func: func === 'listening' ? undefined : func,
+      args
+    });
+
+    this.iframe.contentWindow?.postMessage(message, '*');
+  }
+
+  /**
+   * Seek to specific time in video (in seconds)
+   */
+  public seekTo(seconds: number): void {
+    this.sendCommand('seekTo', [seconds, true]);
+  }
+
+  /**
+   * Play video
+   */
+  public play(): void {
+    this.sendCommand('playVideo');
+  }
+
+  /**
+   * Pause video
+   */
+  public pause(): void {
+    this.sendCommand('pauseVideo');
+  }
+
+  /**
+   * Mute video
+   */
+  public mute(): void {
+    this.sendCommand('mute');
+  }
+
+  /**
+   * Unmute video
+   */
+  public unmute(): void {
+    this.sendCommand('unMute');
+  }
 }
 
 /**
@@ -23,6 +93,9 @@ export class TimelineContainer {
 
   private posts: PostData[] = [];
   private searchQuery: string = '';
+
+  // Store YouTube player controllers for each post
+  private youtubeControllers: Map<string, YouTubePlayerController> = new Map();
 
   constructor(target: HTMLElement, props: TimelineContainerProps) {
     this.containerEl = target;
@@ -103,6 +176,8 @@ export class TimelineContainer {
 
   private renderPosts(): void {
     this.containerEl.empty();
+    // Clear previous YouTube controllers when re-rendering
+    this.youtubeControllers.clear();
 
     // Header with search and refresh button
     const header = this.containerEl.createDiv();
@@ -292,6 +367,9 @@ export class TimelineContainer {
     contentText.style.whiteSpace = 'pre-wrap';
     contentText.style.wordBreak = 'break-word';
 
+    // Pass videoId to renderMarkdownLinks for YouTube posts
+    const videoId = post.platform === 'youtube' ? post.videoId : undefined;
+
     if (isLongContent) {
       // Smart preview truncation - don't cut markdown links in half
       let preview = cleanContent.substring(0, previewLength);
@@ -305,7 +383,7 @@ export class TimelineContainer {
         preview = cleanContent.substring(0, lastOpenBracket);
       }
 
-      this.renderMarkdownLinks(contentText, preview + '...');
+      this.renderMarkdownLinks(contentText, preview + '...', videoId);
 
       const seeMoreBtn = contentContainer.createEl('button', {
         text: 'See more'
@@ -325,15 +403,15 @@ export class TimelineContainer {
         e.stopPropagation();
         expanded = !expanded;
         if (expanded) {
-          this.renderMarkdownLinks(contentText, cleanContent);
+          this.renderMarkdownLinks(contentText, cleanContent, videoId);
           seeMoreBtn.setText('See less');
         } else {
-          this.renderMarkdownLinks(contentText, preview + '...');
+          this.renderMarkdownLinks(contentText, preview + '...', videoId);
           seeMoreBtn.setText('See more');
         }
       });
     } else {
-      this.renderMarkdownLinks(contentText, cleanContent);
+      this.renderMarkdownLinks(contentText, cleanContent, videoId);
     }
 
     // Debug: Log post platform and url
@@ -342,7 +420,9 @@ export class TimelineContainer {
     // YouTube embed (if YouTube platform)
     if (post.platform === 'youtube' && post.videoId) {
       console.log('[Timeline] Rendering YouTube embed');
-      this.renderYouTubeEmbed(contentArea, post.videoId);
+      const player = this.renderYouTubeEmbed(contentArea, post.videoId);
+      // Store controller for use with timestamp links
+      this.youtubeControllers.set(post.videoId, player);
     }
     // TikTok embed (if TikTok platform)
     else if (post.platform === 'tiktok' && post.url) {
@@ -763,21 +843,27 @@ export class TimelineContainer {
   }
 
   /**
-   * Render YouTube embed iframe
+   * Render YouTube embed iframe with playback control
+   * @returns YouTubePlayerController instance for controlling playback
    */
-  private renderYouTubeEmbed(container: HTMLElement, videoId: string): void {
+  private renderYouTubeEmbed(container: HTMLElement, videoId: string): YouTubePlayerController {
     const embedContainer = container.createDiv();
     embedContainer.style.cssText = 'position: relative; width: 100%; padding-bottom: 56.25%; margin: 12px 0; border-radius: 8px; overflow: hidden; background: var(--background-secondary);';
 
+    // IMPORTANT: enablejsapi=1 is required for postMessage control
     const iframe = embedContainer.createEl('iframe', {
       attr: {
-        src: `https://www.youtube.com/embed/${videoId}`,
+        src: `https://www.youtube.com/embed/${videoId}?enablejsapi=1`,
         frameborder: '0',
-        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
         allowfullscreen: 'true',
+        referrerpolicy: 'strict-origin-when-cross-origin'
       }
     });
     iframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;';
+
+    // Create and return player controller
+    return new YouTubePlayerController(iframe);
   }
 
   /**
@@ -1361,16 +1447,31 @@ export class TimelineContainer {
   /**
    * Render text with markdown links and plain URLs converted to HTML
    * Converts [text](url) and plain URLs to clickable <a> tags
+   * YouTube timestamp links (e.g., [00:00](youtube.com/...&t=0s)) are handled specially
    */
-  private renderMarkdownLinks(container: HTMLElement, text: string): void {
+  private renderMarkdownLinks(container: HTMLElement, text: string, videoId?: string): void {
     container.empty();
 
     // First, replace markdown links with a placeholder to avoid processing them again
-    const markdownLinks: Array<{ text: string; url: string }> = [];
+    const markdownLinks: Array<{ text: string; url: string; isTimestamp: boolean; seconds?: number }> = [];
     const markdownPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
     let processedText = text.replace(markdownPattern, (match, linkText, linkUrl) => {
       const index = markdownLinks.length;
-      markdownLinks.push({ text: linkText, url: linkUrl });
+
+      // Check if this is a YouTube timestamp link
+      let isTimestamp = false;
+      let seconds: number | undefined;
+
+      if (videoId) {
+        // Pattern: &t=123s or ?t=123s
+        const timestampMatch = linkUrl.match(/[?&]t=(\d+)s?/);
+        if (timestampMatch && (linkUrl.includes('youtube.com') || linkUrl.includes('youtu.be'))) {
+          isTimestamp = true;
+          seconds = parseInt(timestampMatch[1]);
+        }
+      }
+
+      markdownLinks.push({ text: linkText, url: linkUrl, isTimestamp, seconds });
       return `__MDLINK${index}__`;
     });
 
@@ -1418,18 +1519,44 @@ export class TimelineContainer {
           // Add markdown link
           const linkIndex = parseInt(placeholderMatch[1]);
           const linkData = markdownLinks[linkIndex];
-          const link = container.createEl('a', {
-            text: linkData.text,
-            attr: {
-              href: linkData.url,
-              target: '_blank',
-              rel: 'noopener noreferrer'
-            }
-          });
-          link.style.cssText = 'color: var(--interactive-accent); text-decoration: underline; cursor: pointer;';
-          link.addEventListener('click', (e) => {
-            e.stopPropagation();
-          });
+
+          if (linkData.isTimestamp && linkData.seconds !== undefined && videoId) {
+            // YouTube timestamp link - create button that seeks to timestamp
+            const timestampBtn = container.createEl('a', {
+              text: linkData.text,
+              attr: {
+                href: '#',
+                title: 'Jump to timestamp in video'
+              }
+            });
+            timestampBtn.style.cssText = 'color: var(--interactive-accent); text-decoration: underline; cursor: pointer; font-family: monospace; font-weight: 600;';
+            timestampBtn.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Find controller at click time (in case it wasn't ready during render)
+              const controller = this.youtubeControllers.get(videoId);
+              if (controller) {
+                controller.seekTo(linkData.seconds!);
+                console.log('[Timeline] Seeking to timestamp:', linkData.seconds);
+              } else {
+                console.warn('[Timeline] YouTube controller not found for video:', videoId);
+              }
+            });
+          } else {
+            // Regular link
+            const link = container.createEl('a', {
+              text: linkData.text,
+              attr: {
+                href: linkData.url,
+                target: '_blank',
+                rel: 'noopener noreferrer'
+              }
+            });
+            link.style.cssText = 'color: var(--interactive-accent); text-decoration: underline; cursor: pointer;';
+            link.addEventListener('click', (e) => {
+              e.stopPropagation();
+            });
+          }
 
           textLastIndex = placeholderPattern.lastIndex;
         }
@@ -1459,12 +1586,14 @@ export class TimelineContainer {
 
   public destroy(): void {
     this.containerEl.empty();
+    this.youtubeControllers.clear();
   }
 
   /**
    * Reload the timeline (useful when view is re-activated)
    */
   public async reload(): Promise<void> {
+    this.youtubeControllers.clear();
     await this.loadPosts();
   }
 }
