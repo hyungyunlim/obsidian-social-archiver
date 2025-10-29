@@ -122,6 +122,10 @@ export interface PostData {
   videoId?: string;         // YouTube video ID
   filePath?: string;        // File path in vault (for Timeline View)
   comment?: string;         // User's personal note/comment
+  like?: boolean;           // User's personal like (for sorting/filtering)
+  archive?: boolean;        // Whether post is archived (hidden by default)
+  publishedDate?: Date;     // Original post publication date
+  archivedDate?: Date;      // Date when post was archived
   mediaSourceUrls?: string[]; // Original media URLs (before proxy download)
   ai?: AIAnalysis;
   raw?: unknown; // Original API response

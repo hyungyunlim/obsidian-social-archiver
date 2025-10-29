@@ -92,7 +92,24 @@ export class TimelineContainer {
   private containerEl: HTMLElement;
 
   private posts: PostData[] = [];
-  private searchQuery: string = '';
+  private filteredPosts: PostData[] = [];
+
+  // Filter and sort state
+  private filterState = {
+    platforms: new Set<string>(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube']),
+    likedOnly: false,
+    includeArchived: false,
+    dateRange: { start: null as Date | null, end: null as Date | null }
+  };
+
+  private sortState = {
+    by: 'published' as 'published' | 'archived',
+    order: 'newest' as 'newest' | 'oldest'
+  };
+
+  // UI state
+  private filterPanelOpen = false;
+  private sortDropdownOpen = false;
 
   // Store YouTube player controllers for each post
   private youtubeControllers: Map<string, YouTubePlayerController> = new Map();
@@ -179,24 +196,109 @@ export class TimelineContainer {
     // Clear previous YouTube controllers when re-rendering
     this.youtubeControllers.clear();
 
-    // Header with search and refresh button
+    // Header with filter, sort, and refresh buttons
     const header = this.containerEl.createDiv();
-    header.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: 24px;';
+    header.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; position: relative;';
 
-    // Search filter
-    const searchInput = header.createEl('input', {
-      type: 'text',
-      placeholder: 'Search posts...',
-      cls: 'px-4 py-3 rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-normal)] focus:outline-none focus:border-[var(--interactive-accent)] focus:ring-2 focus:ring-[var(--interactive-accent-hover)]'
-    });
-    searchInput.style.flex = '1';
-    searchInput.value = this.searchQuery;
-    searchInput.addEventListener('input', (e) => {
-      this.searchQuery = (e.target as HTMLInputElement).value;
-      this.renderPosts();
+    // Left side: Filter and Sort buttons
+    const leftButtons = header.createDiv();
+    leftButtons.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+
+    // Filter button
+    const filterBtn = leftButtons.createDiv();
+    filterBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
+    filterBtn.setAttribute('title', 'Filter posts');
+
+    const filterIcon = filterBtn.createDiv();
+    filterIcon.style.cssText = 'width: 16px; height: 16px; transition: color 0.2s;';
+    setIcon(filterIcon, 'filter');
+
+    const filterText = filterBtn.createSpan({ text: 'Filter' });
+    filterText.style.cssText = 'font-weight: 500;';
+
+    // Active filter indicator
+    const updateFilterButton = () => {
+      const hasActiveFilters =
+        this.filterState.platforms.size < 7 ||
+        this.filterState.likedOnly ||
+        this.filterState.includeArchived ||
+        this.filterState.dateRange.start !== null ||
+        this.filterState.dateRange.end !== null;
+
+      if (hasActiveFilters) {
+        filterBtn.style.background = 'var(--interactive-accent)';
+        filterBtn.style.color = 'var(--text-on-accent)';
+        filterIcon.style.color = 'var(--text-on-accent)';
+      } else {
+        filterBtn.style.background = 'var(--background-secondary)';
+        filterBtn.style.color = 'var(--text-muted)';
+        filterIcon.style.color = 'var(--text-muted)';
+      }
+    };
+
+    updateFilterButton();
+
+    filterBtn.addEventListener('mouseenter', () => {
+      if (!this.filterPanelOpen) {
+        filterBtn.style.background = 'var(--background-modifier-hover)';
+      }
     });
 
-    // Refresh button
+    filterBtn.addEventListener('mouseleave', () => {
+      if (!this.filterPanelOpen) {
+        updateFilterButton();
+      }
+    });
+
+    filterBtn.addEventListener('click', () => {
+      this.filterPanelOpen = !this.filterPanelOpen;
+      if (this.filterPanelOpen) {
+        this.sortDropdownOpen = false;
+        this.renderFilterPanel(header, updateFilterButton);
+      } else {
+        const existingPanel = header.querySelector('.filter-panel');
+        existingPanel?.remove();
+      }
+    });
+
+    // Sort button
+    const sortBtn = leftButtons.createDiv();
+    sortBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
+    sortBtn.setAttribute('title', 'Sort posts');
+
+    const sortIcon = sortBtn.createDiv();
+    sortIcon.style.cssText = 'width: 16px; height: 16px; transition: color 0.2s;';
+    setIcon(sortIcon, 'arrow-up-down');
+
+    const sortText = sortBtn.createSpan({ text: 'Sort' });
+    sortText.style.cssText = 'font-weight: 500;';
+
+    sortBtn.addEventListener('mouseenter', () => {
+      if (!this.sortDropdownOpen) {
+        sortBtn.style.background = 'var(--background-modifier-hover)';
+      }
+    });
+
+    sortBtn.addEventListener('mouseleave', () => {
+      if (!this.sortDropdownOpen) {
+        sortBtn.style.background = 'var(--background-secondary)';
+      }
+    });
+
+    sortBtn.addEventListener('click', () => {
+      this.sortDropdownOpen = !this.sortDropdownOpen;
+      if (this.sortDropdownOpen) {
+        this.filterPanelOpen = false;
+        const existingPanel = header.querySelector('.filter-panel');
+        existingPanel?.remove();
+        this.renderSortDropdown(header, sortBtn);
+      } else {
+        const existingDropdown = header.querySelector('.sort-dropdown');
+        existingDropdown?.remove();
+      }
+    });
+
+    // Right side: Refresh button
     const refreshBtn = header.createDiv();
     refreshBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
     refreshBtn.setAttribute('title', 'Refresh timeline');
@@ -229,9 +331,8 @@ export class TimelineContainer {
       }, 600);
     });
 
-    // Filter posts
-    const filtered = this.filterPosts(this.posts, this.searchQuery);
-    const grouped = this.groupPostsByDate(filtered);
+    // Group posts by date
+    const grouped = this.groupPostsByDate(this.filteredPosts);
 
     // Render posts in single-column feed (max-width for readability)
     const feed = this.containerEl.createDiv({
@@ -244,6 +345,272 @@ export class TimelineContainer {
         this.renderPostCard(feed, post);
       }
     }
+  }
+
+  /**
+   * Render filter panel dropdown
+   */
+  private renderFilterPanel(header: HTMLElement, updateFilterButton: () => void): void {
+    // Remove existing dropdowns
+    header.querySelectorAll('.sort-dropdown').forEach(el => el.remove());
+
+    const panel = header.createDiv({ cls: 'filter-panel' });
+    panel.style.cssText = `
+      position: absolute;
+      top: 56px;
+      left: 0;
+      z-index: 1000;
+      background: var(--background-primary);
+      border: 1px solid var(--background-modifier-border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 16px;
+      min-width: 320px;
+      max-width: 400px;
+    `;
+
+    // Platform filters
+    const platformSection = panel.createDiv();
+    platformSection.style.cssText = 'margin-bottom: 16px;';
+
+    const platformLabel = platformSection.createEl('div', { text: 'Platforms' });
+    platformLabel.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;';
+
+    const platformsGrid = platformSection.createDiv();
+    platformsGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;';
+
+    const platforms = [
+      { id: 'facebook', label: 'Facebook', icon: '👥' },
+      { id: 'linkedin', label: 'LinkedIn', icon: '💼' },
+      { id: 'instagram', label: 'Instagram', icon: '📷' },
+      { id: 'tiktok', label: 'TikTok', icon: '🎵' },
+      { id: 'x', label: 'X', icon: '🐦' },
+      { id: 'threads', label: 'Threads', icon: '🧵' },
+      { id: 'youtube', label: 'YouTube', icon: '📺' }
+    ];
+
+    platforms.forEach(platform => {
+      const checkbox = platformsGrid.createDiv();
+      checkbox.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: ${this.filterState.platforms.has(platform.id) ? 'var(--background-modifier-hover)' : 'transparent'};
+      `;
+
+      const icon = checkbox.createSpan({ text: platform.icon });
+      icon.style.cssText = 'font-size: 16px;';
+
+      const label = checkbox.createSpan({ text: platform.label });
+      label.style.cssText = 'font-size: 13px; flex: 1;';
+
+      const checkIcon = checkbox.createDiv();
+      checkIcon.style.cssText = `width: 16px; height: 16px; display: ${this.filterState.platforms.has(platform.id) ? 'block' : 'none'};`;
+      setIcon(checkIcon, 'check');
+
+      checkbox.addEventListener('click', () => {
+        if (this.filterState.platforms.has(platform.id)) {
+          this.filterState.platforms.delete(platform.id);
+          checkbox.style.background = 'transparent';
+          checkIcon.style.display = 'none';
+        } else {
+          this.filterState.platforms.add(platform.id);
+          checkbox.style.background = 'var(--background-modifier-hover)';
+          checkIcon.style.display = 'block';
+        }
+        this.applyFiltersAndSort();
+        this.renderPosts();
+        updateFilterButton();
+      });
+
+      checkbox.addEventListener('mouseenter', () => {
+        if (!this.filterState.platforms.has(platform.id)) {
+          checkbox.style.background = 'var(--background-secondary)';
+        }
+      });
+
+      checkbox.addEventListener('mouseleave', () => {
+        if (!this.filterState.platforms.has(platform.id)) {
+          checkbox.style.background = 'transparent';
+        }
+      });
+    });
+
+    // Divider
+    const divider1 = panel.createDiv();
+    divider1.style.cssText = 'height: 1px; background: var(--background-modifier-border); margin: 16px 0;';
+
+    // Like filter
+    const likeOption = panel.createDiv();
+    likeOption.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+      background: ${this.filterState.likedOnly ? 'var(--background-modifier-hover)' : 'transparent'};
+    `;
+
+    const likeIcon = likeOption.createDiv();
+    likeIcon.style.cssText = 'width: 16px; height: 16px; color: var(--text-accent);';
+    setIcon(likeIcon, 'star');
+
+    const likeLabel = likeOption.createSpan({ text: 'Liked posts only' });
+    likeLabel.style.cssText = 'font-size: 13px; flex: 1;';
+
+    const likeCheckIcon = likeOption.createDiv();
+    likeCheckIcon.style.cssText = `width: 16px; height: 16px; display: ${this.filterState.likedOnly ? 'block' : 'none'};`;
+    setIcon(likeCheckIcon, 'check');
+
+    likeOption.addEventListener('click', () => {
+      this.filterState.likedOnly = !this.filterState.likedOnly;
+      likeOption.style.background = this.filterState.likedOnly ? 'var(--background-modifier-hover)' : 'transparent';
+      likeCheckIcon.style.display = this.filterState.likedOnly ? 'block' : 'none';
+      this.applyFiltersAndSort();
+      this.renderPosts();
+      updateFilterButton();
+    });
+
+    // Archive filter
+    const archiveOption = panel.createDiv();
+    archiveOption.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: ${this.filterState.includeArchived ? 'var(--background-modifier-hover)' : 'transparent'};
+    `;
+
+    const archiveIcon = archiveOption.createDiv();
+    archiveIcon.style.cssText = 'width: 16px; height: 16px;';
+    setIcon(archiveIcon, 'archive');
+
+    const archiveLabel = archiveOption.createSpan({ text: 'Include archived' });
+    archiveLabel.style.cssText = 'font-size: 13px; flex: 1;';
+
+    const archiveCheckIcon = archiveOption.createDiv();
+    archiveCheckIcon.style.cssText = `width: 16px; height: 16px; display: ${this.filterState.includeArchived ? 'block' : 'none'};`;
+    setIcon(archiveCheckIcon, 'check');
+
+    archiveOption.addEventListener('click', () => {
+      this.filterState.includeArchived = !this.filterState.includeArchived;
+      archiveOption.style.background = this.filterState.includeArchived ? 'var(--background-modifier-hover)' : 'transparent';
+      archiveCheckIcon.style.display = this.filterState.includeArchived ? 'block' : 'none';
+      this.applyFiltersAndSort();
+      this.renderPosts();
+      updateFilterButton();
+    });
+
+    // Close on click outside
+    const closeHandler = (e: MouseEvent) => {
+      if (!panel.contains(e.target as Node) && !(e.target as HTMLElement).closest('.filter-panel')) {
+        this.filterPanelOpen = false;
+        panel.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 0);
+  }
+
+  /**
+   * Render sort dropdown
+   */
+  private renderSortDropdown(header: HTMLElement, sortBtn: HTMLElement): void {
+    // Remove existing panels
+    header.querySelectorAll('.filter-panel').forEach(el => el.remove());
+
+    const dropdown = header.createDiv({ cls: 'sort-dropdown' });
+    dropdown.style.cssText = `
+      position: absolute;
+      top: 56px;
+      left: 100px;
+      z-index: 1000;
+      background: var(--background-primary);
+      border: 1px solid var(--background-modifier-border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 8px;
+      min-width: 200px;
+    `;
+
+    const sortOptions = [
+      { by: 'published' as const, order: 'newest' as const, label: 'Newest published first', icon: 'arrow-down' },
+      { by: 'published' as const, order: 'oldest' as const, label: 'Oldest published first', icon: 'arrow-up' },
+      { by: 'archived' as const, order: 'newest' as const, label: 'Recently archived first', icon: 'archive-down' },
+      { by: 'archived' as const, order: 'oldest' as const, label: 'First archived first', icon: 'archive-up' }
+    ];
+
+    sortOptions.forEach((option, index) => {
+      const item = dropdown.createDiv();
+      const isActive = this.sortState.by === option.by && this.sortState.order === option.order;
+
+      item.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: ${isActive ? 'var(--interactive-accent)' : 'transparent'};
+        color: ${isActive ? 'var(--text-on-accent)' : 'var(--text-normal)'};
+        ${index > 0 ? 'margin-top: 4px;' : ''}
+      `;
+
+      const icon = item.createDiv();
+      icon.style.cssText = 'width: 16px; height: 16px;';
+      setIcon(icon, option.icon);
+
+      const label = item.createSpan({ text: option.label });
+      label.style.cssText = 'font-size: 13px; flex: 1;';
+
+      if (isActive) {
+        const checkIcon = item.createDiv();
+        checkIcon.style.cssText = 'width: 16px; height: 16px;';
+        setIcon(checkIcon, 'check');
+      }
+
+      item.addEventListener('click', () => {
+        this.sortState.by = option.by;
+        this.sortState.order = option.order;
+        this.applyFiltersAndSort();
+        this.sortDropdownOpen = false;
+        dropdown.remove();
+        this.renderPosts();
+      });
+
+      item.addEventListener('mouseenter', () => {
+        if (!isActive) {
+          item.style.background = 'var(--background-modifier-hover)';
+        }
+      });
+
+      item.addEventListener('mouseleave', () => {
+        if (!isActive) {
+          item.style.background = 'transparent';
+        }
+      });
+    });
+
+    // Close on click outside
+    const closeHandler = (e: MouseEvent) => {
+      if (!dropdown.contains(e.target as Node) && !sortBtn.contains(e.target as Node)) {
+        this.sortDropdownOpen = false;
+        dropdown.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 0);
   }
 
   private renderPostCard(container: HTMLElement, post: PostData): void {
@@ -453,11 +820,11 @@ export class TimelineContainer {
       });
 
       const likeIcon = likeBtn.createDiv();
-      likeIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0;';
+      likeIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
       setIcon(likeIcon, 'heart');
 
       const likeCount = likeBtn.createSpan({ text: this.formatNumber(post.metadata.likes) });
-      likeCount.style.minWidth = '20px';
+      likeCount.style.cssText = 'min-width: 20px; display: flex; align-items: center;';
     }
 
     // Comments
@@ -472,11 +839,11 @@ export class TimelineContainer {
       });
 
       const commentIcon = commentBtn.createDiv();
-      commentIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0;';
+      commentIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
       setIcon(commentIcon, 'message-circle');
 
       const commentCount = commentBtn.createSpan({ text: this.formatNumber(post.metadata.comments) });
-      commentCount.style.minWidth = '20px';
+      commentCount.style.cssText = 'min-width: 20px; display: flex; align-items: center;';
     }
 
     // Shares
@@ -491,16 +858,51 @@ export class TimelineContainer {
       });
 
       const shareIcon = shareBtn.createDiv();
-      shareIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0;';
+      shareIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
       setIcon(shareIcon, 'repeat-2');
 
       const shareCount = shareBtn.createSpan({ text: this.formatNumber(post.metadata.shares) });
-      shareCount.style.minWidth = '20px';
+      shareCount.style.cssText = 'min-width: 20px; display: flex; align-items: center;';
     }
 
     // Spacer
     const spacer = interactions.createDiv();
     spacer.style.flex = '1';
+
+    // Personal Like button (star icon, right-aligned, distinct from post likes)
+    const personalLikeBtn = interactions.createDiv();
+    personalLikeBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; transition: color 0.2s;';
+    personalLikeBtn.setAttribute('title', post.like ? 'Remove from favorites' : 'Add to favorites');
+
+    const personalLikeIcon = personalLikeBtn.createDiv();
+    personalLikeIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+
+    // Set initial state
+    if (post.like) {
+      setIcon(personalLikeIcon, 'star');
+      // Fill the star when liked
+      const svgEl = personalLikeIcon.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.fill = 'currentColor';
+      }
+      personalLikeBtn.style.color = 'var(--interactive-accent)';
+    } else {
+      setIcon(personalLikeIcon, 'star');
+      personalLikeBtn.style.color = 'var(--text-muted)';
+    }
+
+    personalLikeBtn.addEventListener('mouseenter', () => {
+      personalLikeBtn.style.color = 'var(--interactive-accent)';
+    });
+    personalLikeBtn.addEventListener('mouseleave', () => {
+      personalLikeBtn.style.color = post.like ? 'var(--interactive-accent)' : 'var(--text-muted)';
+    });
+
+    // Personal Like button click handler
+    personalLikeBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.togglePersonalLike(post, personalLikeBtn, personalLikeIcon);
+    });
 
     // Archive button (right-aligned)
     const archiveBtn = interactions.createDiv();
@@ -523,15 +925,31 @@ export class TimelineContainer {
       await this.archivePost(post, card);
     });
 
+    // Open Note button (right-aligned, next to Archive)
+    const openNoteBtn = interactions.createDiv();
+    openNoteBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; transition: color 0.2s;';
+    openNoteBtn.setAttribute('title', 'Open note in Obsidian');
+    openNoteBtn.addEventListener('mouseenter', () => {
+      openNoteBtn.style.color = 'var(--interactive-accent)';
+    });
+    openNoteBtn.addEventListener('mouseleave', () => {
+      openNoteBtn.style.color = 'var(--text-muted)';
+    });
+
+    const openNoteIcon = openNoteBtn.createDiv();
+    openNoteIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+    setIcon(openNoteIcon, 'external-link');
+
+    // Open Note button click handler
+    openNoteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.openNote(post);
+    });
+
     // Comments section (Instagram style)
     if (post.comments && post.comments.length > 0) {
       this.renderComments(contentArea, post.comments);
     }
-
-    // Click handler for entire card (opens note)
-    card.addEventListener('click', async () => {
-      await this.openNote(post);
-    });
   }
 
   /**
@@ -946,6 +1364,60 @@ export class TimelineContainer {
   }
 
   /**
+   * Toggle personal like status for a post
+   */
+  private async togglePersonalLike(post: PostData, btn: HTMLElement, icon: HTMLElement): Promise<void> {
+    try {
+      const filePath = (post as any).filePath;
+      if (!filePath) {
+        console.warn('[Timeline] No file path for post:', post.id);
+        return;
+      }
+
+      const file = this.vault.getAbstractFileByPath(filePath);
+      if (!file || !('extension' in file)) {
+        console.warn('[Timeline] File not found:', filePath);
+        return;
+      }
+
+      const tfile = file as TFile;
+
+      // Read current file content
+      const content = await this.vault.read(tfile);
+
+      // Toggle like status
+      const newLikeStatus = !post.like;
+
+      // Update YAML frontmatter
+      const updatedContent = this.updateYamlFrontmatter(content, { like: newLikeStatus });
+
+      // Write back to file
+      await this.vault.modify(tfile, updatedContent);
+
+      // Update local state
+      post.like = newLikeStatus;
+
+      // Update UI
+      btn.setAttribute('title', newLikeStatus ? 'Remove from favorites' : 'Add to favorites');
+      btn.style.color = newLikeStatus ? 'var(--interactive-accent)' : 'var(--text-muted)';
+
+      // Update star icon fill
+      const svgEl = icon.querySelector('svg');
+      if (svgEl) {
+        if (newLikeStatus) {
+          svgEl.style.fill = 'currentColor';
+        } else {
+          svgEl.style.fill = 'none';
+        }
+      }
+
+      console.log('[Timeline] Toggled personal like:', post.id, newLikeStatus);
+    } catch (err) {
+      console.error('[Timeline] Failed to toggle personal like:', err);
+    }
+  }
+
+  /**
    * Archive a post (set archive: true in YAML and remove from view)
    */
   private async archivePost(post: PostData, cardElement: HTMLElement): Promise<void> {
@@ -1079,17 +1551,12 @@ export class TimelineContainer {
         }
       }
 
-      // Sort by timestamp (newest first)
-      loadedPosts.sort((a, b) =>
-        new Date(b.metadata.timestamp).getTime() -
-        new Date(a.metadata.timestamp).getTime()
-      );
-
       this.posts = loadedPosts;
+      this.applyFiltersAndSort();
 
-      console.log(`[Timeline] Loaded ${this.posts.length} posts`);
+      console.log(`[Timeline] Loaded ${this.posts.length} posts, ${this.filteredPosts.length} after filtering`);
 
-      if (this.posts.length === 0) {
+      if (this.filteredPosts.length === 0) {
         this.renderEmpty();
       } else {
         this.renderPosts();
@@ -1099,6 +1566,68 @@ export class TimelineContainer {
       console.error('[Timeline] Failed to load posts:', err);
       this.renderError(err instanceof Error ? err.message : 'Failed to load posts');
     }
+  }
+
+  /**
+   * Apply filters and sorting to posts
+   */
+  private applyFiltersAndSort(): void {
+    // Start with all posts
+    let filtered = [...this.posts];
+
+    // Filter by platform
+    filtered = filtered.filter(post => this.filterState.platforms.has(post.platform));
+
+    // Filter by liked only
+    if (this.filterState.likedOnly) {
+      filtered = filtered.filter(post => post.like === true);
+    }
+
+    // Filter by archive status
+    if (!this.filterState.includeArchived) {
+      filtered = filtered.filter(post => post.archive !== true);
+    }
+
+    // Filter by date range
+    if (this.filterState.dateRange.start || this.filterState.dateRange.end) {
+      filtered = filtered.filter(post => {
+        const dateToCheck = this.sortState.by === 'published' ? post.publishedDate : post.archivedDate;
+        if (!dateToCheck) return true; // Keep if date doesn't exist
+
+        const postTime = dateToCheck.getTime();
+        if (this.filterState.dateRange.start && postTime < this.filterState.dateRange.start.getTime()) {
+          return false;
+        }
+        if (this.filterState.dateRange.end && postTime > this.filterState.dateRange.end.getTime()) {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      // If sorting by like, prioritize liked posts
+      if (a.like !== b.like) {
+        return a.like ? -1 : 1;
+      }
+
+      // Get date to sort by
+      const getDateForSort = (post: PostData): number => {
+        if (this.sortState.by === 'published') {
+          return post.publishedDate?.getTime() ?? post.metadata.timestamp.getTime();
+        } else {
+          return post.archivedDate?.getTime() ?? post.metadata.timestamp.getTime();
+        }
+      };
+
+      const aTime = getDateForSort(a);
+      const bTime = getDateForSort(b);
+
+      return this.sortState.order === 'newest' ? bTime - aTime : aTime - bTime;
+    });
+
+    this.filteredPosts = filtered;
   }
 
   private async loadPostFromFile(file: TFile): Promise<PostData | null> {
@@ -1111,12 +1640,6 @@ export class TimelineContainer {
 
       if (!frontmatter || !frontmatter.platform) {
         console.log('[Timeline] No frontmatter or platform, skipping');
-        return null;
-      }
-
-      // Filter out archived posts (archive: true)
-      if (frontmatter.archive === true) {
-        console.log('[Timeline] Post is archived, skipping');
         return null;
       }
 
@@ -1133,6 +1656,10 @@ export class TimelineContainer {
         videoId: (frontmatter as any).videoId, // YouTube video ID
         filePath: file.path, // Store file path for opening
         comment: frontmatter.comment, // User's personal note
+        like: frontmatter.like, // User's personal like
+        archive: frontmatter.archive, // Archive status
+        publishedDate: frontmatter.published ? new Date(frontmatter.published) : undefined,
+        archivedDate: frontmatter.archived ? new Date(frontmatter.archived) : undefined,
         author: {
           name: frontmatter.author || 'Unknown',
           url: frontmatter.authorUrl || '',
@@ -1200,16 +1727,6 @@ export class TimelineContainer {
     }
 
     return contentLines.join('\n').trim();
-  }
-
-  private filterPosts(posts: PostData[], query: string): PostData[] {
-    if (!query.trim()) return posts;
-
-    const q = query.toLowerCase();
-    return posts.filter(post =>
-      post.content.text.toLowerCase().includes(q) ||
-      post.author.name.toLowerCase().includes(q)
-    );
   }
 
   private groupPostsByDate(posts: PostData[]): Map<string, PostData[]> {

@@ -32,6 +32,7 @@ export interface YamlFrontmatter {
   download_time?: number; // Time taken to archive in seconds
   archive?: boolean; // Whether the post is archived (hidden from timeline)
   comment?: string; // User's personal note/comment
+  like?: boolean; // User's personal like (for sorting/filtering)
   hasTranscript?: boolean; // YouTube: has full transcript text
   hasFormattedTranscript?: boolean; // YouTube: has formatted transcript with timestamps
   videoId?: string; // YouTube video ID
