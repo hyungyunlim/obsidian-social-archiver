@@ -148,6 +148,7 @@ export default class SocialArchiverPlugin extends Plugin {
     options?: {
       includeTranscript?: boolean;
       includeFormattedTranscript?: boolean;
+      comment?: string;
     }
   ): Promise<void> {
     // Track processing time

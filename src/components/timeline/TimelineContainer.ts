@@ -194,7 +194,7 @@ export class TimelineContainer {
       cls: 'flex flex-col items-center justify-center min-h-[300px] text-[var(--text-muted)]'
     });
 
-    const spinner = loading.createDiv({ cls: 'timeline-loading-spinner' });
+    loading.createDiv({ cls: 'timeline-loading-spinner' });
     loading.createEl('p', {
       text: 'Loading archived posts...',
       cls: 'mt-4'
@@ -383,7 +383,7 @@ export class TimelineContainer {
     });
 
     // Remove date separators - just render all posts
-    for (const [groupLabel, groupPosts] of grouped) {
+    for (const [_, groupPosts] of grouped) {
       for (const post of groupPosts) {
         this.renderPostCard(feed, post);
       }
@@ -509,7 +509,10 @@ export class TimelineContainer {
     const timeSpan = header.createDiv({
       cls: 'text-xs text-[var(--text-muted)]'
     });
-    timeSpan.setText(this.getRelativeTime(post.metadata.timestamp));
+    const timestamp = typeof post.metadata.timestamp === 'string'
+      ? new Date(post.metadata.timestamp)
+      : post.metadata.timestamp;
+    timeSpan.setText(this.getRelativeTime(timestamp));
 
     // Content (full text with expand/collapse)
     const contentContainer = contentArea.createDiv({ cls: 'mb-3' });
@@ -895,7 +898,7 @@ export class TimelineContainer {
       const allLinks = [...markdownLinks, ...plainUrls];
 
       // If exactly one link exists, use it for the image click
-      if (allLinks.length === 1) {
+      if (allLinks.length === 1 && allLinks[0]) {
         extractedLink = allLinks[0];
       }
     }
@@ -910,6 +913,8 @@ export class TimelineContainer {
     const mediaElements: HTMLElement[] = [];
     for (let i = 0; i < media.length; i++) {
       const mediaItem = media[i];
+      if (!mediaItem) continue; // Skip if undefined
+
       const resourcePath = this.app.vault.adapter.getResourcePath(mediaItem.url);
 
       // Determine if it's a video or image
@@ -982,6 +987,8 @@ export class TimelineContainer {
       const thumbnailElements: HTMLElement[] = [];
       for (let i = 0; i < media.length; i++) {
         const mediaItem = media[i];
+        if (!mediaItem) continue; // Skip if undefined
+
         const resourcePath = this.app.vault.adapter.getResourcePath(mediaItem.url);
         const isVideo = mediaItem.type === 'video' || mediaItem.url.endsWith('.mp4');
 
@@ -1291,7 +1298,8 @@ export class TimelineContainer {
    * Archive a post (set archive: true in YAML and remove from view)
    * @deprecated Use toggleArchive instead
    */
-  private async archivePost(post: PostData, cardElement: HTMLElement): Promise<void> {
+  // @ts-ignore - Deprecated method kept for reference
+  private async _archivePost(post: PostData, cardElement: HTMLElement): Promise<void> {
     try {
       const filePath = (post as any).filePath;
       if (!filePath) {
@@ -1350,7 +1358,7 @@ export class TimelineContainer {
     const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
     const match = content.match(frontmatterRegex);
 
-    if (!match) {
+    if (!match || !match[1]) {
       // No frontmatter found, add it
       const yamlLines = Object.entries(updates)
         .map(([key, value]) => `${key}: ${value}`)
@@ -1484,7 +1492,8 @@ export class TimelineContainer {
     const key = platform.toLowerCase();
     // Check if key exists in map (including null values)
     if (key in iconMap) {
-      return iconMap[key];
+      const icon = iconMap[key];
+      return icon !== undefined ? icon : null;
     }
     return siX; // Default fallback for unknown platforms
   }
@@ -1618,7 +1627,7 @@ export class TimelineContainer {
     // First, replace markdown links with a placeholder to avoid processing them again
     const markdownLinks: Array<{ text: string; url: string; isTimestamp: boolean; seconds?: number }> = [];
     const markdownPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
-    let processedText = text.replace(markdownPattern, (match, linkText, linkUrl) => {
+    let processedText = text.replace(markdownPattern, (_match, linkText, linkUrl) => {
       const index = markdownLinks.length;
 
       // Check if this is a YouTube timestamp link
@@ -1653,7 +1662,9 @@ export class TimelineContainer {
 
       // Add the URL
       const url = match[1];
-      parts.push({ type: 'url', content: url, url });
+      if (url) {
+        parts.push({ type: 'url', content: url, url });
+      }
 
       lastIndex = urlPattern.lastIndex;
     }
@@ -1680,8 +1691,11 @@ export class TimelineContainer {
           }
 
           // Add markdown link
+          if (!placeholderMatch[1]) continue; // Skip if no group match
           const linkIndex = parseInt(placeholderMatch[1]);
           const linkData = markdownLinks[linkIndex];
+
+          if (!linkData) continue; // Skip if linkData is undefined
 
           if (linkData.isTimestamp && linkData.seconds !== undefined && videoId) {
             // YouTube timestamp link - create button that seeks to timestamp
@@ -1698,8 +1712,8 @@ export class TimelineContainer {
               e.stopPropagation();
               // Find controller at click time (in case it wasn't ready during render)
               const controller = this.youtubeControllers.get(videoId);
-              if (controller) {
-                controller.seekTo(linkData.seconds!);
+              if (controller && linkData.seconds) {
+                controller.seekTo(linkData.seconds);
                 console.log('[Timeline] Seeking to timestamp:', linkData.seconds);
               } else {
                 console.warn('[Timeline] YouTube controller not found for video:', videoId);

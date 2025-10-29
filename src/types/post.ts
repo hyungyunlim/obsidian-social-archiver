@@ -56,6 +56,7 @@ export interface PostMetadata {
   }>; // TikTok Fast API tagged_user
   externalLink?: string; // Threads external_link_title
   downloadTime?: number; // Time taken to archive in seconds
+  duration?: number; // YouTube video duration in seconds
 }
 
 // Comment types
