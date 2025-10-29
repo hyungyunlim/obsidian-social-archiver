@@ -2,7 +2,7 @@
  * Post data types for Workers API
  */
 
-export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads';
+export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube';
 
 export interface Author {
   name: string;
@@ -35,6 +35,7 @@ export interface PostMetadata {
   bookmarks?: number; // TikTok collect_count
   timestamp: string; // ISO 8601 format
   editedAt?: string;
+  duration?: number; // Video/audio duration in seconds (YouTube, TikTok, etc)
   music?: {
     title: string;
     author: string;

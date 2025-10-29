@@ -38,6 +38,9 @@ export function extractPlatform(url: string): Platform | null {
 		if (hostname.includes('threads.net')) {
 			return 'threads';
 		}
+		if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+			return 'youtube';
+		}
 
 		return null;
 	} catch {
@@ -61,6 +64,7 @@ export function canonicalizeUrl(url: string): string {
 			tiktok: ['is_from_webapp', 'sender_device', 'refer', '_r', 'u_code', 'sec_uid'],
 			x: ['s', 't', 'ref_src', 'ref_url', 'src', 'twclid'],
 			threads: ['utm_source', 'utm_medium', 'utm_campaign'],
+			youtube: ['feature', 'si', 'pp', 'kw', 'ab_channel', 'app', 'cbrd'],
 		};
 
 		// Remove tracking parameters based on platform

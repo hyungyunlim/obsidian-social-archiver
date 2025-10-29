@@ -28,6 +28,7 @@ const PLATFORM_PATTERNS: Array<[Platform, RegExp]> = [
   ['tiktok', /tiktok\.com/i],
   ['x', /(?:x\.com|twitter\.com)/i],
   ['threads', /(?:threads\.net|threads\.com)/i],
+  ['youtube', /(?:youtube\.com|youtu\.be)/i],
 ];
 
 export class ArchiveService {

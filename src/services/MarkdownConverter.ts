@@ -370,6 +370,31 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 
 **Original URL:** {{url}}
 `,
+
+  youtube: `{{content.text}}
+
+{{#if media}}
+
+---
+
+{{media}}
+{{/if}}
+
+{{#if comments}}
+
+---
+
+## 💬 Comments
+
+{{comments}}
+{{/if}}
+
+---
+
+**Platform:** YouTube{{#if author.verified}} ✓{{/if}} | **Channel:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.views}} | **Views:** {{metadata.views}}{{/if}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}{{#if metadata.duration}} | **Duration:** {{metadata.duration}}{{/if}}
+
+**Original URL:** {{url}}
+`,
 };
 
 /**
@@ -511,7 +536,7 @@ export class MarkdownConverter implements IService {
         shares: postData.metadata.shares ? this.formatNumber(postData.metadata.shares) : undefined,
         views: postData.metadata.views ? this.formatNumber(postData.metadata.views) : undefined,
       },
-      media: this.formatMedia(postData.media),
+      media: this.formatMedia(postData.media, postData.platform, postData.url),
       comments: this.formatComments(postData.comments, postData.platform),
       ai: postData.ai ? {
         ...postData.ai,
@@ -546,9 +571,14 @@ export class MarkdownConverter implements IService {
   /**
    * Format media items for markdown
    */
-  private formatMedia(media: PostData['media']): string {
+  private formatMedia(media: PostData['media'], platform: Platform, originalUrl: string): string {
     if (!media || media.length === 0) {
       return '';
+    }
+
+    // For YouTube, use original URL directly (don't download video)
+    if (platform === 'youtube') {
+      return `![](${originalUrl})`;
     }
 
     return media

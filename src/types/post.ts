@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Platform types
-export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads';
+export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube';
 
 // Media types
 export interface Media {

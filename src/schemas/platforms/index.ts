@@ -8,6 +8,7 @@ import { InstagramURLSchema, InstagramPostIdSchema } from './instagram';
 import { TikTokURLSchema, TikTokVideoIdSchema, TikTokShortCodeSchema } from './tiktok';
 import { XURLSchema, XTweetIdSchema, XMomentIdSchema, XSpaceIdSchema } from './x';
 import { ThreadsURLSchema, ThreadsPostIdSchema } from './threads';
+import { YouTubeURLSchema, YouTubeVideoIdSchema } from './youtube';
 
 /**
  * Re-export all platform-specific schemas
@@ -35,6 +36,9 @@ export {
 	// Threads
 	ThreadsURLSchema,
 	ThreadsPostIdSchema,
+	// YouTube
+	YouTubeURLSchema,
+	YouTubeVideoIdSchema,
 };
 
 /**
@@ -48,6 +52,7 @@ const PLATFORM_SCHEMA_MAP = {
 	tiktok: TikTokURLSchema,
 	x: XURLSchema,
 	threads: ThreadsURLSchema,
+	youtube: YouTubeURLSchema,
 } as const satisfies Record<Platform, z.ZodType>;
 
 /**
@@ -93,7 +98,7 @@ export const AnySocialMediaURLSchema = z
 			return schemas.some((schema) => schema.safeParse(url).success);
 		},
 		{
-			message: 'URL must be from a supported social media platform (Facebook, LinkedIn, Instagram, TikTok, X/Twitter, Threads)',
+			message: 'URL must be from a supported social media platform (Facebook, LinkedIn, Instagram, TikTok, X/Twitter, Threads, YouTube)',
 		}
 	);
 
@@ -128,7 +133,7 @@ export function validateAndDetectPlatform(url: string): PlatformSchemaValidation
 	const errors: string[] = [];
 
 	// Try each platform schema
-	const platforms: Platform[] = ['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads'];
+	const platforms: Platform[] = ['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube'];
 
 	for (const platform of platforms) {
 		const schema = getPlatformSchema(platform);

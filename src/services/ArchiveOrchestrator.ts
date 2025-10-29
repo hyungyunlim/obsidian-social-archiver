@@ -312,8 +312,9 @@ export class ArchiveOrchestrator implements IService {
       this.emitStageComplete('fetching');
 
       // Stage 4: Download media (if enabled)
+      // Note: YouTube videos use original URL embed, no download needed
       let mediaResults: MediaResult[] = [];
-      if (options.downloadMedia && postData.media.length > 0) {
+      if (options.downloadMedia && postData.media.length > 0 && platform !== 'youtube') {
         this.emitProgress('downloading', 50, 'Downloading media files...');
 
         // Extract author username (prefer username, fallback to handle without @, or name)

@@ -45,6 +45,7 @@ const PLATFORM_ENDPOINTS: Record<Platform, string> = {
   tiktok: 'https://api.brightdata.com/datasets/v3/trigger',
   x: 'https://api.brightdata.com/datasets/v3/trigger',
   threads: 'https://api.brightdata.com/datasets/v3/trigger',
+  youtube: 'https://api.brightdata.com/datasets/v3/trigger',
 };
 
 /**
@@ -58,6 +59,7 @@ const DATASET_IDS: Record<Platform, string> = {
   tiktok: 'gd_lu702nij2f790tmv9h', // TikTok posts dataset - Posts by URL (updated 2025-01-28)
   x: 'gd_lwxkxvnf1cynvib9co', // X (Twitter) posts dataset (confirmed)
   threads: 'gd_md75myxy14rihbjksa', // Threads posts dataset (confirmed)
+  youtube: 'gd_lk56epmy2i5g7lzu0k', // YouTube videos dataset (confirmed)
 };
 
 export class BrightDataService {
@@ -296,6 +298,19 @@ export class BrightDataService {
     try {
       const urlObj = new URL(url);
 
+      // YouTube: Keep essential 'v' parameter (video ID)
+      if (platform === 'youtube') {
+        const videoId = urlObj.searchParams.get('v');
+        if (!videoId) {
+          throw new Error('YouTube URL must contain video ID (v parameter)');
+        }
+        // Clear all params and keep only 'v'
+        urlObj.search = '';
+        urlObj.searchParams.set('v', videoId);
+        urlObj.hash = '';
+        return urlObj.toString();
+      }
+
       // Remove all query parameters (utm_source, utm_medium, etc.)
       urlObj.search = '';
 
@@ -471,6 +486,8 @@ export class BrightDataService {
         return this.parseXPost(rawData, url);
       case 'threads':
         return this.parseThreadsPost(rawData, url);
+      case 'youtube':
+        return this.parseYouTubePost(rawData, url);
       default:
         throw new Error(`Unsupported platform: ${platform}`);
     }
@@ -1105,6 +1122,53 @@ export class BrightDataService {
         externalLink: data.external_link_title,
       },
       comments: undefined, // Always undefined - BrightData returns incorrect data
+      raw: data,
+    };
+  }
+
+  private parseYouTubePost(data: any, url: string): PostData {
+    // BrightData YouTube response format
+    const username = data.youtuber || data.handle_name || 'unknown';
+
+    this.logger.info('🎥 Parsing YouTube video', {
+      videoId: data.video_id,
+      title: data.title,
+      username,
+      hasVideo: !!data.video_url,
+      duration: data.video_length,
+      views: data.views,
+      likes: data.likes,
+    });
+
+    // YouTube: Don't download media, use original URL embed
+    // Media array is left empty - MarkdownConverter will use original URL
+    const media: Media[] = [];
+
+    return {
+      platform: 'youtube',
+      id: data.video_id || this.extractIdFromUrl(url),
+      url: data.url || url,
+      author: {
+        name: data.handle_name || username,
+        url: data.channel_url || `https://youtube.com/${username}`,
+        handle: username,
+        username: username.replace('@', ''),
+        avatar: data.avatar_img_channel,
+        verified: data.verified || false,
+        followers: data.subscribers,
+      },
+      content: {
+        text: data.description || '',
+      },
+      media,
+      metadata: {
+        likes: data.likes || 0,
+        comments: data.num_comments || 0,
+        shares: 0, // YouTube doesn't have shares
+        views: data.views || 0,
+        timestamp: data.date_posted || new Date().toISOString(),
+        duration: data.video_length,
+      },
       raw: data,
     };
   }

@@ -145,6 +145,24 @@ export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
       threads: true,
     },
   },
+  youtube: {
+    platform: 'youtube',
+    displayName: 'YouTube',
+    domains: ['youtube.com', 'youtu.be', 'm.youtube.com'],
+    supportsMedia: true,
+    supportsAI: true,
+    maxMediaSize: 500 * 1024 * 1024, // 500MB (videos)
+    rateLimit: {
+      requestsPerHour: 150,
+      requestsPerDay: 1500,
+    },
+    features: {
+      stories: false,
+      live: true,
+      reels: true, // YouTube Shorts
+      threads: false,
+    },
+  },
 };
 
 /**

@@ -33,7 +33,7 @@ class ArchiveModal extends Modal {
     container.createEl('label', { text: 'Post URL' });
     const urlInput = container.createEl('input', {
       type: 'text',
-      placeholder: 'Paste URL from Facebook, LinkedIn, Instagram, TikTok, X, or Threads',
+      placeholder: 'Paste URL from Facebook, LinkedIn, Instagram, TikTok, X, Threads, or YouTube',
       value: this.url
     });
     urlInput.style.width = '100%';
@@ -478,7 +478,10 @@ export default class SocialArchiverPlugin extends Plugin {
         'tiktok.com',
         'x.com',
         'twitter.com',
-        'threads.net'
+        'threads.net',
+        'threads.com',
+        'youtube.com',
+        'youtu.be'
       ];
 
       return supportedDomains.some(domain => url.hostname.includes(domain));
