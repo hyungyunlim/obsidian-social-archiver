@@ -247,6 +247,23 @@ export class TimelineContainer {
     });
     timeSpan.setText(this.getRelativeTime(post.metadata.timestamp));
 
+    // User comment (if exists)
+    if (post.comment) {
+      const commentSection = contentArea.createDiv({ cls: 'mb-3' });
+      commentSection.style.cssText = 'padding: 8px 12px; background: var(--background-secondary); border-radius: 4px; border-left: 2px solid var(--interactive-accent);';
+
+      const commentLabel = commentSection.createSpan({
+        text: '💭 ',
+        cls: 'text-xs text-[var(--text-muted)]'
+      });
+
+      const commentText = commentSection.createSpan({
+        cls: 'text-sm text-[var(--text-normal)]'
+      });
+      commentText.style.marginLeft = '4px';
+      this.renderMarkdownLinks(commentText, post.comment);
+    }
+
     // Content (full text with expand/collapse)
     const contentContainer = contentArea.createDiv({ cls: 'mb-3' });
 
@@ -989,6 +1006,7 @@ export class TimelineContainer {
         url: frontmatter.originalUrl || '',
         videoId: (frontmatter as any).videoId, // YouTube video ID
         filePath: file.path, // Store file path for opening
+        comment: frontmatter.comment, // User's personal note
         author: {
           name: frontmatter.author || 'Unknown',
           url: frontmatter.authorUrl || '',

@@ -253,6 +253,22 @@ export default class SocialArchiverPlugin extends Plugin {
         console.log('[Social Archiver] Step 4.5: Downloading media files via proxy...');
         console.log(`[Social Archiver] Found ${result.postData.media.length} media items to download`);
 
+        // Save original media URLs before downloading
+        const originalMediaUrls: string[] = [];
+        for (const media of result.postData.media) {
+          let mediaUrl = '';
+          if (typeof media.url === 'string') {
+            mediaUrl = media.url;
+          } else if (typeof media.url === 'object' && media.url !== null) {
+            const urlObj = media.url as any;
+            mediaUrl = urlObj.video_url || urlObj.url || urlObj.image_url || urlObj.thumbnail_url || '';
+          }
+          if (mediaUrl) {
+            originalMediaUrls.push(mediaUrl);
+          }
+        }
+        result.postData.mediaSourceUrls = originalMediaUrls;
+
         const downloadedMedia: Array<{ originalUrl: string; localPath: string }> = [];
 
         for (let i = 0; i < result.postData.media.length; i++) {
@@ -400,7 +416,7 @@ export default class SocialArchiverPlugin extends Plugin {
         await this.app.workspace.getLeaf().openFile(file as any);
       }
 
-      // Refresh Timeline View if it's open
+      // Refresh Timeline View if it's open (by re-activating it)
       this.refreshTimelineView();
 
     } catch (error) {
@@ -411,15 +427,14 @@ export default class SocialArchiverPlugin extends Plugin {
 
   /**
    * Refresh Timeline View if it exists
+   * Uses activateTimelineView to ensure proper refresh
    */
   private refreshTimelineView(): void {
     const leaves = this.app.workspace.getLeavesOfType('social-archiver-timeline');
     if (leaves.length > 0) {
-      const timelineView = leaves[0].view as any;
-      if (timelineView && typeof timelineView.refresh === 'function') {
-        timelineView.refresh();
-        console.log('[Social Archiver] Timeline View refreshed');
-      }
+      // Timeline View is open, refresh by re-activating
+      console.log('[Social Archiver] Refreshing Timeline View by re-activating');
+      this.activateTimelineView();
     }
   }
 

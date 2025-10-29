@@ -87,7 +87,8 @@ class TemplateEngine {
     }
 
     if (Array.isArray(value)) {
-      return value.join(', ');
+      // Format arrays as markdown list (one item per line)
+      return value.map(item => `- ${String(item)}`).join('\n');
     }
 
     if (typeof value === 'object') {
@@ -144,6 +145,11 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** Facebook{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}{{#if metadata.shares}} | **Shares:** {{metadata.shares}}{{/if}}
 
 **Original URL:** {{url}}
+
+{{#if mediaSourceUrls}}
+**Original Media URLs:**
+{{mediaSourceUrls}}
+{{/if}}
 `,
 
   linkedin: `{{content.text}}
@@ -188,6 +194,11 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** LinkedIn{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Reactions:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
 
 **Original URL:** {{url}}
+
+{{#if mediaSourceUrls}}
+**Original Media URLs:**
+{{mediaSourceUrls}}
+{{/if}}
 `,
 
   instagram: `{{content.text}}
@@ -232,6 +243,11 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** Instagram{{#if author.verified}} ✓{{/if}} | **Author:** {{authorMention}} | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
 
 **Original URL:** {{url}}
+
+{{#if mediaSourceUrls}}
+**Original Media URLs:**
+{{mediaSourceUrls}}
+{{/if}}
 `,
 
   tiktok: `{{content.text}}
@@ -276,6 +292,11 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** TikTok{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.views}} | **Views:** {{metadata.views}}{{/if}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
 
 **Original URL:** {{url}}
+
+{{#if mediaSourceUrls}}
+**Original Media URLs:**
+{{mediaSourceUrls}}
+{{/if}}
 `,
 
   x: `{{content.text}}
@@ -325,6 +346,11 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** X (Twitter){{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Replies:** {{metadata.comments}}{{/if}}{{#if metadata.shares}} | **Retweets:** {{metadata.shares}}{{/if}}
 
 **Original URL:** {{url}}
+
+{{#if mediaSourceUrls}}
+**Original Media URLs:**
+{{mediaSourceUrls}}
+{{/if}}
 `,
 
   threads: `{{content.text}}
@@ -369,6 +395,11 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** Threads{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Replies:** {{metadata.comments}}{{/if}}
 
 **Original URL:** {{url}}
+
+{{#if mediaSourceUrls}}
+**Original Media URLs:**
+{{mediaSourceUrls}}
+{{/if}}
 `,
 
   youtube: `{{content.text}}
@@ -403,6 +434,11 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** YouTube{{#if author.verified}} ✓{{/if}} | **Channel:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.views}} | **Views:** {{metadata.views}}{{/if}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}{{#if metadata.duration}} | **Duration:** {{metadata.duration}}{{/if}}
 
 **Original URL:** {{url}}
+
+{{#if mediaSourceUrls}}
+**Original Media URLs:**
+{{mediaSourceUrls}}
+{{/if}}
 `,
 };
 

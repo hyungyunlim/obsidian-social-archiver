@@ -120,6 +120,9 @@ export interface PostData {
   comments?: Comment[]; // Optional comments array
   transcript?: Transcript;  // YouTube transcript data
   videoId?: string;         // YouTube video ID
+  filePath?: string;        // File path in vault (for Timeline View)
+  comment?: string;         // User's personal note/comment
+  mediaSourceUrls?: string[]; // Original media URLs (before proxy download)
   ai?: AIAnalysis;
   raw?: unknown; // Original API response
 }
