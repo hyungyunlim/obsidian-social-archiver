@@ -380,6 +380,15 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 {{media}}
 {{/if}}
 
+{{#if transcript}}
+
+---
+
+## 📝 Transcript
+
+{{transcript}}
+{{/if}}
+
 {{#if comments}}
 
 ---
@@ -491,16 +500,24 @@ export class MarkdownConverter implements IService {
     // Format as YYYY-MM-DD (split always returns valid string at index 0)
     const today = new Date().toISOString().split('T')[0]!;
 
+    // Format original post date (YYYY-MM-DD HH:mm in local timezone)
+    const published = this.formatDate(postData.metadata.timestamp);
+
     return {
       share: false,
       platform: postData.platform,
       author: postData.author.name,
       authorUrl: postData.author.url,
       originalUrl: postData.url,
-      archived: today,
+      published: published, // Original post date
+      archived: today, // Date when archived
       lastModified: today,
       download_time: undefined, // Will be set by orchestrator
       archive: false, // Default: not archived (visible in timeline)
+      hasTranscript: postData.transcript?.raw ? true : undefined,
+      hasFormattedTranscript: postData.transcript?.formatted && postData.transcript.formatted.length > 0 ? true : undefined,
+      videoId: postData.videoId,
+      duration: postData.metadata.duration,
       tags: [
         `social/${postData.platform}`,
         ...(postData.ai?.topics || []).map(topic => `topic/${topic}`),
@@ -519,6 +536,13 @@ export class MarkdownConverter implements IService {
     const authorMention = postData.platform === 'instagram' && postData.author.handle
       ? `[@${postData.author.handle}](https://instagram.com/${postData.author.handle})`
       : postData.author.name;
+
+    // Format transcript for YouTube
+    const hasRawTranscript = !!postData.transcript?.raw;
+    const hasFormattedTranscript = !!postData.transcript?.formatted && postData.transcript.formatted.length > 0;
+    const formattedTranscript = (hasRawTranscript || hasFormattedTranscript)
+      ? this.formatTranscript(postData.transcript, postData.videoId, hasRawTranscript, hasFormattedTranscript)
+      : undefined;
 
     return {
       ...postData,
@@ -539,6 +563,7 @@ export class MarkdownConverter implements IService {
       },
       media: this.formatMedia(postData.media, postData.platform, postData.url),
       comments: this.formatComments(postData.comments, postData.platform),
+      transcript: formattedTranscript,  // Formatted transcript for YouTube
       ai: postData.ai ? {
         ...postData.ai,
         factCheck: this.formatFactChecks(postData.ai.factCheck),
@@ -558,28 +583,44 @@ export class MarkdownConverter implements IService {
    * Handles both Date objects and ISO string timestamps
    */
   private formatDate(date: Date | string): string {
+    // Return empty string if no date provided
+    if (!date) {
+      return '';
+    }
+
     // Convert to Date object if it's a string
     const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return '';
+    }
 
     if (this.customDateFormat) {
       return this.customDateFormat(dateObj);
     }
 
-    // Default format: YYYY-MM-DD HH:mm
-    return dateObj.toISOString().replace('T', ' ').slice(0, 16);
+    // Default format: YYYY-MM-DD HH:mm (in local timezone)
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   }
 
   /**
    * Format media items for markdown
    */
   private formatMedia(media: PostData['media'], platform: Platform, originalUrl: string): string {
-    if (!media || media.length === 0) {
-      return '';
-    }
-
     // For YouTube, use original URL directly (don't download video)
     if (platform === 'youtube') {
       return `![](${originalUrl})`;
+    }
+
+    if (!media || media.length === 0) {
+      return '';
     }
 
     return media
@@ -620,6 +661,70 @@ export class MarkdownConverter implements IService {
   }
 
   /**
+   * Convert milliseconds to seconds for YouTube URL timestamp parameter
+   */
+  private formatTimestampForUrl(milliseconds: number): number {
+    return Math.floor(milliseconds / 1000);
+  }
+
+  /**
+   * Format milliseconds to MM:SS or HH:MM:SS display format
+   */
+  private formatTimestampDisplay(milliseconds: number): string {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Format YouTube transcript for markdown
+   */
+  private formatTranscript(transcript: PostData['transcript'], videoId: string | undefined, includeRaw: boolean, includeFormatted: boolean): string {
+    if (!transcript || !videoId) {
+      return '';
+    }
+
+    const parts: string[] = [];
+
+    // Add raw transcript text FIRST (if both are enabled)
+    if (includeRaw && transcript.raw) {
+      parts.push('**Full Transcript:**\n\n' + transcript.raw);
+    }
+
+    // Add formatted transcript with clickable timestamps SECOND
+    if (includeFormatted && transcript.formatted && transcript.formatted.length > 0) {
+      const chapterLinks = transcript.formatted
+        .map((entry) => {
+          const timeDisplay = this.formatTimestampDisplay(entry.start_time);
+          const timeSeconds = this.formatTimestampForUrl(entry.start_time);
+          const url = `https://www.youtube.com/watch?v=${videoId}&t=${timeSeconds}s`;
+          return `[${timeDisplay}](${url}) ${entry.text}`;
+        })
+        .join('\n');
+
+      if (parts.length > 0) {
+        parts.push('---\n\n**Chapter Links** (click to open at specific time):\n\n' + chapterLinks);
+      } else {
+        parts.push('**Chapter Links** (click to open at specific time):\n\n' + chapterLinks);
+      }
+    }
+
+    if (parts.length === 0) {
+      return '';
+    }
+
+    // Wrap in Obsidian callout for collapsible section
+    return `> [!note]- Click to expand transcript\n>\n` +
+      parts.join('\n\n').split('\n').map(line => `> ${line}`).join('\n');
+  }
+
+  /**
    * Format comments for markdown (nested style with indentation)
    */
   private formatComments(comments: PostData['comments'], platform: Platform): string {
@@ -654,7 +759,9 @@ export class MarkdownConverter implements IService {
             ? this.linkifyInstagramMentions(comment.content)
             : comment.content;
 
-          let result = `**${authorDisplay}** · ${timestamp}${likes}\n${commentContent}`;
+          // Format header: author [· timestamp] [· likes]
+          const timestampPart = timestamp ? ` · ${timestamp}` : '';
+          let result = `**${authorDisplay}**${timestampPart}${likes}\n${commentContent}`;
 
           // Nested replies with indentation
           if (comment.replies && comment.replies.length > 0) {
@@ -682,7 +789,9 @@ export class MarkdownConverter implements IService {
                   ? this.linkifyInstagramMentions(reply.content, true)
                   : reply.content;
 
-                return `  ↳ **${replyAuthorDisplay}** · ${replyTime}${replyLikes}\n  ${replyContent}`;
+                // Format reply header: author [· timestamp] [· likes]
+                const replyTimePart = replyTime ? ` · ${replyTime}` : '';
+                return `  ↳ **${replyAuthorDisplay}**${replyTimePart}${replyLikes}\n  ${replyContent}`;
               })
               .filter(r => r.length > 0)
               .join('\n\n');

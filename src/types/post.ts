@@ -86,6 +86,24 @@ export interface AIAnalysis {
 }
 
 // Main PostData interface
+/**
+ * YouTube transcript entry
+ */
+export interface TranscriptEntry {
+  start_time: number;    // milliseconds
+  end_time: number;      // milliseconds
+  duration: number;      // milliseconds
+  text: string;
+}
+
+/**
+ * YouTube transcript data
+ */
+export interface Transcript {
+  raw?: string;                      // Full transcript text
+  formatted?: TranscriptEntry[];     // Timestamp segments
+}
+
 export interface PostData {
   platform: Platform;
   id: string;
@@ -100,6 +118,8 @@ export interface PostData {
   media: Media[];
   metadata: PostMetadata;
   comments?: Comment[]; // Optional comments array
+  transcript?: Transcript;  // YouTube transcript data
+  videoId?: string;         // YouTube video ID
   ai?: AIAnalysis;
   raw?: unknown; // Original API response
 }
@@ -107,7 +127,7 @@ export interface PostData {
 // Zod schema for validation with version
 export const PostDataSchema = z.object({
   schemaVersion: z.literal('1.0.0'),
-  platform: z.enum(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads']),
+  platform: z.enum(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube']),
   id: z.string(),
   url: z.string().url(),
   author: z.object({

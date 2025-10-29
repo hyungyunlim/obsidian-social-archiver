@@ -19,6 +19,9 @@ export interface BrightDataConfig {
 export interface BrightDataRequest {
   url: string;
   platform: Platform;
+  // YouTube-specific options
+  includeTranscript?: boolean;
+  includeFormattedTranscript?: boolean;
   options?: {
     includeComments?: boolean;
     includeShares?: boolean;
@@ -1138,6 +1141,8 @@ export class BrightDataService {
       duration: data.video_length,
       views: data.views,
       likes: data.likes,
+      hasTranscript: !!data.transcript,
+      hasFormattedTranscript: !!data.formatted_transcript,
     });
 
     // YouTube: Don't download media, use original URL embed
@@ -1148,6 +1153,7 @@ export class BrightDataService {
       platform: 'youtube',
       id: data.video_id || this.extractIdFromUrl(url),
       url: data.url || url,
+      videoId: data.video_id,  // Add videoId for YouTube
       author: {
         name: data.handle_name || username,
         url: data.channel_url || `https://youtube.com/${username}`,
@@ -1169,6 +1175,12 @@ export class BrightDataService {
         timestamp: data.date_posted || new Date().toISOString(),
         duration: data.video_length,
       },
+      // Map BrightData transcript fields to PostData structure
+      transcript: data.transcript || data.formatted_transcript ? {
+        raw: data.transcript,
+        formatted: data.formatted_transcript,
+        language: data.transcript_language?.[0] || data.transcription_language || 'unknown',
+      } : undefined,
       raw: data,
     };
   }

@@ -6,7 +6,10 @@ export const ArchiveRequestSchema = z.object({
   options: z.object({
     enableAI: z.boolean().optional().default(false),
     deepResearch: z.boolean().optional().default(false),
-    downloadMedia: z.boolean().optional().default(true)
+    downloadMedia: z.boolean().optional().default(true),
+    // YouTube-specific options
+    includeTranscript: z.boolean().optional().default(false),
+    includeFormattedTranscript: z.boolean().optional().default(true)
   }).optional().default({}),
   licenseKey: z.string().optional()
 });

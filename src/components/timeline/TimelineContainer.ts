@@ -1,5 +1,5 @@
 import { setIcon, type TFile, type Vault, type App } from 'obsidian';
-import type { PostData } from '../../types/post';
+import type { PostData, Comment } from '../../types/post';
 import type { YamlFrontmatter } from '../../types/archive';
 
 export interface TimelineContainerProps {
@@ -100,17 +100,54 @@ export class TimelineContainer {
   private renderPosts(): void {
     this.containerEl.empty();
 
+    // Header with search and refresh button
+    const header = this.containerEl.createDiv();
+    header.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: 24px;';
+
     // Search filter
-    const filters = this.containerEl.createDiv({ cls: 'mb-6' });
-    const searchInput = filters.createEl('input', {
+    const searchInput = header.createEl('input', {
       type: 'text',
       placeholder: 'Search posts...',
-      cls: 'w-full px-4 py-3 rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-normal)] focus:outline-none focus:border-[var(--interactive-accent)] focus:ring-2 focus:ring-[var(--interactive-accent-hover)]'
+      cls: 'px-4 py-3 rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-normal)] focus:outline-none focus:border-[var(--interactive-accent)] focus:ring-2 focus:ring-[var(--interactive-accent-hover)]'
     });
+    searchInput.style.flex = '1';
     searchInput.value = this.searchQuery;
     searchInput.addEventListener('input', (e) => {
       this.searchQuery = (e.target as HTMLInputElement).value;
       this.renderPosts();
+    });
+
+    // Refresh button
+    const refreshBtn = header.createDiv();
+    refreshBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
+    refreshBtn.setAttribute('title', 'Refresh timeline');
+
+    const refreshIcon = refreshBtn.createDiv();
+    refreshIcon.style.cssText = 'width: 20px; height: 20px; color: var(--text-muted); transition: color 0.2s;';
+    setIcon(refreshIcon, 'refresh-cw');
+
+    refreshBtn.addEventListener('mouseenter', () => {
+      refreshBtn.style.background = 'var(--background-modifier-hover)';
+      refreshIcon.style.color = 'var(--interactive-accent)';
+    });
+
+    refreshBtn.addEventListener('mouseleave', () => {
+      refreshBtn.style.background = 'var(--background-secondary)';
+      refreshIcon.style.color = 'var(--text-muted)';
+    });
+
+    refreshBtn.addEventListener('click', async () => {
+      // Add spinning animation
+      refreshIcon.style.animation = 'spin 0.6s linear';
+      refreshBtn.style.pointerEvents = 'none';
+
+      await this.loadPosts();
+
+      // Remove animation after completion
+      setTimeout(() => {
+        refreshIcon.style.animation = '';
+        refreshBtn.style.pointerEvents = 'auto';
+      }, 600);
     });
 
     // Filter posts
@@ -257,9 +294,25 @@ export class TimelineContainer {
       contentText.setText(cleanContent);
     }
 
+    // Debug: Log post platform and url
+    console.log('[Timeline] Post platform:', post.platform, 'URL:', post.url);
+
+    // YouTube embed (if YouTube platform)
+    if (post.platform === 'youtube' && post.videoId) {
+      console.log('[Timeline] Rendering YouTube embed');
+      this.renderYouTubeEmbed(contentArea, post.videoId);
+    }
+    // TikTok embed (if TikTok platform)
+    else if (post.platform === 'tiktok' && post.url) {
+      console.log('[Timeline] Detected TikTok platform, rendering embed');
+      this.renderTikTokEmbed(contentArea, post.url);
+    }
     // Media carousel (if images exist)
-    if (post.media.length > 0) {
+    else if (post.media.length > 0) {
+      console.log('[Timeline] Rendering media carousel');
       this.renderMediaCarousel(contentArea, post.media);
+    } else {
+      console.log('[Timeline] No media to render');
     }
 
     // Interaction bar (like Twitter/Facebook)
@@ -348,10 +401,130 @@ export class TimelineContainer {
       await this.archivePost(post, card);
     });
 
+    // Comments section (Instagram style)
+    if (post.comments && post.comments.length > 0) {
+      this.renderComments(contentArea, post.comments);
+    }
+
     // Click handler for entire card (opens note)
     card.addEventListener('click', async () => {
       await this.openNote(post);
     });
+  }
+
+  /**
+   * Render comments section (Instagram style)
+   */
+  private renderComments(container: HTMLElement, comments: Comment[]): void {
+    const commentsContainer = container.createDiv();
+    commentsContainer.style.cssText = 'margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--background-modifier-border);';
+
+    const maxVisibleComments = 2;
+    const hasMoreComments = comments.length > maxVisibleComments;
+
+    // "View all X comments" button (if there are more than 2 comments)
+    if (hasMoreComments) {
+      const viewAllBtn = commentsContainer.createDiv();
+      viewAllBtn.style.cssText = 'font-size: 13px; color: var(--text-muted); cursor: pointer; margin-bottom: 8px; transition: color 0.2s;';
+      viewAllBtn.setText(`View all ${comments.length} comments`);
+
+      let showingAll = false;
+
+      viewAllBtn.addEventListener('mouseenter', () => {
+        viewAllBtn.style.color = 'var(--text-normal)';
+      });
+      viewAllBtn.addEventListener('mouseleave', () => {
+        viewAllBtn.style.color = 'var(--text-muted)';
+      });
+
+      viewAllBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showingAll = !showingAll;
+
+        // Clear and re-render
+        commentsListContainer.empty();
+        const commentsToShow = showingAll ? comments : comments.slice(-maxVisibleComments);
+
+        for (const comment of commentsToShow) {
+          this.renderComment(commentsListContainer, comment);
+        }
+
+        viewAllBtn.setText(showingAll ? 'Hide comments' : `View all ${comments.length} comments`);
+      });
+    }
+
+    // Comments list
+    const commentsListContainer = commentsContainer.createDiv();
+    commentsListContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+
+    // Show last 2 comments initially (like Instagram)
+    const commentsToShow = hasMoreComments ? comments.slice(-maxVisibleComments) : comments;
+
+    for (const comment of commentsToShow) {
+      this.renderComment(commentsListContainer, comment);
+    }
+  }
+
+  /**
+   * Render a single comment (Instagram style)
+   */
+  private renderComment(container: HTMLElement, comment: Comment, isReply: boolean = false): void {
+    const commentDiv = container.createDiv();
+    commentDiv.style.cssText = isReply
+      ? 'font-size: 13px; line-height: 1.4; margin-left: 24px;'
+      : 'font-size: 13px; line-height: 1.4;';
+
+    // Comment content: **username** content (on same line)
+    const contentSpan = commentDiv.createSpan();
+
+    const usernameSpan = contentSpan.createEl('strong');
+    usernameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal); cursor: pointer;';
+    usernameSpan.setText(comment.author.username || comment.author.name);
+
+    if (comment.author.url) {
+      usernameSpan.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.open(comment.author.url, '_blank');
+      });
+      usernameSpan.addEventListener('mouseenter', () => {
+        usernameSpan.style.textDecoration = 'underline';
+      });
+      usernameSpan.addEventListener('mouseleave', () => {
+        usernameSpan.style.textDecoration = 'none';
+      });
+    }
+
+    contentSpan.createSpan({ text: ' ' + comment.content, cls: 'color: var(--text-normal);' });
+
+    // Time and likes (inline for both main comments and replies)
+    // Only show time if timestamp exists and is valid
+    if (comment.timestamp) {
+      const timeSpan = contentSpan.createSpan();
+      timeSpan.style.cssText = 'font-size: 12px; color: var(--text-muted); margin-left: 8px;';
+      const relativeTime = this.getRelativeTime(new Date(comment.timestamp));
+      if (relativeTime && relativeTime !== 'Invalid Date') {
+        timeSpan.setText(relativeTime);
+      }
+    }
+
+    if (comment.likes && comment.likes > 0) {
+      const likesSpan = contentSpan.createSpan();
+      likesSpan.style.cssText = 'font-size: 12px; color: var(--text-muted);';
+      // Add separator if timestamp was shown
+      const separator = comment.timestamp ? ' · ' : ' ';
+      likesSpan.style.marginLeft = comment.timestamp ? '0' : '8px';
+      likesSpan.setText(`${separator}${comment.likes} ${comment.likes === 1 ? 'like' : 'likes'}`);
+    }
+
+    // Render replies (nested)
+    if (comment.replies && comment.replies.length > 0) {
+      const repliesContainer = container.createDiv();
+      repliesContainer.style.marginTop = '8px';
+
+      for (const reply of comment.replies) {
+        this.renderComment(repliesContainer, reply, true);
+      }
+    }
   }
 
   /**
@@ -418,7 +591,17 @@ export class TimelineContainer {
     if (media.length > 1) {
       // Thumbnails container
       const thumbnailsContainer = carouselContainer.createDiv();
-      thumbnailsContainer.style.cssText = 'display: flex; gap: 8px; padding: 12px; overflow-x: auto; background: rgba(0, 0, 0, 0.02);';
+      thumbnailsContainer.style.cssText = 'display: flex; gap: 8px; padding: 12px; overflow-x: auto; background: rgba(0, 0, 0, 0.02); scrollbar-width: thin; scrollbar-color: var(--background-modifier-border) transparent;';
+
+      // Add webkit scrollbar styles
+      thumbnailsContainer.addClass('media-thumbnails-scroll');
+
+      // Convert vertical wheel scroll to horizontal scroll
+      thumbnailsContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        thumbnailsContainer.scrollLeft += e.deltaY;
+      });
 
       // Create thumbnails
       const thumbnailElements: HTMLElement[] = [];
@@ -509,6 +692,73 @@ export class TimelineContainer {
         }
       });
     }
+  }
+
+  /**
+   * Render YouTube embed iframe
+   */
+  private renderYouTubeEmbed(container: HTMLElement, videoId: string): void {
+    const embedContainer = container.createDiv();
+    embedContainer.style.cssText = 'position: relative; width: 100%; padding-bottom: 56.25%; margin: 12px 0; border-radius: 8px; overflow: hidden; background: var(--background-secondary);';
+
+    const iframe = embedContainer.createEl('iframe', {
+      attr: {
+        src: `https://www.youtube.com/embed/${videoId}`,
+        frameborder: '0',
+        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+        allowfullscreen: 'true',
+      }
+    });
+    iframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;';
+  }
+
+  /**
+   * Render TikTok embed iframe (direct method)
+   */
+  private renderTikTokEmbed(container: HTMLElement, url: string): void {
+    console.log('[Timeline] Rendering TikTok embed for URL:', url);
+
+    // Extract video ID from URL
+    // URL patterns:
+    // - https://www.tiktok.com/@username/video/1234567890
+    // - https://vm.tiktok.com/ZMabcdefg/
+    const videoIdMatch = url.match(/\/video\/(\d+)/);
+    const videoId = videoIdMatch ? videoIdMatch[1] : null;
+
+    if (!videoId) {
+      console.warn('[Timeline] Could not extract TikTok video ID from URL:', url);
+      // Fallback: show link
+      const linkContainer = container.createDiv();
+      linkContainer.style.cssText = 'padding: 20px; text-align: center; background: var(--background-secondary); border-radius: 8px; margin: 12px 0;';
+      const link = linkContainer.createEl('a', {
+        text: 'View on TikTok',
+        attr: {
+          href: url,
+          target: '_blank'
+        }
+      });
+      link.style.cssText = 'color: var(--interactive-accent); text-decoration: underline;';
+      return;
+    }
+
+    console.log('[Timeline] TikTok video ID:', videoId);
+
+    const embedContainer = container.createDiv();
+    embedContainer.style.cssText = 'width: 100%; max-width: 340px; height: 700px; margin: 12px auto; border-radius: 8px; overflow: hidden; background: var(--background-secondary);';
+
+    const iframe = embedContainer.createEl('iframe', {
+      attr: {
+        src: `https://www.tiktok.com/embed/v2/${videoId}`,
+        width: '340',
+        height: '700',
+        frameborder: '0',
+        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+        allowfullscreen: 'true'
+      }
+    });
+    iframe.style.cssText = 'width: 100%; height: 100%; border: none;';
+
+    console.log('[Timeline] TikTok iframe created successfully');
   }
 
   /**
@@ -647,14 +897,20 @@ export class TimelineContainer {
 
   private async loadPosts(): Promise<void> {
     try {
+      console.log('[Timeline] === loadPosts started ===');
+      console.log('[Timeline] Archive path:', this.archivePath);
+
       this.renderLoading();
 
       const allFiles = this.vault.getMarkdownFiles();
+      console.log('[Timeline] Total markdown files in vault:', allFiles.length);
+
       const archiveFiles = allFiles.filter(file =>
         file.path.startsWith(this.archivePath)
       );
 
       console.log(`[Timeline] Found ${archiveFiles.length} files in ${this.archivePath}`);
+      console.log('[Timeline] Archive file paths:', archiveFiles.map(f => f.path));
 
       const loadedPosts: PostData[] = [];
 
@@ -696,12 +952,17 @@ export class TimelineContainer {
       const cache = this.app.metadataCache.getFileCache(file);
       const frontmatter = cache?.frontmatter as YamlFrontmatter | undefined;
 
+      console.log('[Timeline] Loading file:', file.path);
+      console.log('[Timeline] Frontmatter:', frontmatter);
+
       if (!frontmatter || !frontmatter.platform) {
+        console.log('[Timeline] No frontmatter or platform, skipping');
         return null;
       }
 
       // Filter out archived posts (archive: true)
       if (frontmatter.archive === true) {
+        console.log('[Timeline] Post is archived, skipping');
         return null;
       }
 
@@ -709,11 +970,13 @@ export class TimelineContainer {
       const contentText = this.extractContentText(content);
       const metadata = this.extractMetadata(content);
       const mediaUrls = this.extractMedia(content);
+      const comments = this.extractComments(content);
 
       const postData: PostData = {
         platform: frontmatter.platform as any,
         id: file.basename,
         url: frontmatter.originalUrl || '',
+        videoId: (frontmatter as any).videoId, // YouTube video ID
         filePath: file.path, // Store file path for opening
         author: {
           name: frontmatter.author || 'Unknown',
@@ -724,13 +987,16 @@ export class TimelineContainer {
         },
         media: mediaUrls.map(url => ({ type: 'image' as const, url })),
         metadata: {
-          timestamp: new Date(frontmatter.archived || file.stat.ctime),
+          timestamp: new Date(frontmatter.published || frontmatter.archived || file.stat.ctime),
           likes: metadata.likes,
           comments: metadata.comments,
           shares: metadata.shares,
           views: metadata.views,
         },
+        comments: comments.length > 0 ? comments : undefined,
       };
+
+      console.log('[Timeline] Loaded post:', postData.platform, postData.id, 'URL:', postData.url);
 
       return postData;
     } catch (err) {
@@ -873,6 +1139,97 @@ export class TimelineContainer {
   }
 
   /**
+   * Extract comments from markdown
+   */
+  private extractComments(markdown: string): Comment[] {
+    const comments: Comment[] = [];
+
+    // Find comments section
+    const commentsMatch = markdown.match(/## 💬 Comments\n\n([\s\S]*?)(?=\n---\n\n\*\*Platform:|$)/);
+    if (!commentsMatch) {
+      return comments;
+    }
+
+    const commentsSection = commentsMatch[1];
+
+    // Split by comment separator (--- between comments)
+    const commentBlocks = commentsSection.split(/\n---\n\n/).filter(block => block.trim());
+
+    for (const block of commentBlocks) {
+      const lines = block.split('\n');
+      if (lines.length === 0) continue;
+
+      // Parse main comment header: **[@username](url)** [· timestamp] [· likes]
+      // Timestamp is optional since Instagram comments don't have timestamp from API
+      const headerMatch = lines[0].match(/\*\*\[?@?([^\]]*)\]?\(?([^)]*)\)?\*\*(?:(?: · ([^·\n]+))?)(?: · (\d+) likes)?/);
+      if (!headerMatch) continue;
+
+      const [, username, url, timestamp, likesStr] = headerMatch;
+
+      // Extract comment content (lines after header, before any replies)
+      const contentLines: string[] = [];
+      let i = 1;
+      while (i < lines.length && !lines[i].trim().startsWith('↳')) {
+        contentLines.push(lines[i]);
+        i++;
+      }
+      const content = contentLines.join('\n').trim();
+
+      // Parse replies (lines starting with ↳)
+      const replies: Comment[] = [];
+      while (i < lines.length) {
+        if (lines[i].trim().startsWith('↳')) {
+          // Reply header: ↳ **[@username](url)** [· timestamp] [· likes]
+          const replyHeaderMatch = lines[i].match(/↳ \*\*\[?@?([^\]]*)\]?\(?([^)]*)\)?\*\*(?:(?: · ([^·\n]+))?)(?: · (\d+) likes)?/);
+          if (replyHeaderMatch) {
+            const [, replyUsername, replyUrl, replyTimestamp, replyLikesStr] = replyHeaderMatch;
+            i++;
+
+            // Get reply content (lines starting with "  " but not "  ↳")
+            const replyContentLines: string[] = [];
+            while (i < lines.length && lines[i].startsWith('  ') && !lines[i].trim().startsWith('↳')) {
+              replyContentLines.push(lines[i].substring(2)); // Remove the 2-space indent
+              i++;
+            }
+            const replyContent = replyContentLines.join('\n').trim();
+
+            replies.push({
+              id: `reply-${Date.now()}-${Math.random()}`,
+              author: {
+                name: replyUsername || 'Unknown',
+                url: replyUrl || '',
+                username: replyUsername,
+              },
+              content: replyContent,
+              timestamp: replyTimestamp?.trim() || '',
+              likes: replyLikesStr ? parseInt(replyLikesStr) : undefined,
+            });
+          } else {
+            i++;
+          }
+        } else {
+          i++;
+        }
+      }
+
+      comments.push({
+        id: `comment-${Date.now()}-${Math.random()}`,
+        author: {
+          name: username || 'Unknown',
+          url: url || '',
+          username: username,
+        },
+        content,
+        timestamp: timestamp?.trim() || '',
+        likes: likesStr ? parseInt(likesStr) : undefined,
+        replies: replies.length > 0 ? replies : undefined,
+      });
+    }
+
+    return comments;
+  }
+
+  /**
    * Get platform-specific lucide icon name
    */
   private getPlatformIcon(platform: string): string {
@@ -934,5 +1291,12 @@ export class TimelineContainer {
 
   public destroy(): void {
     this.containerEl.empty();
+  }
+
+  /**
+   * Reload the timeline (useful when view is re-activated)
+   */
+  public async reload(): Promise<void> {
+    await this.loadPosts();
   }
 }

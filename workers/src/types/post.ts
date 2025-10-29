@@ -81,6 +81,7 @@ export interface PostData {
   platform: Platform;
   id: string;
   url: string;
+  videoId?: string; // YouTube video ID
   author: Author;
   content: {
     text: string;
@@ -91,6 +92,16 @@ export interface PostData {
   metadata: PostMetadata;
   comments?: Comment[]; // Optional comments array for future support
   ai?: AIAnalysis;
+  transcript?: {
+    raw?: string; // Full transcript text
+    formatted?: Array<{
+      start_time: number; // milliseconds
+      end_time: number;
+      duration: number;
+      text: string;
+    }>;
+    language?: string;
+  }; // YouTube transcript
   raw?: any; // Original API response for debugging
 }
 

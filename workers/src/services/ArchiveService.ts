@@ -16,6 +16,9 @@ export interface ArchiveOptions {
   enableAI?: boolean;
   deepResearch?: boolean;
   downloadMedia?: boolean;
+  // YouTube-specific options
+  includeTranscript?: boolean;
+  includeFormattedTranscript?: boolean;
 }
 
 /**
@@ -173,7 +176,12 @@ export class ArchiveService {
       }
 
       // Fetch post data from BrightData
-      const postData = await this.brightData.fetchPost({ url, platform });
+      const postData = await this.brightData.fetchPost({
+        url,
+        platform,
+        includeTranscript: options.includeTranscript,
+        includeFormattedTranscript: options.includeFormattedTranscript,
+      });
 
       // Apply AI analysis if enabled
       if (options.enableAI && this.perplexity) {

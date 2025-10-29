@@ -79,13 +79,12 @@ export class TimelineView extends ItemView {
 
   /**
    * Refresh the timeline view
-   * Useful when new posts are archived
+   * Useful when new posts are archived or view is re-activated
    */
   public async refresh(): Promise<void> {
-    // Re-mount component to refresh
-    if (this.component) {
-      await this.onClose();
-      await this.onOpen();
+    // Reload the timeline without re-mounting
+    if (this.component && this.component.reload) {
+      await this.component.reload();
     }
   }
 }

@@ -1148,11 +1148,65 @@
             "testStrategy": "Test keyboard navigation works correctly with arrow keys and Enter, verify ARIA labels are properly implemented for screen readers, validate focus management and loading states"
           }
         ]
+      },
+      {
+        "id": 12,
+        "title": "YouTube Transcript Feature",
+        "description": "Add YouTube transcript support with clickable timestamp links",
+        "details": "Phase 1: Archive Modal Options\n- Add checkbox options for YouTube URLs: Include Transcript, Include Formatted Transcript\n- Show options only when YouTube URL is detected\n\nPhase 2: Data Structure\n- Extend PostData interface: transcript.raw, transcript.formatted[], videoId\n- Extend YamlFrontmatter: hasTranscript, hasFormattedTranscript, videoId, duration\n\nPhase 3: Markdown Output\n- Implement formatTranscript() in MarkdownConverter\n- Convert ms timestamps to MM:SS or HH:MM:SS format\n- Generate clickable YouTube URLs with &t= parameter\n- Use Obsidian callout syntax for collapsible transcript\n\nPhase 4 (Future): Timeline View Integration\n- Use postMessage API to control YouTube iframe playback\n- Add timestamp buttons to seek video\n\nReference: docs/youtube-transcript-feature.md",
+        "testStrategy": "Test with docs/youtube.json data\nVerify timestamp link generation and time format\nCheck YAML frontmatter fields\nConfirm clickable links open at correct time",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement YouTube URL Detection and Transcript Options in Archive Modal",
+            "description": "Add YouTube URL detection and conditional transcript checkbox options to the archive modal interface",
+            "dependencies": [],
+            "details": "Extend URLInput.svelte to detect YouTube URLs using regex patterns for youtube.com, youtu.be, and m.youtube.com domains. Add conditional rendering of transcript options (Include Transcript, Include Formatted Transcript checkboxes) that only appear when YouTube URL is detected. Update the modal state management to track transcript preferences using Svelte 5 $state runes.",
+            "status": "done",
+            "testStrategy": "Test YouTube URL detection with various URL formats, verify checkboxes appear only for YouTube URLs, validate state management works correctly"
+          },
+          {
+            "id": 2,
+            "title": "Extend Data Structures for YouTube Transcript Support",
+            "description": "Update PostData interface and YamlFrontmatter to support YouTube transcript data and metadata",
+            "dependencies": [
+              1
+            ],
+            "details": "Extend PostData interface in src/types/archive.ts to include transcript.raw (string), transcript.formatted (array of timestamp objects), videoId (string). Update YamlFrontmatter interface to add hasTranscript (boolean), hasFormattedTranscript (boolean), videoId (string), and duration (string). Create TranscriptEntry interface with timestamp, text, and formattedTime properties.",
+            "status": "done",
+            "testStrategy": "Validate TypeScript compilation with new interfaces, test with docs/youtube.json sample data structure"
+          },
+          {
+            "id": 3,
+            "title": "Implement Transcript Formatting in MarkdownConverter",
+            "description": "Create formatTranscript() method to convert timestamp data into clickable YouTube links with proper time formatting",
+            "dependencies": [
+              2
+            ],
+            "details": "Add formatTranscript() method to MarkdownConverter class that converts millisecond timestamps to MM:SS or HH:MM:SS format. Generate clickable YouTube URLs with &t= parameter for timestamp navigation. Implement Obsidian callout syntax for collapsible transcript sections. Handle both raw transcript (simple text) and formatted transcript (with clickable timestamps) based on user preferences.",
+            "status": "done",
+            "testStrategy": "Test timestamp conversion accuracy, verify clickable links open at correct time positions, validate Obsidian callout syntax renders properly"
+          },
+          {
+            "id": 4,
+            "title": "Integrate Transcript Data in Archive Workflow",
+            "description": "Connect transcript options to the main archiving workflow and ensure proper YAML frontmatter generation",
+            "dependencies": [
+              3
+            ],
+            "details": "Update ArchiveService to process transcript preferences and include transcript data in PostData object. Ensure MarkdownConverter properly generates YAML frontmatter with transcript-related fields (hasTranscript, hasFormattedTranscript, videoId, duration). Update the archive workflow to handle transcript data from the backend API and format it according to user preferences before saving to vault.",
+            "status": "done",
+            "testStrategy": "Test end-to-end archiving workflow with transcript options enabled, verify YAML frontmatter contains correct transcript fields, validate markdown output matches expected format"
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-26T14:09:53.710Z",
-      "updated": "2025-10-29T02:24:43.429Z",
+      "updated": "2025-10-29T05:42:17.380Z",
       "description": "Tasks for master context"
     }
   }

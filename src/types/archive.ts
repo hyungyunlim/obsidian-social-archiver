@@ -4,6 +4,8 @@ export interface ArchiveOptions {
   removeTracking: boolean;
   generateShareLink: boolean;
   deepResearch: boolean;
+  includeTranscript?: boolean;           // YouTube: include full transcript
+  includeFormattedTranscript?: boolean;  // YouTube: include formatted transcript with timestamps
 }
 
 export interface ArchiveResult {
@@ -23,10 +25,15 @@ export interface YamlFrontmatter {
   author: string;
   authorUrl: string;
   originalUrl: string;
-  archived: string; // YYYY-MM-DD format
+  published: string; // Original post date in YYYY-MM-DD HH:mm format
+  archived: string; // Date when archived (YYYY-MM-DD format)
   lastModified: string; // YYYY-MM-DD format
   download_time?: number; // Time taken to archive in seconds
   archive?: boolean; // Whether the post is archived (hidden from timeline)
+  hasTranscript?: boolean; // YouTube: has full transcript text
+  hasFormattedTranscript?: boolean; // YouTube: has formatted transcript with timestamps
+  videoId?: string; // YouTube video ID
+  duration?: number; // YouTube video duration in seconds
   tags: string[];
   ai_summary?: string;
   sentiment?: string;

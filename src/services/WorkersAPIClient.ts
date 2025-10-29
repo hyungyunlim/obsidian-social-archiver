@@ -21,6 +21,9 @@ export interface ArchiveRequest {
     enableAI?: boolean;
     deepResearch?: boolean;
     downloadMedia?: boolean;
+    // YouTube-specific options
+    includeTranscript?: boolean;
+    includeFormattedTranscript?: boolean;
   };
   licenseKey?: string;
 }

@@ -1,4 +1,4 @@
-import { Plugin, Notice, addIcon, Modal, App } from 'obsidian';
+import { Plugin, Notice, addIcon } from 'obsidian';
 import { SocialArchiverSettingTab } from './settings/SettingTab';
 import { SocialArchiverSettings, DEFAULT_SETTINGS } from './types/settings';
 import { WorkersAPIClient } from './services/WorkersAPIClient';
@@ -6,98 +6,11 @@ import { ArchiveOrchestrator } from './services/ArchiveOrchestrator';
 import { VaultManager } from './services/VaultManager';
 import { MarkdownConverter } from './services/MarkdownConverter';
 import { TimelineView, VIEW_TYPE_TIMELINE } from './views/TimelineView';
+import { ArchiveModal } from './modals/ArchiveModal';
 import type { Media } from './types/post';
 
 // Import styles for Vite to process
 import '../styles.css';
-
-// Temporary ArchiveModal class until Svelte integration is complete
-class ArchiveModal extends Modal {
-  private plugin: SocialArchiverPlugin;
-  private url: string = '';
-
-  constructor(app: App, plugin: SocialArchiverPlugin) {
-    super(app);
-    this.plugin = plugin;
-  }
-
-  setUrl(url: string): void {
-    this.url = url;
-  }
-
-  onOpen(): void {
-    const { contentEl } = this;
-    contentEl.empty();
-
-    contentEl.createEl('h2', { text: 'Archive Social Media Post' });
-
-    const container = contentEl.createDiv({ cls: 'social-archiver-modal' });
-
-    // URL Input
-    container.createEl('label', { text: 'Post URL' });
-    const urlInput = container.createEl('input', {
-      type: 'text',
-      placeholder: 'Paste URL from Facebook, LinkedIn, Instagram, TikTok, X, Threads, or YouTube',
-      value: this.url
-    });
-    urlInput.style.width = '100%';
-    urlInput.style.marginBottom = '1em';
-
-    // Disclaimer
-    const disclaimer = container.createDiv({ cls: 'social-archiver-disclaimer' });
-    disclaimer.innerHTML = `
-      <p style="color: var(--text-muted); font-size: 0.9em; margin: 1em 0;">
-        ⚠️ <strong>Important:</strong> Only archive content you have permission to save.
-        Respect copyright and privacy rights.
-      </p>
-    `;
-
-    // Buttons
-    const buttonContainer = container.createDiv({ cls: 'social-archiver-buttons' });
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.gap = '0.5em';
-    buttonContainer.style.justifyContent = 'flex-end';
-    buttonContainer.style.marginTop = '1em';
-
-    const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
-    cancelBtn.addEventListener('click', () => this.close());
-
-    const archiveBtn = buttonContainer.createEl('button', {
-      text: 'Archive',
-      cls: 'mod-cta'
-    });
-    archiveBtn.addEventListener('click', async () => {
-      const url = urlInput.value.trim();
-      if (!url) {
-        new Notice('Please enter a URL');
-        return;
-      }
-
-      // Close modal immediately
-      this.close();
-
-      // Show brief notice
-      new Notice('📡 Archiving post...');
-
-      // Run archive in background
-      try {
-        await this.plugin.archivePost(url);
-        // Success notification is shown by archivePost method
-      } catch (error) {
-        console.error('Archive failed:', error);
-        new Notice(`❌ Archive failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 8000);
-      }
-    });
-
-    // Focus on input
-    urlInput.focus();
-  }
-
-  onClose(): void {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-}
 
 export default class SocialArchiverPlugin extends Plugin {
   settings: SocialArchiverSettings = DEFAULT_SETTINGS;
@@ -203,7 +116,6 @@ export default class SocialArchiverPlugin extends Plugin {
    */
   private async initializeServices(): Promise<void> {
     // Clean up existing services
-    await this.orchestrator?.dispose();
     await this.apiClient?.dispose();
 
     // Only initialize if we have the required settings
@@ -220,9 +132,6 @@ export default class SocialArchiverPlugin extends Plugin {
       });
       await this.apiClient.initialize();
 
-      // Note: ArchiveService would need to be adapted for plugin use
-      // For now, we'll primarily use the Workers API
-
       console.log('[Social Archiver] Services initialized successfully');
 
     } catch (error) {
@@ -234,13 +143,20 @@ export default class SocialArchiverPlugin extends Plugin {
   /**
    * Archive a social media post
    */
-  async archivePost(url: string): Promise<void> {
+  async archivePost(
+    url: string,
+    options?: {
+      includeTranscript?: boolean;
+      includeFormattedTranscript?: boolean;
+    }
+  ): Promise<void> {
     // Track processing time
     const startTime = Date.now();
 
     console.log('[Social Archiver] ========== ARCHIVE STARTED ==========');
     console.log('[Social Archiver] URL:', url);
     console.log('[Social Archiver] Plugin version:', this.manifest.version);
+    console.log('[Social Archiver] Options:', options);
 
     if (!this.apiClient) {
       console.error('[Social Archiver] apiClient not initialized!');
@@ -265,6 +181,9 @@ export default class SocialArchiverPlugin extends Plugin {
           enableAI: this.settings.enableAI,
           deepResearch: this.settings.enableDeepResearch,
           downloadMedia: true,
+          // YouTube-specific options
+          includeTranscript: options?.includeTranscript,
+          includeFormattedTranscript: options?.includeFormattedTranscript,
         },
         licenseKey: this.settings.licenseKey,
       });
@@ -288,6 +207,20 @@ export default class SocialArchiverPlugin extends Plugin {
         contentLength: result.postData.content?.text?.length || 0,
         contentPreview: result.postData.content?.text?.substring(0, 100),
       });
+
+      // Filter transcript based on user options (YouTube only)
+      if (result.postData.platform === 'youtube' && result.postData.transcript) {
+        if (!options?.includeTranscript) {
+          delete result.postData.transcript.raw;
+        }
+        if (!options?.includeFormattedTranscript) {
+          delete result.postData.transcript.formatted;
+        }
+        // Remove transcript object if both are disabled
+        if (!result.postData.transcript.raw && !result.postData.transcript.formatted) {
+          delete result.postData.transcript;
+        }
+      }
 
       // Debug: Log media array
       if (result.postData.media && result.postData.media.length > 0) {
@@ -468,8 +401,12 @@ export default class SocialArchiverPlugin extends Plugin {
     }
   }
 
-  private openArchiveModal(): void {
-    new ArchiveModal(this.app, this).open();
+  /**
+   * Open the archive modal
+   */
+  private openArchiveModal(initialUrl?: string): void {
+    const modal = new ArchiveModal(this.app, this, initialUrl);
+    modal.open();
   }
 
   private async archiveFromClipboard(): Promise<void> {
@@ -481,9 +418,7 @@ export default class SocialArchiverPlugin extends Plugin {
         return;
       }
 
-      const modal = new ArchiveModal(this.app, this);
-      modal.setUrl(clipboardText);
-      modal.open();
+      this.openArchiveModal(clipboardText);
 
     } catch (error) {
       console.error('Failed to read clipboard:', error);
@@ -529,9 +464,7 @@ export default class SocialArchiverPlugin extends Plugin {
         return;
       }
 
-      const modal = new ArchiveModal(this.app, this);
-      modal.setUrl(url);
-      modal.open();
+      this.openArchiveModal(url);
     });
   }
 
@@ -583,6 +516,7 @@ export default class SocialArchiverPlugin extends Plugin {
   /**
    * Activate the Timeline View
    * Opens the view in the right sidebar if not already open
+   * Automatically refreshes the timeline when activated
    */
   async activateTimelineView(): Promise<void> {
     const { workspace } = this.app;
@@ -605,6 +539,12 @@ export default class SocialArchiverPlugin extends Plugin {
     // Reveal the leaf
     if (leaf) {
       workspace.revealLeaf(leaf);
+
+      // Refresh the timeline view to load new posts
+      const view = leaf.view;
+      if (view && 'refresh' in view && typeof view.refresh === 'function') {
+        await view.refresh();
+      }
     }
   }
 }
