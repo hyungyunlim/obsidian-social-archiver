@@ -31,6 +31,10 @@ export interface SocialArchiverSettings {
   // Credit Tracking
   creditsRemaining: number;
   creditResetDate: string;
+
+  // Timeline View Settings
+  timelineSortBy: 'published' | 'archived';
+  timelineSortOrder: 'newest' | 'oldest';
 }
 
 export const DEFAULT_SETTINGS: SocialArchiverSettings = {
@@ -66,5 +70,9 @@ export const DEFAULT_SETTINGS: SocialArchiverSettings = {
 
   // Credit Tracking
   creditsRemaining: 10,
-  creditResetDate: new Date().toISOString()
+  creditResetDate: new Date().toISOString(),
+
+  // Timeline View Settings
+  timelineSortBy: 'published',
+  timelineSortOrder: 'newest'
 };

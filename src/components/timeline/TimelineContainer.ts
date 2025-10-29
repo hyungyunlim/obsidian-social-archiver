@@ -102,9 +102,9 @@ export class TimelineContainer {
     dateRange: { start: null as Date | null, end: null as Date | null }
   };
 
-  private sortState = {
-    by: 'published' as 'published' | 'archived',
-    order: 'newest' as 'newest' | 'oldest'
+  private sortState: {
+    by: 'published' | 'archived';
+    order: 'newest' | 'oldest';
   };
 
   // UI state
@@ -120,6 +120,12 @@ export class TimelineContainer {
     this.app = props.app;
     this.archivePath = props.archivePath;
     this.plugin = props.plugin;
+
+    // Load sort settings from plugin settings
+    this.sortState = {
+      by: props.plugin.settings.timelineSortBy,
+      order: props.plugin.settings.timelineSortOrder
+    };
 
     this.render();
     this.loadPosts();
@@ -261,41 +267,88 @@ export class TimelineContainer {
       }
     });
 
-    // Sort button
-    const sortBtn = leftButtons.createDiv();
-    sortBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
-    sortBtn.setAttribute('title', 'Sort posts');
+    // Sort by dropdown (Published / Archived)
+    const sortByBtn = leftButtons.createDiv();
+    sortByBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
 
-    const sortIcon = sortBtn.createDiv();
-    sortIcon.style.cssText = 'width: 16px; height: 16px; transition: color 0.2s;';
-    setIcon(sortIcon, 'arrow-up-down');
+    const updateSortByButton = () => {
+      const text = this.sortState.by === 'published' ? 'Published' : 'Archived';
+      sortByBtn.setAttribute('title', `Sort by ${text.toLowerCase()}`);
+      sortByText.setText(text);
+    };
 
-    const sortText = sortBtn.createSpan({ text: 'Sort' });
-    sortText.style.cssText = 'font-weight: 500;';
+    const sortByIcon = sortByBtn.createDiv();
+    sortByIcon.style.cssText = 'width: 16px; height: 16px; transition: color 0.2s;';
+    setIcon(sortByIcon, 'calendar');
 
-    sortBtn.addEventListener('mouseenter', () => {
+    const sortByText = sortByBtn.createSpan();
+    sortByText.style.cssText = 'font-weight: 500;';
+    updateSortByButton();
+
+    sortByBtn.addEventListener('mouseenter', () => {
       if (!this.sortDropdownOpen) {
-        sortBtn.style.background = 'var(--background-modifier-hover)';
+        sortByBtn.style.background = 'var(--background-modifier-hover)';
       }
     });
 
-    sortBtn.addEventListener('mouseleave', () => {
+    sortByBtn.addEventListener('mouseleave', () => {
       if (!this.sortDropdownOpen) {
-        sortBtn.style.background = 'var(--background-secondary)';
+        sortByBtn.style.background = 'var(--background-secondary)';
       }
     });
 
-    sortBtn.addEventListener('click', () => {
+    sortByBtn.addEventListener('click', () => {
       this.sortDropdownOpen = !this.sortDropdownOpen;
       if (this.sortDropdownOpen) {
         this.filterPanelOpen = false;
         const existingPanel = header.querySelector('.filter-panel');
         existingPanel?.remove();
-        this.renderSortDropdown(header, sortBtn);
+        this.renderSortByDropdown(header, sortByBtn, updateSortByButton);
       } else {
         const existingDropdown = header.querySelector('.sort-dropdown');
         existingDropdown?.remove();
       }
+    });
+
+    // Order toggle button (Newest ⬇️ / Oldest ⬆️)
+    const orderBtn = leftButtons.createDiv();
+    orderBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
+
+    const orderIcon = orderBtn.createDiv();
+    orderIcon.style.cssText = 'width: 18px; height: 18px; color: var(--text-muted); transition: all 0.2s;';
+
+    const updateOrderButton = () => {
+      const iconName = this.sortState.order === 'newest' ? 'arrow-down' : 'arrow-up';
+      const title = this.sortState.order === 'newest' ? 'Newest first' : 'Oldest first';
+      orderBtn.setAttribute('title', title);
+      orderIcon.empty();
+      setIcon(orderIcon, iconName);
+    };
+
+    updateOrderButton();
+
+    orderBtn.addEventListener('mouseenter', () => {
+      orderBtn.style.background = 'var(--background-modifier-hover)';
+      orderIcon.style.color = 'var(--interactive-accent)';
+    });
+
+    orderBtn.addEventListener('mouseleave', () => {
+      orderBtn.style.background = 'var(--background-secondary)';
+      orderIcon.style.color = 'var(--text-muted)';
+    });
+
+    orderBtn.addEventListener('click', async () => {
+      // Toggle order
+      this.sortState.order = this.sortState.order === 'newest' ? 'oldest' : 'newest';
+
+      // Save to settings
+      this.plugin.settings.timelineSortOrder = this.sortState.order;
+      await this.plugin.saveSettings();
+
+      // Update UI and re-render
+      updateOrderButton();
+      this.applyFiltersAndSort();
+      this.renderPostsFeed();
     });
 
     // Right side: Refresh button
@@ -555,9 +608,9 @@ export class TimelineContainer {
   }
 
   /**
-   * Render sort dropdown
+   * Render sort by dropdown (Published / Archived)
    */
-  private renderSortDropdown(header: HTMLElement, sortBtn: HTMLElement): void {
+  private renderSortByDropdown(header: HTMLElement, sortByBtn: HTMLElement, updateSortByButton: () => void): void {
     // Remove existing panels
     header.querySelectorAll('.filter-panel').forEach(el => el.remove());
 
@@ -572,19 +625,17 @@ export class TimelineContainer {
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       padding: 8px;
-      min-width: 200px;
+      min-width: 160px;
     `;
 
     const sortOptions = [
-      { by: 'published' as const, order: 'newest' as const, label: 'Newest published first', icon: 'arrow-down', secondIcon: null },
-      { by: 'published' as const, order: 'oldest' as const, label: 'Oldest published first', icon: 'arrow-up', secondIcon: null },
-      { by: 'archived' as const, order: 'newest' as const, label: 'Recently archived first', icon: 'archive', secondIcon: 'arrow-down' },
-      { by: 'archived' as const, order: 'oldest' as const, label: 'First archived first', icon: 'archive', secondIcon: 'arrow-up' }
+      { by: 'published' as const, label: 'Published', icon: 'calendar' },
+      { by: 'archived' as const, label: 'Archived', icon: 'archive' }
     ];
 
     sortOptions.forEach((option, index) => {
       const item = dropdown.createDiv();
-      const isActive = this.sortState.by === option.by && this.sortState.order === option.order;
+      const isActive = this.sortState.by === option.by;
 
       item.style.cssText = `
         display: flex;
@@ -599,20 +650,9 @@ export class TimelineContainer {
         ${index > 0 ? 'margin-top: 4px;' : ''}
       `;
 
-      // Icon container for primary and secondary icons
-      const iconContainer = item.createDiv();
-      iconContainer.style.cssText = 'display: flex; align-items: center; gap: 2px;';
-
-      const icon = iconContainer.createDiv();
+      const icon = item.createDiv();
       icon.style.cssText = 'width: 16px; height: 16px;';
       setIcon(icon, option.icon);
-
-      // Add second icon if exists (for archive + arrow)
-      if (option.secondIcon) {
-        const secondIcon = iconContainer.createDiv();
-        secondIcon.style.cssText = 'width: 12px; height: 12px;';
-        setIcon(secondIcon, option.secondIcon);
-      }
 
       const label = item.createSpan({ text: option.label });
       label.style.cssText = 'font-size: 13px; flex: 1;';
@@ -623,13 +663,18 @@ export class TimelineContainer {
         setIcon(checkIcon, 'check');
       }
 
-      item.addEventListener('click', () => {
+      item.addEventListener('click', async () => {
         this.sortState.by = option.by;
-        this.sortState.order = option.order;
+
+        // Save to settings
+        this.plugin.settings.timelineSortBy = this.sortState.by;
+        await this.plugin.saveSettings();
+
         this.applyFiltersAndSort();
         this.sortDropdownOpen = false;
         dropdown.remove();
-        this.renderPosts();
+        updateSortByButton();
+        this.renderPostsFeed();
       });
 
       item.addEventListener('mouseenter', () => {
@@ -647,7 +692,7 @@ export class TimelineContainer {
 
     // Close on click outside
     const closeHandler = (e: MouseEvent) => {
-      if (!dropdown.contains(e.target as Node) && !sortBtn.contains(e.target as Node)) {
+      if (!dropdown.contains(e.target as Node) && !sortByBtn.contains(e.target as Node)) {
         this.sortDropdownOpen = false;
         dropdown.remove();
         document.removeEventListener('click', closeHandler);
