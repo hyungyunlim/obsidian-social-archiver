@@ -629,17 +629,34 @@ export class BrightDataService {
   }
 
   private parseLinkedInPost(data: any, url: string): PostData {
+    // Decode URL-encoded strings (Korean characters, etc.)
+    const decodeIfNeeded = (str: string | undefined): string | undefined => {
+      if (!str) return str;
+      try {
+        // Only decode if it contains URL-encoded characters (%)
+        if (str.includes('%')) {
+          return decodeURIComponent(str);
+        }
+        return str;
+      } catch {
+        // If decoding fails, return original string
+        return str;
+      }
+    };
+
     // Extract username from author URL or author field
     const extractUsername = (authorData: any): string | undefined => {
-      // BrightData uses 'user_id' field for LinkedIn
-      let username = authorData.user_id || authorData.username || authorData.author_username;
+      // BrightData uses 'user_id' field for LinkedIn - decode if URL-encoded
+      let username = decodeIfNeeded(authorData.user_id) || authorData.username || authorData.author_username;
 
       // If not found, try to extract from URL: https://linkedin.com/in/username
       if (!username) {
         const authorUrl = authorData.use_url || authorData.author_url;
         if (authorUrl) {
           const match = authorUrl.match(/\/in\/([^\/\?]+)/);
-          if (match) username = match[1];
+          if (match) {
+            username = decodeIfNeeded(match[1]);
+          }
         }
       }
 
@@ -653,7 +670,7 @@ export class BrightDataService {
 
     const username = extractUsername(data);
 
-    // BrightData uses 'use_url' for author profile URL
+    // BrightData uses 'use_url' for author profile URL - decode if needed
     const authorUrl = data.use_url || data.author_url || '';
 
     // Extract author name from user_title if available
@@ -686,18 +703,23 @@ export class BrightDataService {
       },
       // Parse LinkedIn comments from top_visible_comments
       comments: data.top_visible_comments && Array.isArray(data.top_visible_comments)
-        ? data.top_visible_comments.map((comment: any) => ({
-            id: `${data.id}-comment-${comment.user_id}-${comment.comment_date}`,
-            author: {
-              name: comment.user_name || comment.author_name || 'Unknown',
-              url: comment.use_url || comment.user_url || '',
-              username: comment.user_id,
-              handle: comment.user_id ? `@${comment.user_id}` : undefined,
-            },
-            content: comment.comment || '',
-            timestamp: comment.comment_date || new Date().toISOString(),
-            likes: comment.num_reactions || 0,
-          }))
+        ? data.top_visible_comments.map((comment: any) => {
+            // Decode comment user_id if URL-encoded
+            const commentUserId = decodeIfNeeded(comment.user_id);
+
+            return {
+              id: `${data.id}-comment-${commentUserId}-${comment.comment_date}`,
+              author: {
+                name: comment.user_name || comment.author_name || 'Unknown',
+                url: comment.use_url || comment.user_url || '',
+                username: commentUserId,
+                handle: commentUserId ? `@${commentUserId}` : undefined,
+              },
+              content: comment.comment || '',
+              timestamp: comment.comment_date || new Date().toISOString(),
+              likes: comment.num_reactions || 0,
+            };
+          })
         : undefined,
       raw: data,
     };
