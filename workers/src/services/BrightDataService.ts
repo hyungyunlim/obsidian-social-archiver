@@ -684,6 +684,21 @@ export class BrightDataService {
         shares: data.num_shares || data.shares_count,
         timestamp: data.date_posted || data.published_date || new Date().toISOString(),
       },
+      // Parse LinkedIn comments from top_visible_comments
+      comments: data.top_visible_comments && Array.isArray(data.top_visible_comments)
+        ? data.top_visible_comments.map((comment: any) => ({
+            id: `${data.id}-comment-${comment.user_id}-${comment.comment_date}`,
+            author: {
+              name: comment.user_name || comment.author_name || 'Unknown',
+              url: comment.use_url || comment.user_url || '',
+              username: comment.user_id,
+              handle: comment.user_id ? `@${comment.user_id}` : undefined,
+            },
+            content: comment.comment || '',
+            timestamp: comment.comment_date || new Date().toISOString(),
+            likes: comment.num_reactions || 0,
+          }))
+        : undefined,
       raw: data,
     };
   }
