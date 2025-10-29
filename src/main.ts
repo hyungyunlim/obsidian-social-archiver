@@ -8,6 +8,9 @@ import { MarkdownConverter } from './services/MarkdownConverter';
 import { TimelineView, VIEW_TYPE_TIMELINE } from './views/TimelineView';
 import type { Media } from './types/post';
 
+// Import styles for Vite to process
+import '../styles.css';
+
 // Temporary ArchiveModal class until Svelte integration is complete
 class ArchiveModal extends Modal {
   private plugin: SocialArchiverPlugin;

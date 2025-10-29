@@ -1,8 +1,64 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    './src/**/*.{ts,svelte}',
+    './src/**/*.{ts,tsx,svelte}',
     './src/**/*.{html,js}'
+  ],
+  // Safelist dynamic classes used in Timeline
+  safelist: [
+    // Layout & Sizing
+    'w-full', 'h-full', 'w-10', 'h-10', 'w-8', 'h-8', 'w-6', 'h-6', 'w-5', 'h-5', 'w-4', 'h-4', 'w-3', 'h-3',
+    'max-w-2xl', 'mx-auto', 'min-w-0',
+
+    // Flexbox & Grid
+    'flex', 'flex-col', 'flex-1', 'flex-shrink', 'flex-shrink-0',
+    'items-center', 'items-start', 'justify-center',
+    'grid', 'grid-cols-1', 'grid-cols-2', 'md:grid-cols-2', 'lg:grid-cols-3',
+
+    // Spacing
+    'gap-1', 'gap-1.5', 'gap-2', 'gap-3', 'gap-4', 'gap-6', 'gap-8',
+    'p-4', 'px-2', 'px-3', 'px-4', 'py-0.5', 'py-1', 'py-2', 'py-3', 'pt-3',
+    'mb-1', 'mb-2', 'mb-3', 'mb-4', 'mb-6', 'mt-1', 'mt-2', 'mt-3', 'mt-4', 'pb-2',
+    'pl-14', 'pr-14',
+
+    // Borders & Radius
+    'border', 'border-t', 'border-b-2', 'rounded', 'rounded-lg', 'rounded-full',
+
+    // Typography
+    'text-5xl', 'text-2xl', 'text-xl', 'text-sm', 'text-xs',
+    'font-semibold', 'leading-relaxed', 'uppercase', 'tracking-wide',
+    'text-center', 'text-white', 'whitespace-pre-wrap', 'truncate', 'line-clamp-4',
+
+    // Display & Overflow
+    'block', 'inline-block', 'overflow-y-auto', 'overflow-hidden', 'min-h-[300px]',
+
+    // Position
+    'sticky', 'top-0', 'top-3', 'top-1/2', 'left-2', 'left-3', 'right-2', 'right-3', 'bottom-2',
+    'relative', 'absolute', 'inset-0',
+
+    // Transforms
+    '-translate-y-1/2',
+
+    // Aspect Ratio
+    'aspect-square', 'aspect-video',
+
+    // Object Fit
+    'object-cover', 'object-contain',
+
+    // Z-index
+    'z-10',
+
+    // Cursor
+    'cursor-pointer',
+
+    // Opacity & Background
+    'bg-opacity-50', 'bg-opacity-60', 'bg-opacity-70', 'bg-black',
+
+    // Transitions
+    'transition-all', 'transition-colors', 'transition-opacity', 'duration-200', 'duration-300',
+
+    // Hover states
+    'hover:shadow-lg', 'hover:-translate-y-1', 'hover:opacity-90', 'hover:bg-opacity-70',
   ],
   // Disable preflight to prevent conflicts with Obsidian's native styles
   corePlugins: {

@@ -8,8 +8,9 @@ Timeline View는 아카이브된 소셜 미디어 포스트를 시간순으로 �
 
 ### 아키텍처
 - **순수 TypeScript** - 프레임워크 종속성 없음
-- **번들 크기**: ~195KB (gzip: ~58KB)
-- **빌드 시간**: ~177ms
+- **번들 크기**: ~211KB (gzip: ~62KB)
+- **빌드 시간**: ~284ms
+- **UI 스타일**: 소셜 미디어 피드 (Facebook, Twitter, Instagram 스타일)
 
 ### 스타일링 전략
 **Tailwind CSS + Obsidian CSS 변수 조합**
@@ -67,18 +68,89 @@ const filtered = posts.filter(post =>
 );
 ```
 
-### 4. 반응형 그리드
+### 4. 소셜 미디어 피드 레이아웃
 
-**Tailwind 반응형 클래스:**
+**단일 컬럼 피드 (최대 너비 제한):**
 ```typescript
-cls: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+cls: 'flex flex-col gap-4 max-w-2xl mx-auto'
 ```
 
-- **모바일** (< 768px): 1열
-- **태블릿** (≥ 768px): 2열
-- **데스크톱** (≥ 1024px): 3열
+- **레이아웃**: 단일 컬럼 (소셜 미디어 앱과 동일)
+- **최대 너비**: 672px (max-w-2xl)
+- **중앙 정렬**: 가독성 향상
+- **카드 간격**: 1rem (gap-4)
 
-### 5. 플랫폼별 색상 배지
+### 5. 플랫폼 아이콘 아바타
+
+**Obsidian Lucide 아이콘 사용:**
+```typescript
+import { setIcon } from 'obsidian';
+
+const iconWrapper = avatarContainer.createDiv({ cls: 'w-5 h-5' });
+setIcon(iconWrapper, 'facebook'); // 플랫폼별 아이콘
+```
+
+**플랫폼별 아이콘 매핑:**
+- Facebook → `facebook`
+- Instagram → `instagram`
+- LinkedIn → `linkedin`
+- X/Twitter → `twitter`
+- TikTok → `music` (대체 아이콘)
+- Threads → `at-sign` (대체 아이콘)
+- YouTube → `youtube`
+
+**아바타 배경색 (플랫폼 브랜드 컬러):**
+```css
+.timeline-avatar[data-platform="facebook"] {
+  background: #1877f2;
+  color: white;
+}
+/* ... 각 플랫폼별 색상 */
+```
+
+### 6. 상대적 시간 표시
+
+**Facebook/Twitter 스타일 시간 표시:**
+```typescript
+function getRelativeTime(timestamp: Date): string {
+  // "Just now", "2h ago", "Yesterday", "Mar 15"
+}
+```
+
+- 1분 미만: "Just now"
+- 1시간 미만: "15m ago"
+- 24시간 미만: "5h ago"
+- 어제: "Yesterday"
+- 7일 미만: "3d ago"
+- 그 외: "Oct 15" or "Oct 15, 2023"
+
+### 7. 전체 컨텐츠 + See More 확장
+
+**긴 포스트 자동 축약:**
+```typescript
+const isLongContent = post.content.text.length > 300;
+// 300자 이상이면 "See more" 버튼 표시
+```
+
+- 짧은 포스트 (≤300자): 전체 표시
+- 긴 포스트 (>300자): 300자까지 표시 + "See more" 버튼
+- 클릭 시 전체 텍스트 표시/숨김 토글
+
+### 8. 인터랙션 바
+
+**소셜 미디어 스타일 메트릭 표시:**
+```typescript
+// 좋아요, 댓글, 공유 수를 아이콘과 함께 표시
+// 1000+ → 1K, 1000000+ → 1M 포맷팅
+```
+
+**표시 항목:**
+- ❤️ 좋아요 (heart 아이콘)
+- 💬 댓글 (message-circle 아이콘)
+- 🔁 공유 (repeat-2 아이콘)
+- 🔗 열기 (external-link 아이콘) - 원본 노트로 이동
+
+### 9. 플랫폼별 색상 배지
 
 ```css
 /* styles.css */
@@ -287,6 +359,11 @@ class TimelineContainer {
   private renderPostCard(container: HTMLElement, post: PostData): void
   private filterPosts(posts: PostData[], query: string): PostData[]
   private groupPostsByDate(posts: PostData[]): Map<string, PostData[]>
+
+  // Helper methods (새로 추가됨)
+  private getPlatformIcon(platform: string): string
+  private getRelativeTime(timestamp: Date): string
+  private formatNumber(num: number): string
 }
 ```
 
@@ -300,25 +377,38 @@ interface TimelineContainerProps {
 }
 ```
 
+## 완료된 기능 ✅
+
+- [x] **소셜 미디어 피드 레이아웃** - 단일 컬럼 타임라인
+- [x] **플랫폼 아이콘 아바타** - Lucide 아이콘 + 브랜드 컬러
+- [x] **상대적 시간 표시** - "2h ago", "Yesterday" 등
+- [x] **전체 컨텐츠 표시** - See More/Less 버튼
+- [x] **인터랙션 바** - 좋아요, 댓글, 공유, 열기 버튼
+- [x] **숫자 포맷팅** - 1K, 1M 단위 표시
+- [x] **실시간 검색** - 작성자 & 내용 검색
+- [x] **날짜별 그룹핑** - Today, Yesterday, This Week 등
+
 ## 향후 개선 사항
 
 ### 우선순위 높음
-- [ ] 포스트 클릭 시 원본 노트 열기
+- [ ] 포스트 클릭 시 원본 노트 열기 (현재 console.log만 구현)
 - [ ] 가상 스크롤 (1000+ 포스트 대응)
 - [ ] 플랫폼 필터 (Facebook만, Instagram만 등)
 - [ ] 정렬 옵션 (최신순/오래된순/인기순)
+- [ ] 미디어 썸네일 표시 (이미지/비디오)
 
 ### 우선순위 중간
-- [ ] 미디어 썸네일 표시
 - [ ] 날짜 범위 필터
 - [ ] 무한 스크롤
-- [ ] 포스트 카드 크기 조절
+- [ ] 포스트 카드 크기 조절 (컴팩트/표준/상세)
+- [ ] 인터랙션 버튼 실제 동작 (좋아요 토글 등)
 
 ### 우선순위 낮음
 - [ ] 애니메이션 설정
 - [ ] 테마 커스터마이징 UI
 - [ ] 통계 대시보드
 - [ ] Export 기능
+- [ ] 댓글 표시 (노트 내 댓글 섹션)
 
 ## 기여 가이드
 
