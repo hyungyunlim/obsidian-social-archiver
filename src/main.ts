@@ -5,6 +5,7 @@ import { WorkersAPIClient } from './services/WorkersAPIClient';
 import { ArchiveOrchestrator } from './services/ArchiveOrchestrator';
 import { VaultManager } from './services/VaultManager';
 import { MarkdownConverter } from './services/MarkdownConverter';
+import { TimelineView, VIEW_TYPE_TIMELINE } from './views/TimelineView';
 import type { Media } from './types/post';
 
 // Temporary ArchiveModal class until Svelte integration is complete
@@ -117,6 +118,12 @@ export default class SocialArchiverPlugin extends Plugin {
     // Initialize services if API endpoint is configured
     await this.initializeServices();
 
+    // Register Timeline View
+    this.registerView(
+      VIEW_TYPE_TIMELINE,
+      (leaf) => new TimelineView(leaf, this)
+    );
+
     // Register custom icon
     addIcon('social-archive', `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
@@ -126,17 +133,31 @@ export default class SocialArchiverPlugin extends Plugin {
       </svg>
     `);
 
-    // Add ribbon icon
+    // Add ribbon icon for archive
     this.addRibbonIcon('social-archive', 'Archive social media post', () => {
       this.openArchiveModal();
     });
 
-    // Add command
+    // Add ribbon icon for timeline
+    this.addRibbonIcon('calendar-clock', 'Open timeline view', () => {
+      this.activateTimelineView();
+    });
+
+    // Add command for archive modal
     this.addCommand({
       id: 'open-archive-modal',
       name: 'Archive social media post',
       callback: () => {
         this.openArchiveModal();
+      }
+    });
+
+    // Add command for timeline view
+    this.addCommand({
+      id: 'open-timeline-view',
+      name: 'Open timeline view',
+      callback: () => {
+        this.activateTimelineView();
       }
     });
 
@@ -553,6 +574,34 @@ export default class SocialArchiverPlugin extends Plugin {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Activate the Timeline View
+   * Opens the view in the right sidebar if not already open
+   */
+  async activateTimelineView(): Promise<void> {
+    const { workspace } = this.app;
+
+    // Check if view is already open
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_TIMELINE)[0];
+
+    if (!leaf) {
+      // Create new leaf in right sidebar
+      const rightLeaf = workspace.getRightLeaf(false);
+      if (rightLeaf) {
+        leaf = rightLeaf;
+        await leaf.setViewState({
+          type: VIEW_TYPE_TIMELINE,
+          active: true,
+        });
+      }
+    }
+
+    // Reveal the leaf
+    if (leaf) {
+      workspace.revealLeaf(leaf);
     }
   }
 }

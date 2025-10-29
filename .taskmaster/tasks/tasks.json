@@ -1078,11 +1078,81 @@
             "testStrategy": ""
           }
         ]
+      },
+      {
+        "id": 11,
+        "title": "Build Timeline View feature for displaying archived social media posts",
+        "description": "Create a custom ItemView-based timeline interface with Svelte 5 components, virtual scrolling, and comprehensive filtering capabilities for chronological display of archived posts.",
+        "details": "Create TimelineView class extending ItemView with VIEW_TYPE_TIMELINE identifier. Implement TimelineContainer.svelte as main component using virtual scrolling library (svelte-virtual) for performance with large datasets. Build platform-specific post cards: FacebookPostCard.svelte, TwitterPostCard.svelte, InstagramPostCard.svelte, etc., each following PostData interface with author info, content, media gallery, and interaction metrics. Implement DateGroupHeader.svelte for chronological grouping (Today, Yesterday, This Week, etc.). Create SearchFilter.svelte with real-time search across post content and FilterPanel.svelte with platform checkboxes, date range picker, and sorting options (newest/oldest first). Build responsive grid system using CSS Grid with breakpoints: mobile (1 column), tablet (2 columns), desktop (3+ columns). Integrate with existing vault structure by scanning for files with platform frontmatter, parsing YAML headers to extract PostData. Add command 'Show Timeline View' and ribbon icon for easy access. Include keyboard navigation (arrow keys for post selection, Enter to open) and accessibility features (ARIA labels, screen reader support). Implement infinite scroll loading with intersection observer for performance. Style with Obsidian CSS variables for seamless theme integration and mobile-first design with 44px minimum touch targets.",
+        "testStrategy": "Test ItemView registration and activation in workspace, verify virtual scrolling performance with 1000+ posts, validate platform-specific card rendering matches PostData schema, test responsive breakpoints across device sizes, ensure search filters work with partial matches and debouncing, verify date grouping accuracy across different time zones, test keyboard navigation and screen reader compatibility, validate infinite scroll triggers at correct thresholds, test integration with vault file scanning and YAML parsing accuracy, ensure CSS variables work across light/dark themes",
+        "status": "pending",
+        "dependencies": [
+          1,
+          5,
+          8
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create TimelineView class extending ItemView",
+            "description": "Implement TimelineView class that extends Obsidian's ItemView to create a custom timeline interface for displaying archived social media posts",
+            "dependencies": [],
+            "details": "Create src/views/TimelineView.ts extending ItemView with VIEW_TYPE_TIMELINE constant. Register view type in main plugin. Implement getViewType(), getDisplayText(), getIcon() methods. Set up basic container structure and lifecycle management (onOpen, onClose). Add command 'Show Timeline View' and ribbon icon integration. Ensure proper cleanup on view destruction.",
+            "status": "done",
+            "testStrategy": "Test ItemView registration in workspace, verify view opens correctly when command is executed, validate proper cleanup when view is closed"
+          },
+          {
+            "id": 2,
+            "title": "Build TimelineContainer.svelte with virtual scrolling",
+            "description": "Create the main timeline container component using Svelte 5 with virtual scrolling for performance optimization when displaying large datasets",
+            "dependencies": [
+              1
+            ],
+            "details": "Create src/components/timeline/TimelineContainer.svelte using Svelte 5 runes syntax. Integrate svelte-virtual library for virtual scrolling performance. Implement data fetching from vault manager to scan files with platform frontmatter. Parse YAML headers to extract PostData. Create responsive grid system using CSS Grid with breakpoints: mobile (1 column), tablet (2 columns), desktop (3+ columns). Add infinite scroll loading with intersection observer.",
+            "status": "done",
+            "testStrategy": "Test virtual scrolling performance with 1000+ mock posts, verify responsive breakpoints work correctly across device sizes, ensure intersection observer loads content properly"
+          },
+          {
+            "id": 3,
+            "title": "Implement platform-specific post cards",
+            "description": "Create individual Svelte components for each platform's post display following the PostData interface structure",
+            "dependencies": [
+              2
+            ],
+            "details": "Create src/components/timeline/cards/ directory with FacebookPostCard.svelte, TwitterPostCard.svelte, InstagramPostCard.svelte, TikTokPostCard.svelte, ThreadsPostCard.svelte, LinkedInPostCard.svelte. Each component follows PostData interface with author info, content display, media gallery, and interaction metrics. Implement mobile-first design with 44px minimum touch targets. Use Obsidian CSS variables for theme integration. Add click handlers to open source files.",
+            "status": "pending",
+            "testStrategy": "Validate each card component renders PostData correctly, test mobile touch targets meet 44px minimum, ensure theme integration works with dark/light modes"
+          },
+          {
+            "id": 4,
+            "title": "Create filtering and search components",
+            "description": "Build comprehensive filtering interface with search, platform filters, date range selection, and sorting options",
+            "dependencies": [
+              2
+            ],
+            "details": "Create src/components/timeline/filters/ directory with SearchFilter.svelte for real-time content search with debouncing, FilterPanel.svelte with platform checkboxes, date range picker, and sorting options (newest/oldest first). Implement search across post content with partial matching. Add filter state management and URL persistence. Integrate with TimelineContainer data flow for reactive filtering.",
+            "status": "pending",
+            "testStrategy": "Test search filters work with partial matches and debouncing, verify platform filters correctly show/hide posts, validate date range picker functions properly"
+          },
+          {
+            "id": 5,
+            "title": "Implement timeline navigation and accessibility",
+            "description": "Add keyboard navigation, accessibility features, and date grouping headers for better user experience",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Create DateGroupHeader.svelte for chronological grouping (Today, Yesterday, This Week, etc.). Implement keyboard navigation with arrow keys for post selection and Enter to open files. Add ARIA labels and screen reader support throughout timeline. Create focus management system for keyboard users. Integrate with Obsidian's existing keyboard shortcuts. Add loading states and empty state handling.",
+            "status": "pending",
+            "testStrategy": "Test keyboard navigation works correctly with arrow keys and Enter, verify ARIA labels are properly implemented for screen readers, validate focus management and loading states"
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-26T14:09:53.710Z",
-      "updated": "2025-10-27T05:24:54.472Z",
+      "updated": "2025-10-29T01:56:24.584Z",
       "description": "Tasks for master context"
     }
   }
