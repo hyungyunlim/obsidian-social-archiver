@@ -11,6 +11,9 @@ import {
   type SimpleIcon
 } from 'simple-icons';
 import { PostDataParser } from './parsers/PostDataParser';
+import { FilterSortManager } from './filters/FilterSortManager';
+import { FilterPanel } from './filters/FilterPanel';
+import { SortDropdown } from './filters/SortDropdown';
 
 export interface TimelineContainerProps {
   vault: Vault;
@@ -106,22 +109,10 @@ export class TimelineContainer {
   // Parser for loading posts from vault
   private postDataParser: PostDataParser;
 
-  // Filter and sort state
-  private filterState = {
-    platforms: new Set<string>(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube']),
-    likedOnly: false,
-    includeArchived: false,
-    dateRange: { start: null as Date | null, end: null as Date | null }
-  };
-
-  private sortState: {
-    by: 'published' | 'archived';
-    order: 'newest' | 'oldest';
-  };
-
-  // UI state
-  private filterPanelOpen = false;
-  private sortDropdownOpen = false;
+  // Filter and sort management
+  private filterSortManager: FilterSortManager;
+  private filterPanel: FilterPanel;
+  private sortDropdown: SortDropdown;
 
   // Store YouTube player controllers for each post
   private youtubeControllers: Map<string, YouTubePlayerController> = new Map();
@@ -136,14 +127,58 @@ export class TimelineContainer {
     // Initialize PostDataParser
     this.postDataParser = new PostDataParser(this.vault, this.app);
 
-    // Load sort settings from plugin settings
-    this.sortState = {
-      by: props.plugin.settings.timelineSortBy,
-      order: props.plugin.settings.timelineSortOrder
-    };
+    // Initialize FilterSortManager with plugin settings
+    this.filterSortManager = new FilterSortManager(
+      undefined, // Use default filter state
+      {
+        by: props.plugin.settings.timelineSortBy,
+        order: props.plugin.settings.timelineSortOrder
+      }
+    );
+
+    // Initialize FilterPanel
+    this.filterPanel = new FilterPanel(
+      (platform) => this.getPlatformSimpleIcon(platform),
+      (platform) => this.getLucideIcon(platform)
+    );
+
+    // Initialize SortDropdown
+    this.sortDropdown = new SortDropdown(props.plugin);
+
+    // Setup callbacks
+    this.setupCallbacks();
 
     this.render();
     this.loadPosts();
+  }
+
+  /**
+   * Setup callbacks for filter and sort changes
+   */
+  private setupCallbacks(): void {
+    // FilterPanel callbacks
+    this.filterPanel.onFilterChange((filter) => {
+      this.filterSortManager.updateFilter(filter);
+      this.filteredPosts = this.filterSortManager.applyFiltersAndSort(this.posts);
+    });
+
+    this.filterPanel.onRerender(() => {
+      this.renderPostsFeed();
+    });
+
+    this.filterPanel.onGetFilterState(() => {
+      return this.filterSortManager.getFilterState();
+    });
+
+    // SortDropdown callbacks
+    this.sortDropdown.onSortChange((sort) => {
+      this.filterSortManager.updateSort(sort);
+      this.filteredPosts = this.filterSortManager.applyFiltersAndSort(this.posts);
+    });
+
+    this.sortDropdown.onRerender(() => {
+      this.renderPostsFeed();
+    });
   }
 
   private render(): void {
@@ -212,12 +247,10 @@ export class TimelineContainer {
     });
   }
 
-  private renderPosts(): void {
-    this.containerEl.empty();
-    // Clear previous YouTube controllers when re-rendering
-    this.youtubeControllers.clear();
-
-    // Header with filter, sort, and refresh buttons
+  /**
+   * Render header with filter, sort, and refresh controls
+   */
+  private renderHeader(): HTMLElement {
     const header = this.containerEl.createDiv();
     header.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; position: relative;';
 
@@ -226,7 +259,23 @@ export class TimelineContainer {
     leftButtons.style.cssText = 'display: flex; align-items: center; gap: 8px;';
 
     // Filter button
-    const filterBtn = leftButtons.createDiv();
+    this.renderFilterButton(leftButtons, header);
+
+    // Sort controls (dropdown + order toggle)
+    const sortState = this.filterSortManager.getSortState();
+    this.sortDropdown.renderSortControls(leftButtons, sortState);
+
+    // Right side: Refresh button
+    this.renderRefreshButton(header);
+
+    return header;
+  }
+
+  /**
+   * Render filter button
+   */
+  private renderFilterButton(parent: HTMLElement, header: HTMLElement): void {
+    const filterBtn = parent.createDiv();
     filterBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
     filterBtn.setAttribute('title', 'Filter posts');
 
@@ -237,14 +286,9 @@ export class TimelineContainer {
     const filterText = filterBtn.createSpan({ text: 'Filter' });
     filterText.style.cssText = 'font-weight: 500;';
 
-    // Active filter indicator
+    // Update filter button based on active filters
     const updateFilterButton = () => {
-      const hasActiveFilters =
-        this.filterState.platforms.size < 7 ||
-        this.filterState.likedOnly ||
-        this.filterState.includeArchived ||
-        this.filterState.dateRange.start !== null ||
-        this.filterState.dateRange.end !== null;
+      const hasActiveFilters = this.filterSortManager.hasActiveFilters();
 
       if (hasActiveFilters) {
         filterBtn.style.background = 'var(--interactive-accent)';
@@ -260,118 +304,28 @@ export class TimelineContainer {
     updateFilterButton();
 
     filterBtn.addEventListener('mouseenter', () => {
-      if (!this.filterPanelOpen) {
+      if (!this.filterPanel.isOpened) {
         filterBtn.style.background = 'var(--background-modifier-hover)';
       }
     });
 
     filterBtn.addEventListener('mouseleave', () => {
-      if (!this.filterPanelOpen) {
+      if (!this.filterPanel.isOpened) {
         updateFilterButton();
       }
     });
 
     filterBtn.addEventListener('click', () => {
-      this.filterPanelOpen = !this.filterPanelOpen;
-      if (this.filterPanelOpen) {
-        this.sortDropdownOpen = false;
-        this.renderFilterPanel(header, updateFilterButton);
-      } else {
-        const existingPanel = header.querySelector('.filter-panel');
-        existingPanel?.remove();
-      }
+      const filterState = this.filterSortManager.getFilterState();
+      this.filterPanel.toggle(header, filterState, updateFilterButton);
     });
+  }
 
-    // Sort controls container (group dropdown and toggle tightly)
-    const sortControls = leftButtons.createDiv();
-    sortControls.style.cssText = 'display: flex; align-items: center; gap: 0;';
-
-    // Sort by dropdown (Published / Archived)
-    const sortByBtn = sortControls.createDiv();
-    sortByBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px 0 0 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
-
-    const updateSortByButton = () => {
-      const text = this.sortState.by === 'published' ? 'Published' : 'Archived';
-      sortByBtn.setAttribute('title', `Sort by ${text.toLowerCase()}`);
-      sortByText.setText(text);
-    };
-
-    const sortByIcon = sortByBtn.createDiv();
-    sortByIcon.style.cssText = 'width: 16px; height: 16px; transition: color 0.2s;';
-    setIcon(sortByIcon, 'calendar');
-
-    const sortByText = sortByBtn.createSpan();
-    sortByText.style.cssText = 'font-weight: 500;';
-    updateSortByButton();
-
-    sortByBtn.addEventListener('mouseenter', () => {
-      if (!this.sortDropdownOpen) {
-        sortByBtn.style.background = 'var(--background-modifier-hover)';
-      }
-    });
-
-    sortByBtn.addEventListener('mouseleave', () => {
-      if (!this.sortDropdownOpen) {
-        sortByBtn.style.background = 'var(--background-secondary)';
-      }
-    });
-
-    sortByBtn.addEventListener('click', () => {
-      this.sortDropdownOpen = !this.sortDropdownOpen;
-      if (this.sortDropdownOpen) {
-        this.filterPanelOpen = false;
-        const existingPanel = header.querySelector('.filter-panel');
-        existingPanel?.remove();
-        this.renderSortByDropdown(header, sortByBtn, updateSortByButton);
-      } else {
-        const existingDropdown = header.querySelector('.sort-dropdown');
-        existingDropdown?.remove();
-      }
-    });
-
-    // Order toggle button (Newest ⬇️ / Oldest ⬆️)
-    const orderBtn = sortControls.createDiv();
-    orderBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 0 8px 8px 0; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
-
-    const orderIcon = orderBtn.createDiv();
-    orderIcon.style.cssText = 'width: 18px; height: 18px; color: var(--text-muted); transition: all 0.2s;';
-
-    const updateOrderButton = () => {
-      const iconName = this.sortState.order === 'newest' ? 'arrow-down' : 'arrow-up';
-      const title = this.sortState.order === 'newest' ? 'Newest first' : 'Oldest first';
-      orderBtn.setAttribute('title', title);
-      orderIcon.empty();
-      setIcon(orderIcon, iconName);
-    };
-
-    updateOrderButton();
-
-    orderBtn.addEventListener('mouseenter', () => {
-      orderBtn.style.background = 'var(--background-modifier-hover)';
-      orderIcon.style.color = 'var(--interactive-accent)';
-    });
-
-    orderBtn.addEventListener('mouseleave', () => {
-      orderBtn.style.background = 'var(--background-secondary)';
-      orderIcon.style.color = 'var(--text-muted)';
-    });
-
-    orderBtn.addEventListener('click', async () => {
-      // Toggle order
-      this.sortState.order = this.sortState.order === 'newest' ? 'oldest' : 'newest';
-
-      // Save to settings
-      this.plugin.settings.timelineSortOrder = this.sortState.order;
-      await this.plugin.saveSettings();
-
-      // Update UI and re-render
-      updateOrderButton();
-      this.applyFiltersAndSort();
-      this.renderPostsFeed();
-    });
-
-    // Right side: Refresh button
-    const refreshBtn = header.createDiv();
+  /**
+   * Render refresh button
+   */
+  private renderRefreshButton(parent: HTMLElement): void {
+    const refreshBtn = parent.createDiv();
     refreshBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
     refreshBtn.setAttribute('title', 'Refresh timeline');
 
@@ -389,35 +343,23 @@ export class TimelineContainer {
       refreshIcon.style.color = 'var(--text-muted)';
     });
 
-    refreshBtn.addEventListener('click', async () => {
-      // Add spinning animation
-      refreshIcon.style.animation = 'spin 0.6s linear';
-      refreshBtn.style.pointerEvents = 'none';
-
-      await this.loadPosts();
-
-      // Remove animation after completion
-      setTimeout(() => {
-        refreshIcon.style.animation = '';
-        refreshBtn.style.pointerEvents = 'auto';
-      }, 600);
+    refreshBtn.addEventListener('click', () => {
+      this.loadPosts();
     });
-
-    // Group posts by date
-    const grouped = this.groupPostsByDate(this.filteredPosts);
-
-    // Render posts in single-column feed (max-width for readability)
-    const feed = this.containerEl.createDiv({
-      cls: 'flex flex-col gap-4 max-w-2xl mx-auto timeline-feed'
-    });
-
-    // Remove date separators - just render all posts
-    for (const [groupLabel, groupPosts] of grouped) {
-      for (const post of groupPosts) {
-        this.renderPostCard(feed, post);
-      }
-    }
   }
+
+  private renderPosts(): void {
+    this.containerEl.empty();
+    // Clear previous YouTube controllers when re-rendering
+    this.youtubeControllers.clear();
+
+    // Render header with filter/sort controls
+    this.renderHeader();
+
+    // Render posts feed
+    this.renderPostsFeed();
+  }
+
 
   /**
    * Re-render only the posts feed (keep header/panels intact)
@@ -446,289 +388,6 @@ export class TimelineContainer {
         this.renderPostCard(feed, post);
       }
     }
-  }
-
-  /**
-   * Render filter panel dropdown
-   */
-  private renderFilterPanel(header: HTMLElement, updateFilterButton: () => void): void {
-    // Remove existing dropdowns
-    header.querySelectorAll('.sort-dropdown').forEach(el => el.remove());
-
-    const panel = header.createDiv({ cls: 'filter-panel' });
-    panel.style.cssText = `
-      position: absolute;
-      top: 48px;
-      left: 0;
-      z-index: 1000;
-      background: var(--background-primary);
-      border: 1px solid var(--background-modifier-border);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      padding: 16px;
-      min-width: 320px;
-      max-width: 400px;
-    `;
-
-    // Platform filters
-    const platformSection = panel.createDiv();
-    platformSection.style.cssText = 'margin-bottom: 16px;';
-
-    const platformLabel = platformSection.createEl('div', { text: 'Platforms' });
-    platformLabel.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;';
-
-    const platformsGrid = platformSection.createDiv();
-    platformsGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;';
-
-    const platforms = [
-      { id: 'facebook', label: 'Facebook' },
-      { id: 'linkedin', label: 'LinkedIn' },
-      { id: 'instagram', label: 'Instagram' },
-      { id: 'tiktok', label: 'TikTok' },
-      { id: 'x', label: 'X' },
-      { id: 'threads', label: 'Threads' },
-      { id: 'youtube', label: 'YouTube' }
-    ];
-
-    platforms.forEach(platform => {
-      const checkbox = platformsGrid.createDiv();
-      checkbox.style.cssText = `
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: ${this.filterState.platforms.has(platform.id) ? 'var(--background-modifier-hover)' : 'transparent'};
-      `;
-
-      // Use actual platform icon (same as card)
-      const iconWrapper = checkbox.createDiv();
-      iconWrapper.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-accent);';
-      const icon = this.getPlatformSimpleIcon(platform.id);
-      if (icon) {
-        // Use Simple Icon with Obsidian theme color
-        iconWrapper.innerHTML = `
-          <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: var(--text-accent); width: 100%; height: 100%;">
-            <title>${icon.title}</title>
-            <path d="${icon.path}"/>
-          </svg>
-        `;
-      } else {
-        // Use Lucide icon for platforms not in simple-icons (e.g., LinkedIn)
-        const lucideIconName = this.getLucideIcon(platform.id);
-        setIcon(iconWrapper, lucideIconName);
-      }
-
-      const label = checkbox.createSpan({ text: platform.label });
-      label.style.cssText = 'font-size: 13px; flex: 1;';
-
-      const checkIcon = checkbox.createDiv();
-      checkIcon.style.cssText = `width: 16px; height: 16px; display: ${this.filterState.platforms.has(platform.id) ? 'block' : 'none'};`;
-      setIcon(checkIcon, 'check');
-
-      checkbox.addEventListener('click', () => {
-        if (this.filterState.platforms.has(platform.id)) {
-          this.filterState.platforms.delete(platform.id);
-          checkbox.style.background = 'transparent';
-          checkIcon.style.display = 'none';
-        } else {
-          this.filterState.platforms.add(platform.id);
-          checkbox.style.background = 'var(--background-modifier-hover)';
-          checkIcon.style.display = 'block';
-        }
-        this.applyFiltersAndSort();
-        this.renderPostsFeed(); // Only re-render feed, keep panel open
-        updateFilterButton();
-      });
-
-      checkbox.addEventListener('mouseenter', () => {
-        if (!this.filterState.platforms.has(platform.id)) {
-          checkbox.style.background = 'var(--background-secondary)';
-        }
-      });
-
-      checkbox.addEventListener('mouseleave', () => {
-        if (!this.filterState.platforms.has(platform.id)) {
-          checkbox.style.background = 'transparent';
-        }
-      });
-    });
-
-    // Divider
-    const divider1 = panel.createDiv();
-    divider1.style.cssText = 'height: 1px; background: var(--background-modifier-border); margin: 16px 0;';
-
-    // Like filter
-    const likeOption = panel.createDiv();
-    likeOption.style.cssText = `
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-bottom: 8px;
-      background: ${this.filterState.likedOnly ? 'var(--background-modifier-hover)' : 'transparent'};
-    `;
-
-    const likeIcon = likeOption.createDiv();
-    likeIcon.style.cssText = 'width: 16px; height: 16px; color: var(--text-accent);';
-    setIcon(likeIcon, 'star');
-
-    const likeLabel = likeOption.createSpan({ text: 'Liked posts only' });
-    likeLabel.style.cssText = 'font-size: 13px; flex: 1;';
-
-    const likeCheckIcon = likeOption.createDiv();
-    likeCheckIcon.style.cssText = `width: 16px; height: 16px; display: ${this.filterState.likedOnly ? 'block' : 'none'};`;
-    setIcon(likeCheckIcon, 'check');
-
-    likeOption.addEventListener('click', () => {
-      this.filterState.likedOnly = !this.filterState.likedOnly;
-      likeOption.style.background = this.filterState.likedOnly ? 'var(--background-modifier-hover)' : 'transparent';
-      likeCheckIcon.style.display = this.filterState.likedOnly ? 'block' : 'none';
-      this.applyFiltersAndSort();
-      this.renderPostsFeed(); // Only re-render feed, keep panel open
-      updateFilterButton();
-    });
-
-    // Archive filter
-    const archiveOption = panel.createDiv();
-    archiveOption.style.cssText = `
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-      background: ${this.filterState.includeArchived ? 'var(--background-modifier-hover)' : 'transparent'};
-    `;
-
-    const archiveIcon = archiveOption.createDiv();
-    archiveIcon.style.cssText = 'width: 16px; height: 16px;';
-    setIcon(archiveIcon, 'archive');
-
-    const archiveLabel = archiveOption.createSpan({ text: 'Include archived' });
-    archiveLabel.style.cssText = 'font-size: 13px; flex: 1;';
-
-    const archiveCheckIcon = archiveOption.createDiv();
-    archiveCheckIcon.style.cssText = `width: 16px; height: 16px; display: ${this.filterState.includeArchived ? 'block' : 'none'};`;
-    setIcon(archiveCheckIcon, 'check');
-
-    archiveOption.addEventListener('click', () => {
-      this.filterState.includeArchived = !this.filterState.includeArchived;
-      archiveOption.style.background = this.filterState.includeArchived ? 'var(--background-modifier-hover)' : 'transparent';
-      archiveCheckIcon.style.display = this.filterState.includeArchived ? 'block' : 'none';
-      this.applyFiltersAndSort();
-      this.renderPostsFeed(); // Only re-render feed, keep panel open
-      updateFilterButton();
-    });
-
-    // Close on click outside
-    const closeHandler = (e: MouseEvent) => {
-      if (!panel.contains(e.target as Node) && !(e.target as HTMLElement).closest('.filter-panel')) {
-        this.filterPanelOpen = false;
-        panel.remove();
-        document.removeEventListener('click', closeHandler);
-      }
-    };
-    setTimeout(() => document.addEventListener('click', closeHandler), 0);
-  }
-
-  /**
-   * Render sort by dropdown (Published / Archived)
-   */
-  private renderSortByDropdown(header: HTMLElement, sortByBtn: HTMLElement, updateSortByButton: () => void): void {
-    // Remove existing panels
-    header.querySelectorAll('.filter-panel').forEach(el => el.remove());
-
-    // Calculate dropdown position based on button position
-    const btnRect = sortByBtn.getBoundingClientRect();
-    const headerRect = header.getBoundingClientRect();
-    const leftOffset = btnRect.left - headerRect.left;
-
-    const dropdown = header.createDiv({ cls: 'sort-dropdown' });
-    dropdown.style.cssText = `
-      position: absolute;
-      top: 48px;
-      left: ${leftOffset}px;
-      z-index: 1000;
-      background: var(--background-primary);
-      border: 1px solid var(--background-modifier-border);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      padding: 8px;
-      min-width: 140px;
-    `;
-
-    const sortOptions = [
-      { by: 'published' as const, label: 'Published', icon: 'calendar' },
-      { by: 'archived' as const, label: 'Archived', icon: 'archive' }
-    ];
-
-    sortOptions.forEach((option, index) => {
-      const item = dropdown.createDiv();
-      const isActive = this.sortState.by === option.by;
-
-      item.style.cssText = `
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: ${isActive ? 'var(--interactive-accent)' : 'transparent'};
-        color: ${isActive ? 'var(--text-on-accent)' : 'var(--text-normal)'};
-        ${index > 0 ? 'margin-top: 4px;' : ''}
-      `;
-
-      const icon = item.createDiv();
-      icon.style.cssText = 'width: 16px; height: 16px;';
-      setIcon(icon, option.icon);
-
-      const label = item.createSpan({ text: option.label });
-      label.style.cssText = 'font-size: 13px; flex: 1;';
-
-      item.addEventListener('click', async () => {
-        this.sortState.by = option.by;
-
-        // Save to settings
-        this.plugin.settings.timelineSortBy = this.sortState.by;
-        await this.plugin.saveSettings();
-
-        this.applyFiltersAndSort();
-        this.sortDropdownOpen = false;
-        dropdown.remove();
-        updateSortByButton();
-        this.renderPostsFeed();
-      });
-
-      item.addEventListener('mouseenter', () => {
-        if (!isActive) {
-          item.style.background = 'var(--background-modifier-hover)';
-        }
-      });
-
-      item.addEventListener('mouseleave', () => {
-        if (!isActive) {
-          item.style.background = 'transparent';
-        }
-      });
-    });
-
-    // Close on click outside
-    const closeHandler = (e: MouseEvent) => {
-      if (!dropdown.contains(e.target as Node) && !sortByBtn.contains(e.target as Node)) {
-        this.sortDropdownOpen = false;
-        dropdown.remove();
-        document.removeEventListener('click', closeHandler);
-      }
-    };
-    setTimeout(() => document.addEventListener('click', closeHandler), 0);
   }
 
   private renderPostCard(container: HTMLElement, post: PostData): void {
@@ -1742,7 +1401,9 @@ export class TimelineContainer {
 
       // Use PostDataParser to load posts from vault
       this.posts = await this.postDataParser.loadFromVault(this.archivePath);
-      this.applyFiltersAndSort();
+
+      // Use FilterSortManager to apply filters and sorting
+      this.filteredPosts = this.filterSortManager.applyFiltersAndSort(this.posts);
 
       console.log(`[Timeline] Loaded ${this.posts.length} posts, ${this.filteredPosts.length} after filtering`);
 
@@ -1761,64 +1422,6 @@ export class TimelineContainer {
   /**
    * Apply filters and sorting to posts
    */
-  private applyFiltersAndSort(): void {
-    // Start with all posts
-    let filtered = [...this.posts];
-
-    // Filter by platform
-    filtered = filtered.filter(post => this.filterState.platforms.has(post.platform));
-
-    // Filter by liked only
-    if (this.filterState.likedOnly) {
-      filtered = filtered.filter(post => post.like === true);
-    }
-
-    // Filter by archive status
-    if (!this.filterState.includeArchived) {
-      filtered = filtered.filter(post => post.archive !== true);
-    }
-
-    // Filter by date range
-    if (this.filterState.dateRange.start || this.filterState.dateRange.end) {
-      filtered = filtered.filter(post => {
-        const dateToCheck = this.sortState.by === 'published' ? post.publishedDate : post.archivedDate;
-        if (!dateToCheck) return true; // Keep if date doesn't exist
-
-        const postTime = dateToCheck.getTime();
-        if (this.filterState.dateRange.start && postTime < this.filterState.dateRange.start.getTime()) {
-          return false;
-        }
-        if (this.filterState.dateRange.end && postTime > this.filterState.dateRange.end.getTime()) {
-          return false;
-        }
-        return true;
-      });
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      // If sorting by like, prioritize liked posts
-      if (a.like !== b.like) {
-        return a.like ? -1 : 1;
-      }
-
-      // Get date to sort by
-      const getDateForSort = (post: PostData): number => {
-        if (this.sortState.by === 'published') {
-          return post.publishedDate?.getTime() ?? post.metadata.timestamp.getTime();
-        } else {
-          return post.archivedDate?.getTime() ?? post.metadata.timestamp.getTime();
-        }
-      };
-
-      const aTime = getDateForSort(a);
-      const bTime = getDateForSort(b);
-
-      return this.sortState.order === 'newest' ? bTime - aTime : aTime - bTime;
-    });
-
-    this.filteredPosts = filtered;
-  }
 
 
   private groupPostsByDate(posts: PostData[]): Map<string, PostData[]> {
