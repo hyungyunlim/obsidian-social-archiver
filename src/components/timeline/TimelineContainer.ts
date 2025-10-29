@@ -907,22 +907,36 @@ export class TimelineContainer {
     // Archive button (right-aligned)
     const archiveBtn = interactions.createDiv();
     archiveBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; transition: color 0.2s;';
-    archiveBtn.setAttribute('title', 'Archive this post');
+    archiveBtn.setAttribute('title', post.archive ? 'Unarchive this post' : 'Archive this post');
+
+    const archiveIcon = archiveBtn.createDiv();
+    archiveIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+
+    // Set initial state
+    if (post.archive) {
+      setIcon(archiveIcon, 'archive');
+      // Fill the archive icon when archived
+      const svgEl = archiveIcon.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.fill = 'currentColor';
+      }
+      archiveBtn.style.color = 'var(--interactive-accent)';
+    } else {
+      setIcon(archiveIcon, 'archive');
+      archiveBtn.style.color = 'var(--text-muted)';
+    }
+
     archiveBtn.addEventListener('mouseenter', () => {
       archiveBtn.style.color = 'var(--interactive-accent)';
     });
     archiveBtn.addEventListener('mouseleave', () => {
-      archiveBtn.style.color = 'var(--text-muted)';
+      archiveBtn.style.color = post.archive ? 'var(--interactive-accent)' : 'var(--text-muted)';
     });
-
-    const archiveIcon = archiveBtn.createDiv();
-    archiveIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0;';
-    setIcon(archiveIcon, 'archive');
 
     // Archive button click handler
     archiveBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      await this.archivePost(post, card);
+      await this.toggleArchive(post, archiveBtn, archiveIcon);
     });
 
     // Open Note button (right-aligned, next to Archive)
@@ -1418,7 +1432,62 @@ export class TimelineContainer {
   }
 
   /**
+   * Toggle archive status for a post
+   */
+  private async toggleArchive(post: PostData, btn: HTMLElement, icon: HTMLElement): Promise<void> {
+    try {
+      const filePath = (post as any).filePath;
+      if (!filePath) {
+        console.warn('[Timeline] No file path for post:', post.id);
+        return;
+      }
+
+      const file = this.vault.getAbstractFileByPath(filePath);
+      if (!file || !('extension' in file)) {
+        console.warn('[Timeline] File not found:', filePath);
+        return;
+      }
+
+      const tfile = file as TFile;
+
+      // Read current file content
+      const content = await this.vault.read(tfile);
+
+      // Toggle archive status
+      const newArchiveStatus = !post.archive;
+
+      // Update YAML frontmatter
+      const updatedContent = this.updateYamlFrontmatter(content, { archive: newArchiveStatus });
+
+      // Write back to file
+      await this.vault.modify(tfile, updatedContent);
+
+      // Update post object
+      post.archive = newArchiveStatus;
+
+      // Update UI
+      btn.style.color = newArchiveStatus ? 'var(--interactive-accent)' : 'var(--text-muted)';
+      btn.setAttribute('title', newArchiveStatus ? 'Unarchive this post' : 'Archive this post');
+
+      // Update archive icon fill
+      const svgEl = icon.querySelector('svg');
+      if (svgEl) {
+        if (newArchiveStatus) {
+          svgEl.style.fill = 'currentColor'; // Filled archive icon
+        } else {
+          svgEl.style.fill = 'none'; // Outline archive icon
+        }
+      }
+
+      console.log('[Timeline] Toggled archive:', post.id, newArchiveStatus);
+    } catch (err) {
+      console.error('[Timeline] Failed to toggle archive:', err);
+    }
+  }
+
+  /**
    * Archive a post (set archive: true in YAML and remove from view)
+   * @deprecated Use toggleArchive instead
    */
   private async archivePost(post: PostData, cardElement: HTMLElement): Promise<void> {
     try {
