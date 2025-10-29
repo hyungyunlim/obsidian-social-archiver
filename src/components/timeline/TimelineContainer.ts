@@ -16,6 +16,7 @@ import { FilterPanel } from './filters/FilterPanel';
 import { SortDropdown } from './filters/SortDropdown';
 import { MediaGalleryRenderer } from './renderers/MediaGalleryRenderer';
 import { CommentRenderer } from './renderers/CommentRenderer';
+import { YouTubeEmbedRenderer } from './renderers/YouTubeEmbedRenderer';
 
 export interface TimelineContainerProps {
   vault: Vault;
@@ -119,6 +120,7 @@ export class TimelineContainer {
   // Renderers
   private mediaGalleryRenderer: MediaGalleryRenderer;
   private commentRenderer: CommentRenderer;
+  private youtubeEmbedRenderer: YouTubeEmbedRenderer;
 
   // Store YouTube player controllers for each post
   private youtubeControllers: Map<string, YouTubePlayerController> = new Map();
@@ -160,6 +162,9 @@ export class TimelineContainer {
     this.commentRenderer = new CommentRenderer(
       (date) => this.getRelativeTime(date)
     );
+
+    // Initialize YouTubeEmbedRenderer
+    this.youtubeEmbedRenderer = new YouTubeEmbedRenderer();
 
     // Setup callbacks
     this.setupCallbacks();
@@ -597,14 +602,15 @@ export class TimelineContainer {
     // YouTube embed (if YouTube platform)
     if (post.platform === 'youtube' && post.videoId) {
       console.log('[Timeline] Rendering YouTube embed');
-      const player = this.renderYouTubeEmbed(contentArea, post.videoId);
+      const iframe = this.youtubeEmbedRenderer.renderYouTube(contentArea, post.videoId);
+      const player = new YouTubePlayerController(iframe);
       // Store controller for use with timestamp links
       this.youtubeControllers.set(post.videoId, player);
     }
     // TikTok embed (if TikTok platform)
     else if (post.platform === 'tiktok' && post.url) {
       console.log('[Timeline] Detected TikTok platform, rendering embed');
-      this.renderTikTokEmbed(contentArea, post.url);
+      this.youtubeEmbedRenderer.renderTikTok(contentArea, post.url);
     }
     // Media carousel (if images exist)
     else if (post.media.length > 0) {
@@ -778,79 +784,6 @@ export class TimelineContainer {
     if (post.comments && post.comments.length > 0) {
       this.commentRenderer.render(contentArea, post.comments);
     }
-  }
-
-  /**
-   * Render YouTube embed iframe with playback control
-   * @returns YouTubePlayerController instance for controlling playback
-   */
-  private renderYouTubeEmbed(container: HTMLElement, videoId: string): YouTubePlayerController {
-    const embedContainer = container.createDiv();
-    embedContainer.style.cssText = 'position: relative; width: 100%; padding-bottom: 56.25%; margin: 12px 0; border-radius: 8px; overflow: hidden; background: var(--background-secondary);';
-
-    // IMPORTANT: enablejsapi=1 is required for postMessage control
-    const iframe = embedContainer.createEl('iframe', {
-      attr: {
-        src: `https://www.youtube.com/embed/${videoId}?enablejsapi=1`,
-        frameborder: '0',
-        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
-        allowfullscreen: 'true',
-        referrerpolicy: 'strict-origin-when-cross-origin'
-      }
-    });
-    iframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;';
-
-    // Create and return player controller
-    return new YouTubePlayerController(iframe);
-  }
-
-  /**
-   * Render TikTok embed iframe (direct method)
-   */
-  private renderTikTokEmbed(container: HTMLElement, url: string): void {
-    console.log('[Timeline] Rendering TikTok embed for URL:', url);
-
-    // Extract video ID from URL
-    // URL patterns:
-    // - https://www.tiktok.com/@username/video/1234567890
-    // - https://vm.tiktok.com/ZMabcdefg/
-    const videoIdMatch = url.match(/\/video\/(\d+)/);
-    const videoId = videoIdMatch ? videoIdMatch[1] : null;
-
-    if (!videoId) {
-      console.warn('[Timeline] Could not extract TikTok video ID from URL:', url);
-      // Fallback: show link
-      const linkContainer = container.createDiv();
-      linkContainer.style.cssText = 'padding: 20px; text-align: center; background: var(--background-secondary); border-radius: 8px; margin: 12px 0;';
-      const link = linkContainer.createEl('a', {
-        text: 'View on TikTok',
-        attr: {
-          href: url,
-          target: '_blank'
-        }
-      });
-      link.style.cssText = 'color: var(--interactive-accent); text-decoration: underline;';
-      return;
-    }
-
-    console.log('[Timeline] TikTok video ID:', videoId);
-
-    const embedContainer = container.createDiv();
-    embedContainer.style.cssText = 'width: 100%; max-width: 340px; height: 700px; margin: 12px auto; border-radius: 8px; overflow: hidden; background: var(--background-secondary);';
-
-    const iframe = embedContainer.createEl('iframe', {
-      attr: {
-        src: `https://www.tiktok.com/embed/v2/${videoId}`,
-        width: '340',
-        height: '700',
-        frameborder: '0',
-        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
-        allowfullscreen: 'true'
-      }
-    });
-    iframe.style.cssText = 'width: 100%; height: 100%; border: none;';
-
-    console.log('[Timeline] TikTok iframe created successfully');
   }
 
   /**
