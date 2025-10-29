@@ -530,6 +530,25 @@ export class MarkdownConverter implements IService {
   }
 
   /**
+   * Extract hashtags from text
+   */
+  private extractHashtags(text: string): string[] {
+    // Hashtag pattern: #word (supports alphanumeric, underscore, and unicode characters like Korean/Japanese)
+    const hashtagPattern = /#([\w\u0080-\uFFFF]+)/g;
+    const hashtags: string[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = hashtagPattern.exec(text)) !== null) {
+      const tag = match[1];
+      if (tag && !hashtags.includes(tag)) {
+        hashtags.push(tag);
+      }
+    }
+
+    return hashtags;
+  }
+
+  /**
    * Generate YAML frontmatter
    */
   private generateFrontmatter(postData: PostData): YamlFrontmatter {
@@ -538,6 +557,9 @@ export class MarkdownConverter implements IService {
 
     // Format original post date (YYYY-MM-DD HH:mm in local timezone)
     const published = this.formatDate(postData.metadata.timestamp);
+
+    // Extract hashtags from content
+    const contentHashtags = this.extractHashtags(postData.content.text);
 
     return {
       share: false,
@@ -557,6 +579,7 @@ export class MarkdownConverter implements IService {
       tags: [
         `social/${postData.platform}`,
         ...(postData.ai?.topics || []).map(topic => `topic/${topic}`),
+        ...contentHashtags, // Add extracted hashtags from content
       ],
       ai_summary: postData.ai?.summary,
       sentiment: postData.ai?.sentiment,

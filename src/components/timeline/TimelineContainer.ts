@@ -726,7 +726,7 @@ export class TimelineContainer {
       // Comment text
       const commentTextDiv = wrapper.createDiv({ cls: 'mb-3' });
       commentTextDiv.style.cssText = 'font-size: 14px; line-height: 1.5; color: var(--text-normal);';
-      this.renderMarkdownLinks(commentTextDiv, post.comment);
+      this.renderMarkdownLinks(commentTextDiv, post.comment, undefined, post.platform);
 
       // Create nested container for the actual card
       cardContainer = wrapper.createDiv();
@@ -842,7 +842,7 @@ export class TimelineContainer {
         preview = cleanContent.substring(0, lastOpenBracket);
       }
 
-      this.renderMarkdownLinks(contentText, preview + '...', videoId);
+      this.renderMarkdownLinks(contentText, preview + '...', videoId, post.platform);
 
       const seeMoreBtn = contentContainer.createEl('button', {
         text: 'See more'
@@ -862,15 +862,15 @@ export class TimelineContainer {
         e.stopPropagation();
         expanded = !expanded;
         if (expanded) {
-          this.renderMarkdownLinks(contentText, cleanContent, videoId);
+          this.renderMarkdownLinks(contentText, cleanContent, videoId, post.platform);
           seeMoreBtn.setText('See less');
         } else {
-          this.renderMarkdownLinks(contentText, preview + '...', videoId);
+          this.renderMarkdownLinks(contentText, preview + '...', videoId, post.platform);
           seeMoreBtn.setText('See more');
         }
       });
     } else {
-      this.renderMarkdownLinks(contentText, cleanContent, videoId);
+      this.renderMarkdownLinks(contentText, cleanContent, videoId, post.platform);
     }
 
     // Debug: Log post platform and url
@@ -2133,11 +2133,76 @@ export class TimelineContainer {
   }
 
   /**
+   * Get hashtag URL for platform
+   */
+  private getHashtagUrl(hashtag: string, platform: string): string {
+    // Remove # from hashtag
+    const tag = hashtag.replace('#', '');
+
+    const urlMap: Record<string, string> = {
+      instagram: `https://www.instagram.com/explore/tags/${tag}/`,
+      x: `https://twitter.com/hashtag/${tag}`,
+      twitter: `https://twitter.com/hashtag/${tag}`,
+      facebook: `https://www.facebook.com/hashtag/${tag}`,
+      linkedin: `https://www.linkedin.com/feed/hashtag/${tag}/`,
+      tiktok: `https://www.tiktok.com/tag/${tag}`,
+      threads: `https://www.threads.net/tag/${tag}`,
+      youtube: `https://www.youtube.com/hashtag/${tag}`
+    };
+
+    return urlMap[platform.toLowerCase()] || `https://www.google.com/search?q=${encodeURIComponent(hashtag)}`;
+  }
+
+  /**
+   * Render text with hashtags highlighted and clickable
+   */
+  private renderTextWithHashtags(container: HTMLElement, text: string, platform?: string): void {
+    // Hashtag pattern: #word (supports alphanumeric, underscore, and unicode characters like Korean/Japanese)
+    const hashtagPattern = /(#[\w\u0080-\uFFFF]+)/g;
+    const parts = text.split(hashtagPattern);
+
+    for (const part of parts) {
+      if (part.startsWith('#') && part.length > 1) {
+        // This is a hashtag - make it clickable if platform is provided
+        if (platform) {
+          const hashtagLink = container.createEl('a', {
+            text: part,
+            attr: {
+              href: this.getHashtagUrl(part, platform),
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              title: `Search ${part} on ${platform}`
+            }
+          });
+          hashtagLink.style.cssText = 'color: var(--interactive-accent); font-weight: 500; text-decoration: none; cursor: pointer;';
+          hashtagLink.addEventListener('mouseenter', () => {
+            hashtagLink.style.textDecoration = 'underline';
+          });
+          hashtagLink.addEventListener('mouseleave', () => {
+            hashtagLink.style.textDecoration = 'none';
+          });
+          hashtagLink.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
+        } else {
+          // Just highlight without link
+          const hashtagSpan = container.createEl('span', { text: part });
+          hashtagSpan.style.cssText = 'color: var(--interactive-accent); font-weight: 500;';
+        }
+      } else {
+        // Regular text
+        container.appendText(part);
+      }
+    }
+  }
+
+  /**
    * Render text with markdown links and plain URLs converted to HTML
    * Converts [text](url) and plain URLs to clickable <a> tags
    * YouTube timestamp links (e.g., [00:00](youtube.com/...&t=0s)) are handled specially
+   * Also highlights hashtags
    */
-  private renderMarkdownLinks(container: HTMLElement, text: string, videoId?: string): void {
+  private renderMarkdownLinks(container: HTMLElement, text: string, videoId?: string, platform?: string): void {
     container.empty();
 
     // First, replace markdown links with a placeholder to avoid processing them again
@@ -2198,10 +2263,10 @@ export class TimelineContainer {
         let placeholderMatch: RegExpExecArray | null;
 
         while ((placeholderMatch = placeholderPattern.exec(part.content)) !== null) {
-          // Add text before placeholder
+          // Add text before placeholder (with hashtag highlighting)
           if (placeholderMatch.index > textLastIndex) {
             const textBefore = part.content.substring(textLastIndex, placeholderMatch.index);
-            container.appendText(textBefore);
+            this.renderTextWithHashtags(container, textBefore, platform);
           }
 
           // Add markdown link
@@ -2249,10 +2314,10 @@ export class TimelineContainer {
           textLastIndex = placeholderPattern.lastIndex;
         }
 
-        // Add remaining text
+        // Add remaining text (with hashtag highlighting)
         if (textLastIndex < part.content.length) {
           const textAfter = part.content.substring(textLastIndex);
-          container.appendText(textAfter);
+          this.renderTextWithHashtags(container, textAfter, platform);
         }
       } else if (part.type === 'url' && part.url) {
         // Create clickable link for plain URL
