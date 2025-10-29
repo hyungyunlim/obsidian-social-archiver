@@ -352,7 +352,7 @@ export class TimelineContainer {
     // Media carousel (if images exist)
     else if (post.media.length > 0) {
       console.log('[Timeline] Rendering media carousel');
-      this.renderMediaCarousel(contentArea, post.media);
+      this.renderMediaCarousel(contentArea, post.media, post);
     } else {
       console.log('[Timeline] No media to render');
     }
@@ -572,10 +572,25 @@ export class TimelineContainer {
   /**
    * Render media carousel for images/videos (Instagram style)
    */
-  private renderMediaCarousel(container: HTMLElement, media: Media[]): void {
+  private renderMediaCarousel(container: HTMLElement, media: Media[], post?: PostData): void {
     const carouselContainer = container.createDiv({
       cls: 'relative mt-3 rounded-lg overflow-hidden bg-[var(--background-modifier-border)]'
     });
+
+    // Extract links from post content if available
+    let extractedLink: string | null = null;
+    if (post && media.length === 1) {
+      const content = post.content.text;
+      // Extract all URLs (markdown links and plain URLs)
+      const markdownLinks = [...content.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)].map(m => m[2]);
+      const plainUrls = [...content.matchAll(/(https?:\/\/[^\s]+)/g)].map(m => m[1]);
+      const allLinks = [...markdownLinks, ...plainUrls];
+
+      // If exactly one link exists, use it for the image click
+      if (allLinks.length === 1) {
+        extractedLink = allLinks[0];
+      }
+    }
 
     // Media container - preserves aspect ratio with max-height
     const mediaContainer = carouselContainer.createDiv();
@@ -622,6 +637,16 @@ export class TimelineContainer {
 
         img.style.cssText = 'max-width: 100%; max-height: 600px; width: auto; height: auto;';
         img.style.display = i === 0 ? 'block' : 'none';
+
+        // If single image and single link, make image clickable
+        if (extractedLink && media.length === 1) {
+          img.style.cursor = 'pointer';
+          img.setAttribute('title', `Open link: ${extractedLink}`);
+          img.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.open(extractedLink, '_blank');
+          });
+        }
 
         element = img;
       }
