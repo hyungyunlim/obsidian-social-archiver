@@ -63,6 +63,7 @@ export class TimelineView extends ItemView {
       target: container,
       props: {
         vault: this.app.vault,
+        app: this.app,
         archivePath: this.plugin.settings.archivePath || 'Social Archives',
       },
     });

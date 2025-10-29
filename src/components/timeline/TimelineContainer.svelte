@@ -1,15 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { TFile, Vault } from 'obsidian';
+  import type { TFile, Vault, App, CachedMetadata } from 'obsidian';
   import type { PostData } from '../../types/post';
+  import type { YamlFrontmatter } from '../../types/archive';
 
   // Props
   interface Props {
     vault: Vault;
+    app: App;
     archivePath: string;
   }
 
-  let { vault, archivePath }: Props = $props();
+  let { vault, app, archivePath }: Props = $props();
 
   // Reactive state using Svelte 5 runes
   let posts = $state<PostData[]>([]);
@@ -72,70 +74,80 @@
   }
 
   /**
-   * Load PostData from a file by parsing frontmatter
+   * Load PostData from a file by parsing frontmatter using Obsidian's MetadataCache
    */
   async function loadPostFromFile(file: TFile): Promise<PostData | null> {
-    const content = await vault.read(file);
-    const frontmatter = parseFrontmatter(content);
+    try {
+      // Use Obsidian's MetadataCache API
+      const cache = app.metadataCache.getFileCache(file);
+      const frontmatter = cache?.frontmatter as YamlFrontmatter | undefined;
 
-    if (!frontmatter || !frontmatter.platform) {
+      if (!frontmatter || !frontmatter.platform) {
+        return null;
+      }
+
+      // Read file content to extract post text
+      const content = await vault.read(file);
+      const contentText = extractContentText(content);
+
+      // Reconstruct PostData from frontmatter
+      const postData: PostData = {
+        platform: frontmatter.platform as any,
+        id: file.basename,
+        url: frontmatter.originalUrl || '',
+        author: {
+          name: frontmatter.author || 'Unknown',
+          url: frontmatter.authorUrl || '',
+        },
+        content: {
+          text: contentText,
+        },
+        media: [],
+        metadata: {
+          timestamp: new Date(frontmatter.archived || file.stat.ctime),
+          likes: (frontmatter as any).likes,
+          comments: (frontmatter as any).comments,
+          shares: (frontmatter as any).shares,
+          views: (frontmatter as any).views,
+        },
+      };
+
+      return postData;
+    } catch (err) {
+      console.warn(`[Timeline] Failed to load ${file.path}:`, err);
       return null;
     }
-
-    // Reconstruct PostData from frontmatter
-    const postData: PostData = {
-      platform: frontmatter.platform,
-      id: frontmatter.id || file.basename,
-      url: frontmatter.url || '',
-      author: {
-        name: frontmatter.author?.name || 'Unknown',
-        url: frontmatter.author?.url || '',
-        avatar: frontmatter.author?.avatar,
-      },
-      content: {
-        text: frontmatter.content?.text || '',
-        html: frontmatter.content?.html,
-      },
-      media: frontmatter.media || [],
-      metadata: {
-        timestamp: new Date(frontmatter.archived || file.stat.ctime),
-        likes: frontmatter.likes,
-        comments: frontmatter.comments,
-        shares: frontmatter.shares,
-        views: frontmatter.views,
-      },
-    };
-
-    return postData;
   }
 
   /**
-   * Parse YAML frontmatter from markdown content
+   * Extract main content text from markdown (skip frontmatter and metadata)
    */
-  function parseFrontmatter(content: string): any {
-    const match = content.match(/^---\n([\s\S]*?)\n---/);
-    if (!match) return null;
+  function extractContentText(markdown: string): string {
+    // Remove frontmatter
+    const withoutFrontmatter = markdown.replace(/^---\n[\s\S]*?\n---\n/, '');
 
-    try {
-      // Simple YAML parsing (in production, use a proper YAML library)
-      const yaml = match[1];
-      const obj: any = {};
+    // Find the first paragraph (skip headers)
+    const lines = withoutFrontmatter.split('\n');
+    const contentLines: string[] = [];
 
-      const lines = yaml.split('\n');
-      for (const line of lines) {
-        const colonIndex = line.indexOf(':');
-        if (colonIndex > 0) {
-          const key = line.substring(0, colonIndex).trim();
-          const value = line.substring(colonIndex + 1).trim();
-          obj[key] = value.replace(/^["']|["']$/g, ''); // Remove quotes
-        }
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Skip empty lines, headers, and horizontal rules at the start
+      if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('---') || trimmed.startsWith('**Platform:**')) {
+        if (contentLines.length > 0) break; // Stop if we've already collected content
+        continue;
       }
 
-      return obj;
-    } catch (err) {
-      console.warn('[Timeline] Failed to parse frontmatter:', err);
-      return null;
+      contentLines.push(line);
+
+      // Collect only first paragraph (stop at first empty line after content)
+      if (contentLines.length > 0 && !trimmed) {
+        break;
+      }
     }
+
+    return contentLines.join('\n').trim();
   }
 
   /**
