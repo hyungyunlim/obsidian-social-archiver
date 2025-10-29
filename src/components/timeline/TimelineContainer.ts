@@ -336,7 +336,36 @@ export class TimelineContainer {
 
     // Render posts in single-column feed (max-width for readability)
     const feed = this.containerEl.createDiv({
-      cls: 'flex flex-col gap-4 max-w-2xl mx-auto'
+      cls: 'flex flex-col gap-4 max-w-2xl mx-auto timeline-feed'
+    });
+
+    // Remove date separators - just render all posts
+    for (const [groupLabel, groupPosts] of grouped) {
+      for (const post of groupPosts) {
+        this.renderPostCard(feed, post);
+      }
+    }
+  }
+
+  /**
+   * Re-render only the posts feed (keep header/panels intact)
+   */
+  private renderPostsFeed(): void {
+    // Find and remove existing feed
+    const existingFeed = this.containerEl.querySelector('.timeline-feed');
+    if (existingFeed) {
+      existingFeed.remove();
+    }
+
+    // Clear YouTube controllers
+    this.youtubeControllers.clear();
+
+    // Group posts by date
+    const grouped = this.groupPostsByDate(this.filteredPosts);
+
+    // Render posts in single-column feed (max-width for readability)
+    const feed = this.containerEl.createDiv({
+      cls: 'flex flex-col gap-4 max-w-2xl mx-auto timeline-feed'
     });
 
     // Remove date separators - just render all posts
@@ -380,13 +409,13 @@ export class TimelineContainer {
     platformsGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;';
 
     const platforms = [
-      { id: 'facebook', label: 'Facebook', icon: '👥' },
-      { id: 'linkedin', label: 'LinkedIn', icon: '💼' },
-      { id: 'instagram', label: 'Instagram', icon: '📷' },
-      { id: 'tiktok', label: 'TikTok', icon: '🎵' },
-      { id: 'x', label: 'X', icon: '🐦' },
-      { id: 'threads', label: 'Threads', icon: '🧵' },
-      { id: 'youtube', label: 'YouTube', icon: '📺' }
+      { id: 'facebook', label: 'Facebook' },
+      { id: 'linkedin', label: 'LinkedIn' },
+      { id: 'instagram', label: 'Instagram' },
+      { id: 'tiktok', label: 'TikTok' },
+      { id: 'x', label: 'X' },
+      { id: 'threads', label: 'Threads' },
+      { id: 'youtube', label: 'YouTube' }
     ];
 
     platforms.forEach(platform => {
@@ -402,8 +431,11 @@ export class TimelineContainer {
         background: ${this.filterState.platforms.has(platform.id) ? 'var(--background-modifier-hover)' : 'transparent'};
       `;
 
-      const icon = checkbox.createSpan({ text: platform.icon });
-      icon.style.cssText = 'font-size: 16px;';
+      // Use actual platform icon (same as card)
+      const iconWrapper = checkbox.createDiv();
+      iconWrapper.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+      const iconName = this.getPlatformIcon(platform.id);
+      setIcon(iconWrapper, iconName);
 
       const label = checkbox.createSpan({ text: platform.label });
       label.style.cssText = 'font-size: 13px; flex: 1;';
@@ -423,7 +455,7 @@ export class TimelineContainer {
           checkIcon.style.display = 'block';
         }
         this.applyFiltersAndSort();
-        this.renderPosts();
+        this.renderPostsFeed(); // Only re-render feed, keep panel open
         updateFilterButton();
       });
 
@@ -474,7 +506,7 @@ export class TimelineContainer {
       likeOption.style.background = this.filterState.likedOnly ? 'var(--background-modifier-hover)' : 'transparent';
       likeCheckIcon.style.display = this.filterState.likedOnly ? 'block' : 'none';
       this.applyFiltersAndSort();
-      this.renderPosts();
+      this.renderPostsFeed(); // Only re-render feed, keep panel open
       updateFilterButton();
     });
 
@@ -507,7 +539,7 @@ export class TimelineContainer {
       archiveOption.style.background = this.filterState.includeArchived ? 'var(--background-modifier-hover)' : 'transparent';
       archiveCheckIcon.style.display = this.filterState.includeArchived ? 'block' : 'none';
       this.applyFiltersAndSort();
-      this.renderPosts();
+      this.renderPostsFeed(); // Only re-render feed, keep panel open
       updateFilterButton();
     });
 
@@ -544,10 +576,10 @@ export class TimelineContainer {
     `;
 
     const sortOptions = [
-      { by: 'published' as const, order: 'newest' as const, label: 'Newest published first', icon: 'arrow-down' },
-      { by: 'published' as const, order: 'oldest' as const, label: 'Oldest published first', icon: 'arrow-up' },
-      { by: 'archived' as const, order: 'newest' as const, label: 'Recently archived first', icon: 'archive-down' },
-      { by: 'archived' as const, order: 'oldest' as const, label: 'First archived first', icon: 'archive-up' }
+      { by: 'published' as const, order: 'newest' as const, label: 'Newest published first', icon: 'arrow-down', secondIcon: null },
+      { by: 'published' as const, order: 'oldest' as const, label: 'Oldest published first', icon: 'arrow-up', secondIcon: null },
+      { by: 'archived' as const, order: 'newest' as const, label: 'Recently archived first', icon: 'archive', secondIcon: 'arrow-down' },
+      { by: 'archived' as const, order: 'oldest' as const, label: 'First archived first', icon: 'archive', secondIcon: 'arrow-up' }
     ];
 
     sortOptions.forEach((option, index) => {
@@ -567,9 +599,20 @@ export class TimelineContainer {
         ${index > 0 ? 'margin-top: 4px;' : ''}
       `;
 
-      const icon = item.createDiv();
+      // Icon container for primary and secondary icons
+      const iconContainer = item.createDiv();
+      iconContainer.style.cssText = 'display: flex; align-items: center; gap: 2px;';
+
+      const icon = iconContainer.createDiv();
       icon.style.cssText = 'width: 16px; height: 16px;';
       setIcon(icon, option.icon);
+
+      // Add second icon if exists (for archive + arrow)
+      if (option.secondIcon) {
+        const secondIcon = iconContainer.createDiv();
+        secondIcon.style.cssText = 'width: 12px; height: 12px;';
+        setIcon(secondIcon, option.secondIcon);
+      }
 
       const label = item.createSpan({ text: option.label });
       label.style.cssText = 'font-size: 13px; flex: 1;';
