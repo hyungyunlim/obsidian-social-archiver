@@ -1,5 +1,45 @@
 # Timeline View Refactoring Plan - SRP (Single Responsibility Principle)
 
+## 📊 진행 상황 (2025-01-29)
+
+### ✅ 완료된 작업
+
+#### Phase 1: Parser 분리 (완료)
+- ✅ `PostDataParser.ts` (286줄) - 데이터 파싱 로직
+- Commit: ecf5e0a
+
+#### Phase 2: Filter/Sort 분리 (완료)
+- ✅ `FilterSortManager.ts` (175줄) - 필터/정렬 로직
+- ✅ `FilterPanel.ts` (327줄) - 필터 UI
+- ✅ `SortDropdown.ts` (263줄) - 정렬 UI
+- Commit: 4e508f9
+
+#### Phase 3: Renderer 분리 (진행 중 - 3/4 완료)
+- ✅ `MediaGalleryRenderer.ts` (218줄) - 미디어 갤러리 렌더링 (Commit: b484df1)
+- ✅ `CommentRenderer.ts` (125줄) - 댓글 렌더링 (Commit: 38f8e86)
+- ✅ `YouTubeEmbedRenderer.ts` (75줄) - YouTube/TikTok 임베드 (Commit: 69a46bb)
+- ⏳ `PostCardRenderer.ts` - 포스트 카드 렌더링 (다음)
+
+### 📉 TimelineContainer.ts 축소 현황
+```
+시작:  1762줄 (Phase 0)
+Phase 1: -286줄 → 1476줄 (파서 분리)
+Phase 2: -533줄 → 1760줄 → 1464줄 (필터/정렬 분리, 헤더 리팩토링)
+Phase 3.1: -191줄 → 1571줄 (MediaGalleryRenderer)
+Phase 3.2: -107줄 → 1464줄 (CommentRenderer)
+Phase 3.3: -64줄 → 1400줄 (YouTubeEmbedRenderer)
+
+현재: 1400줄 (-362줄, -20.5% 감소)
+목표: ~200줄 (Phase 3-5 완료 후)
+```
+
+### 🎯 남은 작업
+- ⏳ Phase 3.4: PostCardRenderer 분리 (~380줄 예상)
+- ⏳ Phase 4: YouTubePlayerController 분리 (~80줄)
+- ⏳ Phase 5: 테스트 작성
+
+---
+
 ## 현재 문제점
 
 ### TimelineContainer.ts (1600+ lines)
