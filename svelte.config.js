@@ -5,13 +5,9 @@ export default {
   compilerOptions: {
     // Enable Svelte 5 Runes mode
     runes: true,
-    // Disable accessibility warnings for Obsidian UI
-    accessors: false,
+    // Enable HMR (Svelte 5 integrated)
+    hmr: true,
     // CSS handling
     css: 'injected'
-  },
-  // Hot module replacement configuration
-  vitePlugin: {
-    hot: true
   }
 };

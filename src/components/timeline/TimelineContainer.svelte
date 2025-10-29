@@ -4,7 +4,7 @@
   import type { PostData } from '../../types/post';
   import type { YamlFrontmatter } from '../../types/archive';
 
-  // Props
+  // Props using Svelte 5 $props()
   interface Props {
     vault: Vault;
     app: App;
@@ -13,18 +13,84 @@
 
   let { vault, app, archivePath }: Props = $props();
 
-  // Reactive state using Svelte 5 runes
+  // State variables
   let posts = $state<PostData[]>([]);
-  let filteredPosts = $state<PostData[]>([]);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let searchQuery = $state('');
   let selectedPlatforms = $state<Set<string>>(new Set());
 
-  // Derived state
-  let groupedPosts = $derived(() => {
-    return groupPostsByDate(filteredPosts);
-  });
+  /**
+   * Group posts by date (Today, Yesterday, This Week, etc.)
+   */
+  function groupPostsByDate(postsToGroup: PostData[]): Map<string, PostData[]> {
+    const grouped = new Map<string, PostData[]>();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const thisWeek = new Date(today);
+    thisWeek.setDate(thisWeek.getDate() - 7);
+
+    for (const post of postsToGroup) {
+      const postDate = new Date(post.metadata.timestamp);
+      const postDay = new Date(
+        postDate.getFullYear(),
+        postDate.getMonth(),
+        postDate.getDate()
+      );
+
+      let groupLabel: string;
+
+      if (postDay.getTime() === today.getTime()) {
+        groupLabel = 'Today';
+      } else if (postDay.getTime() === yesterday.getTime()) {
+        groupLabel = 'Yesterday';
+      } else if (postDate >= thisWeek) {
+        groupLabel = 'This Week';
+      } else {
+        // Format as "Month Year"
+        groupLabel = postDate.toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric',
+        });
+      }
+
+      if (!grouped.has(groupLabel)) {
+        grouped.set(groupLabel, []);
+      }
+      grouped.get(groupLabel)!.push(post);
+    }
+
+    return grouped;
+  }
+
+  // Helper function to filter posts
+  function filterPosts(allPosts: PostData[], query: string, platforms: Set<string>): PostData[] {
+    let result = allPosts;
+
+    // Search filter
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      result = result.filter(post =>
+        post.content.text.toLowerCase().includes(q) ||
+        post.author.name.toLowerCase().includes(q)
+      );
+    }
+
+    // Platform filter
+    if (platforms.size > 0) {
+      result = result.filter(post => platforms.has(post.platform));
+    }
+
+    return result;
+  }
+
+  // Derived state for filtered posts
+  let filteredPosts = $derived(filterPosts(posts, searchQuery, selectedPlatforms));
+
+  // Derived state for grouped posts
+  let groupedPosts = $derived(groupPostsByDate(filteredPosts));
 
   /**
    * Load all archived posts from vault
@@ -61,7 +127,6 @@
       );
 
       posts = loadedPosts;
-      filteredPosts = loadedPosts;
 
       console.log(`[Timeline] Loaded ${posts.length} posts`);
 
@@ -150,84 +215,9 @@
     return contentLines.join('\n').trim();
   }
 
-  /**
-   * Group posts by date (Today, Yesterday, This Week, etc.)
-   */
-  function groupPostsByDate(posts: PostData[]): Map<string, PostData[]> {
-    const grouped = new Map<string, PostData[]>();
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const thisWeek = new Date(today);
-    thisWeek.setDate(thisWeek.getDate() - 7);
-
-    for (const post of posts) {
-      const postDate = new Date(post.metadata.timestamp);
-      const postDay = new Date(
-        postDate.getFullYear(),
-        postDate.getMonth(),
-        postDate.getDate()
-      );
-
-      let groupLabel: string;
-
-      if (postDay.getTime() === today.getTime()) {
-        groupLabel = 'Today';
-      } else if (postDay.getTime() === yesterday.getTime()) {
-        groupLabel = 'Yesterday';
-      } else if (postDate >= thisWeek) {
-        groupLabel = 'This Week';
-      } else {
-        // Format as "Month Year"
-        groupLabel = postDate.toLocaleDateString('en-US', {
-          month: 'long',
-          year: 'numeric',
-        });
-      }
-
-      if (!grouped.has(groupLabel)) {
-        grouped.set(groupLabel, []);
-      }
-      grouped.get(groupLabel)!.push(post);
-    }
-
-    return grouped;
-  }
-
-  /**
-   * Filter posts based on search query and selected platforms
-   */
-  function filterPosts(): void {
-    let result = posts;
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(post =>
-        post.content.text.toLowerCase().includes(query) ||
-        post.author.name.toLowerCase().includes(query)
-      );
-    }
-
-    // Platform filter
-    if (selectedPlatforms.size > 0) {
-      result = result.filter(post =>
-        selectedPlatforms.has(post.platform)
-      );
-    }
-
-    filteredPosts = result;
-  }
-
   // Load posts on mount
   onMount(() => {
     loadPosts();
-  });
-
-  // Watch for search/filter changes
-  $effect(() => {
-    filterPosts();
   });
 </script>
 

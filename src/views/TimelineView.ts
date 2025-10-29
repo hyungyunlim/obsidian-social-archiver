@@ -1,6 +1,7 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import type SocialArchiverPlugin from '../main';
 import TimelineContainer from '../components/timeline/TimelineContainer.svelte';
+import { mount, unmount } from 'svelte';
 
 /**
  * Unique identifier for the Timeline View
@@ -21,7 +22,7 @@ export const VIEW_TYPE_TIMELINE = 'social-archiver-timeline';
  */
 export class TimelineView extends ItemView {
   private plugin: SocialArchiverPlugin;
-  private component: TimelineContainer | null = null;
+  private component: ReturnType<typeof TimelineContainer> | undefined;
 
   constructor(leaf: WorkspaceLeaf, plugin: SocialArchiverPlugin) {
     super(leaf);
@@ -58,8 +59,8 @@ export class TimelineView extends ItemView {
     container.empty();
     container.addClass('social-archiver-timeline-view');
 
-    // Mount Svelte TimelineContainer component
-    this.component = new TimelineContainer({
+    // Mount Svelte 5 component using mount()
+    this.component = mount(TimelineContainer, {
       target: container,
       props: {
         vault: this.app.vault,
@@ -74,10 +75,10 @@ export class TimelineView extends ItemView {
    * Cleanup resources and unmount Svelte components
    */
   async onClose(): Promise<void> {
-    // Destroy Svelte component instance
+    // Unmount Svelte 5 component
     if (this.component) {
-      this.component.$destroy();
-      this.component = null;
+      unmount(this.component);
+      this.component = undefined;
     }
   }
 
