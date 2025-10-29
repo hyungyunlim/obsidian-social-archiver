@@ -63,6 +63,7 @@ export class TimelineView extends ItemView {
       vault: this.app.vault,
       app: this.app,
       archivePath: this.plugin.settings.archivePath || 'Social Archives',
+      plugin: this.plugin,
     });
   }
 

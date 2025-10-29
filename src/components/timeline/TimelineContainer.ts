@@ -1,11 +1,13 @@
 import { setIcon, type TFile, type Vault, type App } from 'obsidian';
 import type { PostData, Comment } from '../../types/post';
 import type { YamlFrontmatter } from '../../types/archive';
+import type SocialArchiverPlugin from '../../main';
 
 export interface TimelineContainerProps {
   vault: Vault;
   app: App;
   archivePath: string;
+  plugin: SocialArchiverPlugin;
 }
 
 /**
@@ -16,6 +18,7 @@ export class TimelineContainer {
   private vault: Vault;
   private app: App;
   private archivePath: string;
+  private plugin: SocialArchiverPlugin;
   private containerEl: HTMLElement;
 
   private posts: PostData[] = [];
@@ -26,6 +29,7 @@ export class TimelineContainer {
     this.vault = props.vault;
     this.app = props.app;
     this.archivePath = props.archivePath;
+    this.plugin = props.plugin;
 
     this.render();
     this.loadPosts();
@@ -247,20 +251,27 @@ export class TimelineContainer {
     });
     timeSpan.setText(this.getRelativeTime(post.metadata.timestamp));
 
-    // User comment (if exists)
+    // User comment (if exists) - Social media style with nested appearance
     if (post.comment) {
-      const commentSection = contentArea.createDiv({ cls: 'mb-3' });
-      commentSection.style.cssText = 'padding: 8px 12px; background: var(--background-secondary); border-radius: 4px; border-left: 2px solid var(--interactive-accent);';
+      const userName = this.plugin.settings.userName || 'You';
 
-      const commentLabel = commentSection.createSpan({
-        text: '💭 ',
-        cls: 'text-xs text-[var(--text-muted)]'
-      });
+      // Comment header: "Jun commented on this post"
+      const commentHeader = contentArea.createDiv({ cls: 'mb-2' });
+      commentHeader.style.cssText = 'font-size: 13px; color: var(--text-muted);';
 
-      const commentText = commentSection.createSpan({
+      const userNameSpan = commentHeader.createSpan({ text: userName });
+      userNameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal);';
+
+      commentHeader.createSpan({ text: ' commented on this post' });
+
+      // Comment content with left border (nested appearance)
+      const commentSection = contentArea.createDiv({ cls: 'mb-4' });
+      commentSection.style.cssText = 'padding-left: 12px; border-left: 2px solid var(--background-modifier-border); margin-left: 4px;';
+
+      const commentText = commentSection.createDiv({
         cls: 'text-sm text-[var(--text-normal)]'
       });
-      commentText.style.marginLeft = '4px';
+      commentText.style.cssText = 'padding: 4px 0; line-height: 1.5;';
       this.renderMarkdownLinks(commentText, post.comment);
     }
 

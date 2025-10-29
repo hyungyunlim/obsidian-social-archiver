@@ -59,6 +59,20 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
+    // User Settings Section
+    containerEl.createEl('h3', { text: 'User Settings' });
+
+    new Setting(containerEl)
+      .setName('Display name')
+      .setDesc('Your name for comments (shown as "Name commented on this post")')
+      .addText(text => text
+        .setPlaceholder('You')
+        .setValue(this.plugin.settings.userName)
+        .onChange(async (value) => {
+          this.plugin.settings.userName = value || 'You';
+          await this.plugin.saveSettings();
+        }));
+
     // Storage Section
     containerEl.createEl('h3', { text: 'Storage Settings' });
 
