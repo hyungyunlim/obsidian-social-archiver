@@ -500,6 +500,7 @@ export class MarkdownConverter implements IService {
       archived: today,
       lastModified: today,
       download_time: undefined, // Will be set by orchestrator
+      archive: false, // Default: not archived (visible in timeline)
       tags: [
         `social/${postData.platform}`,
         ...(postData.ai?.topics || []).map(topic => `topic/${topic}`),

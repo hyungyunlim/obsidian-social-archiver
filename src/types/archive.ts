@@ -26,6 +26,7 @@ export interface YamlFrontmatter {
   archived: string; // YYYY-MM-DD format
   lastModified: string; // YYYY-MM-DD format
   download_time?: number; // Time taken to archive in seconds
+  archive?: boolean; // Whether the post is archived (hidden from timeline)
   tags: string[];
   ai_summary?: string;
   sentiment?: string;

@@ -148,9 +148,25 @@ export class TimelineContainer {
       card.style.backgroundColor = 'var(--background-secondary)';
     });
 
-    // Avatar (platform icon) - Top right corner, subtle style
+    // Avatar (platform icon) - Top right corner, subtle style - click to open original URL
     const avatarContainer = card.createDiv();
-    avatarContainer.style.cssText = 'position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; opacity: 0.3;';
+    avatarContainer.style.cssText = 'position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; opacity: 0.3; cursor: pointer; transition: opacity 0.2s;';
+    avatarContainer.setAttribute('title', `Open on ${post.platform}`);
+
+    avatarContainer.addEventListener('mouseenter', () => {
+      avatarContainer.style.opacity = '0.6';
+    });
+
+    avatarContainer.addEventListener('mouseleave', () => {
+      avatarContainer.style.opacity = '0.3';
+    });
+
+    avatarContainer.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (post.url) {
+        window.open(post.url, '_blank');
+      }
+    });
 
     const iconWrapper = avatarContainer.createDiv();
     iconWrapper.style.cssText = 'width: 24px; height: 24px;';
@@ -163,11 +179,30 @@ export class TimelineContainer {
     // Header: Author + Time
     const header = contentArea.createDiv({ cls: 'mb-3' });
 
-    // Author name
-    header.createEl('strong', {
+    // Author name - click to open author URL
+    const authorName = header.createEl('strong', {
       text: post.author.name,
       cls: 'text-[var(--text-normal)] block mb-1'
     });
+    authorName.style.cursor = 'pointer';
+    authorName.style.transition = 'color 0.2s';
+
+    if (post.author.url) {
+      authorName.setAttribute('title', `Visit ${post.author.name}'s profile`);
+
+      authorName.addEventListener('mouseenter', () => {
+        authorName.style.color = 'var(--interactive-accent)';
+      });
+
+      authorName.addEventListener('mouseleave', () => {
+        authorName.style.color = 'var(--text-normal)';
+      });
+
+      authorName.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.open(post.author.url, '_blank');
+      });
+    }
 
     // Relative time
     const timeSpan = header.createDiv({
@@ -292,28 +327,28 @@ export class TimelineContainer {
     const spacer = interactions.createDiv();
     spacer.style.flex = '1';
 
-    // Open original note button
-    const openBtn = interactions.createDiv();
-    openBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; transition: color 0.2s;';
-    openBtn.addEventListener('mouseenter', () => {
-      openBtn.style.color = 'var(--interactive-accent)';
+    // Archive button (right-aligned)
+    const archiveBtn = interactions.createDiv();
+    archiveBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; transition: color 0.2s;';
+    archiveBtn.setAttribute('title', 'Archive this post');
+    archiveBtn.addEventListener('mouseenter', () => {
+      archiveBtn.style.color = 'var(--interactive-accent)';
     });
-    openBtn.addEventListener('mouseleave', () => {
-      openBtn.style.color = 'var(--text-muted)';
+    archiveBtn.addEventListener('mouseleave', () => {
+      archiveBtn.style.color = 'var(--text-muted)';
     });
 
-    const openIcon = openBtn.createDiv();
-    openIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0;';
-    setIcon(openIcon, 'external-link');
-    openBtn.createSpan({ text: 'Open' });
+    const archiveIcon = archiveBtn.createDiv();
+    archiveIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0;';
+    setIcon(archiveIcon, 'archive');
 
-    // Click handler for open button
-    openBtn.addEventListener('click', async (e) => {
+    // Archive button click handler
+    archiveBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      await this.openNote(post);
+      await this.archivePost(post, card);
     });
 
-    // Click handler for entire card (also opens note)
+    // Click handler for entire card (opens note)
     card.addEventListener('click', async () => {
       await this.openNote(post);
     });
@@ -506,6 +541,110 @@ export class TimelineContainer {
     }
   }
 
+  /**
+   * Archive a post (set archive: true in YAML and remove from view)
+   */
+  private async archivePost(post: PostData, cardElement: HTMLElement): Promise<void> {
+    try {
+      const filePath = (post as any).filePath;
+      if (!filePath) {
+        console.warn('[Timeline] No file path for post:', post.id);
+        return;
+      }
+
+      const file = this.vault.getAbstractFileByPath(filePath);
+      if (!file || !('extension' in file)) {
+        console.warn('[Timeline] File not found:', filePath);
+        return;
+      }
+
+      const tfile = file as TFile;
+
+      // Read current file content
+      const content = await this.vault.read(tfile);
+
+      // Update YAML frontmatter
+      const updatedContent = this.updateYamlFrontmatter(content, { archive: true });
+
+      // Write back to file
+      await this.vault.modify(tfile, updatedContent);
+
+      // Animate card removal (fade out)
+      cardElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+      cardElement.style.opacity = '0';
+      cardElement.style.transform = 'translateY(-10px)';
+
+      // Remove from DOM after animation
+      setTimeout(() => {
+        cardElement.remove();
+
+        // Remove from posts array
+        const index = this.posts.findIndex(p => (p as any).filePath === filePath);
+        if (index !== -1) {
+          this.posts.splice(index, 1);
+        }
+
+        // Re-render if no posts left
+        if (this.posts.length === 0) {
+          this.renderEmpty();
+        }
+      }, 300);
+
+      console.log('[Timeline] Archived post:', post.id);
+    } catch (err) {
+      console.error('[Timeline] Failed to archive post:', err);
+    }
+  }
+
+  /**
+   * Update YAML frontmatter with new values
+   */
+  private updateYamlFrontmatter(content: string, updates: Record<string, any>): string {
+    const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
+    const match = content.match(frontmatterRegex);
+
+    if (!match) {
+      // No frontmatter found, add it
+      const yamlLines = Object.entries(updates)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('\n');
+      return `---\n${yamlLines}\n---\n\n${content}`;
+    }
+
+    const frontmatterContent = match[1];
+    const restContent = content.slice(match[0].length);
+
+    // Parse existing frontmatter
+    const lines = frontmatterContent.split('\n');
+    const updatedLines: string[] = [];
+    const processedKeys = new Set<string>();
+
+    // Update existing keys
+    for (const line of lines) {
+      const keyMatch = line.match(/^(\w+):/);
+      if (keyMatch) {
+        const key = keyMatch[1];
+        if (key && updates.hasOwnProperty(key)) {
+          updatedLines.push(`${key}: ${updates[key]}`);
+          processedKeys.add(key);
+        } else {
+          updatedLines.push(line);
+        }
+      } else {
+        updatedLines.push(line);
+      }
+    }
+
+    // Add new keys
+    for (const [key, value] of Object.entries(updates)) {
+      if (!processedKeys.has(key)) {
+        updatedLines.push(`${key}: ${value}`);
+      }
+    }
+
+    return `---\n${updatedLines.join('\n')}\n---\n${restContent}`;
+  }
+
   private async loadPosts(): Promise<void> {
     try {
       this.renderLoading();
@@ -558,6 +697,11 @@ export class TimelineContainer {
       const frontmatter = cache?.frontmatter as YamlFrontmatter | undefined;
 
       if (!frontmatter || !frontmatter.platform) {
+        return null;
+      }
+
+      // Filter out archived posts (archive: true)
+      if (frontmatter.archive === true) {
         return null;
       }
 
