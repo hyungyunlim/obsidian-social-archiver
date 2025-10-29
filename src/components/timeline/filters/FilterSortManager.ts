@@ -103,11 +103,6 @@ export class FilterSortManager {
    */
   private applySort(posts: PostData[]): PostData[] {
     return posts.sort((a, b) => {
-      // If sorting by like, prioritize liked posts
-      if (a.like !== b.like) {
-        return a.like ? -1 : 1;
-      }
-
       // Get date to sort by
       const getDateForSort = (post: PostData): number => {
         const timestamp = typeof post.metadata.timestamp === 'string'

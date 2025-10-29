@@ -65,17 +65,15 @@ export class PostCardRenderer {
    * Returns the root element (wrapper if comment exists, otherwise cardContainer)
    */
   public render(container: HTMLElement, post: PostData): HTMLElement {
-    // If comment exists, create wrapper for entire card
-    let cardContainer = container;
-    let rootElement: HTMLElement = container;
+    // Always create wrapper for entire card (for consistent structure)
+    const wrapper = container.createDiv({ cls: 'mb-4' });
+    const rootElement: HTMLElement = wrapper;
+
+    const userName = this.plugin.settings.userName || 'You';
+    const archivedTime = this.getRelativeTime(post.archivedDate);
 
     if (post.comment) {
-      const wrapper = container.createDiv({ cls: 'mb-4' });
-      rootElement = wrapper; // Set root element to wrapper
-
-      const userName = this.plugin.settings.userName || 'You';
-
-      // Comment header: "Jun commented on this post"
+      // Comment header: "Jun commented on this post · 2h ago"
       const commentHeader = wrapper.createDiv({ cls: 'mb-2' });
       commentHeader.style.cssText = 'font-size: 13px; color: var(--text-muted);';
 
@@ -84,20 +82,34 @@ export class PostCardRenderer {
 
       commentHeader.createSpan({ text: ' commented on this post' });
 
+      // Add archived time
+      if (archivedTime) {
+        commentHeader.createSpan({ text: ` · ${archivedTime}` });
+      }
+
       // Comment text
       const commentTextDiv = wrapper.createDiv({ cls: 'mb-3' });
       commentTextDiv.style.cssText = 'font-size: 14px; line-height: 1.5; color: var(--text-normal);';
       this.renderMarkdownLinks(commentTextDiv, post.comment, undefined, post.platform);
-
-      // Create nested container for the actual card
-      cardContainer = wrapper.createDiv();
-      cardContainer.style.cssText = 'padding-left: 16px; border-left: 2px solid var(--background-modifier-border); margin-left: 4px;';
     } else {
-      // No comment, create a wrapper div anyway for consistent removal
-      const wrapper = container.createDiv({ cls: 'mb-4' });
-      rootElement = wrapper;
-      cardContainer = wrapper;
+      // Saved header: "Jun saved this post · 2h ago"
+      const savedHeader = wrapper.createDiv({ cls: 'mb-2' });
+      savedHeader.style.cssText = 'font-size: 13px; color: var(--text-muted);';
+
+      const userNameSpan = savedHeader.createSpan({ text: userName });
+      userNameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal);';
+
+      savedHeader.createSpan({ text: ' saved this post' });
+
+      // Add archived time
+      if (archivedTime) {
+        savedHeader.createSpan({ text: ` · ${archivedTime}` });
+      }
     }
+
+    // Create nested container for the actual card (always nested now)
+    const cardContainer = wrapper.createDiv();
+    cardContainer.style.cssText = 'padding-left: 16px; border-left: 2px solid var(--background-modifier-border); margin-left: 4px;';
 
     const card = cardContainer.createDiv({
       cls: 'relative p-4 rounded-lg bg-[var(--background-secondary)] transition-all duration-200'
@@ -729,7 +741,11 @@ export class PostCardRenderer {
   /**
    * Format relative time (e.g., "2h ago", "Yesterday", "Mar 15")
    */
-  public getRelativeTime(timestamp: Date): string {
+  public getRelativeTime(timestamp: Date | undefined): string {
+    if (!timestamp) {
+      return '';
+    }
+
     const now = new Date();
     const date = new Date(timestamp);
     const diffMs = now.getTime() - date.getTime();

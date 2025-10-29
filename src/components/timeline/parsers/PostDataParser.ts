@@ -1,4 +1,4 @@
-import { type TFile, type Vault, type App } from 'obsidian';
+import { type TFile, type Vault } from 'obsidian';
 import type { PostData, Comment } from '../../../types/post';
 import type { YamlFrontmatter } from '../../../types/archive';
 
@@ -8,8 +8,7 @@ import type { YamlFrontmatter } from '../../../types/archive';
  */
 export class PostDataParser {
   constructor(
-    private vault: Vault,
-    private app: App
+    private vault: Vault
   ) {}
 
   /**
@@ -19,7 +18,6 @@ export class PostDataParser {
     console.log('[PostDataParser] Loading posts from:', archivePath);
 
     const allFiles = this.vault.getMarkdownFiles();
-    console.log('[PostDataParser] Total markdown files in vault:', allFiles.length);
 
     const archiveFiles = allFiles.filter(file =>
       file.path.startsWith(archivePath)
@@ -49,21 +47,25 @@ export class PostDataParser {
    */
   private async parseFile(file: TFile): Promise<PostData | null> {
     try {
-      const cache = this.app.metadataCache.getFileCache(file);
-      const frontmatter = cache?.frontmatter as YamlFrontmatter | undefined;
-
       console.log('[PostDataParser] Loading file:', file.path);
+
+      // Read file content directly to avoid stale cache
+      const content = await this.vault.read(file);
+
+      // Parse frontmatter from file content
+      const frontmatter = this.parseFrontmatter(content);
 
       if (!frontmatter || !frontmatter.platform) {
         console.log('[PostDataParser] No frontmatter or platform, skipping');
         return null;
       }
-
-      const content = await this.vault.read(file);
       const contentText = this.extractContentText(content);
       const metadata = this.extractMetadata(content);
       const mediaUrls = this.extractMedia(content);
       const comments = this.extractComments(content);
+
+      const publishedDate = frontmatter.published ? new Date(frontmatter.published) : undefined;
+      const archivedDate = frontmatter.archived ? new Date(frontmatter.archived) : undefined;
 
       const postData: PostData = {
         platform: frontmatter.platform as any,
@@ -74,8 +76,8 @@ export class PostDataParser {
         comment: frontmatter.comment, // User's personal note
         like: frontmatter.like, // User's personal like
         archive: frontmatter.archive, // Archive status
-        publishedDate: frontmatter.published ? new Date(frontmatter.published) : undefined,
-        archivedDate: frontmatter.archived ? new Date(frontmatter.archived) : undefined,
+        publishedDate: publishedDate,
+        archivedDate: archivedDate,
         author: {
           name: frontmatter.author || 'Unknown',
           url: frontmatter.authorUrl || '',
@@ -282,5 +284,73 @@ export class PostDataParser {
     }
 
     return comments;
+  }
+
+  /**
+   * Parse YAML frontmatter from markdown content
+   */
+  private parseFrontmatter(markdown: string): YamlFrontmatter | null {
+    const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
+    if (!frontmatterMatch || !frontmatterMatch[1]) {
+      return null;
+    }
+
+    const frontmatterText = frontmatterMatch[1];
+    const lines = frontmatterText.split('\n');
+    const frontmatter: any = {};
+
+    let currentKey: string | null = null;
+    let currentArray: string[] = [];
+
+    for (const line of lines) {
+      // Array item: "  - value"
+      if (line.startsWith('  - ')) {
+        const value = line.substring(4).trim();
+        currentArray.push(value);
+        continue;
+      }
+
+      // If we were building an array, save it
+      if (currentKey && currentArray.length > 0) {
+        frontmatter[currentKey] = currentArray;
+        currentArray = [];
+        currentKey = null;
+      }
+
+      // Key-value pair: "key: value"
+      const match = line.match(/^(\w+):\s*(.*)$/);
+      if (match && match[1] && match[2] !== undefined) {
+        const key = match[1];
+        const value = match[2];
+        currentKey = key;
+
+        // Remove quotes if present
+        const cleanValue = value.replace(/^["']|["']$/g, '').trim();
+
+        // Check if this starts an array (value is empty, next line will have array items)
+        if (cleanValue === '') {
+          currentArray = [];
+        } else {
+          // Parse value
+          if (cleanValue === 'true') {
+            frontmatter[key] = true;
+          } else if (cleanValue === 'false') {
+            frontmatter[key] = false;
+          } else if (!isNaN(Number(cleanValue)) && cleanValue !== '') {
+            frontmatter[key] = Number(cleanValue);
+          } else {
+            frontmatter[key] = cleanValue;
+          }
+          currentKey = null;
+        }
+      }
+    }
+
+    // Save last array if any
+    if (currentKey && currentArray.length > 0) {
+      frontmatter[currentKey] = currentArray;
+    }
+
+    return frontmatter as YamlFrontmatter;
   }
 }

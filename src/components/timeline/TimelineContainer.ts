@@ -66,7 +66,7 @@ export class TimelineContainer {
     this.plugin = props.plugin;
 
     // Initialize PostDataParser
-    this.postDataParser = new PostDataParser(this.vault, this.app);
+    this.postDataParser = new PostDataParser(this.vault);
 
     // Initialize FilterSortManager with plugin settings
     this.filterSortManager = new FilterSortManager(
@@ -394,8 +394,7 @@ export class TimelineContainer {
 
   private async loadPosts(): Promise<void> {
     try {
-      console.log('[Timeline] === loadPosts started ===');
-      console.log('[Timeline] Archive path:', this.archivePath);
+      console.log('[Timeline] Loading posts from:', this.archivePath);
 
       this.renderLoading();
 

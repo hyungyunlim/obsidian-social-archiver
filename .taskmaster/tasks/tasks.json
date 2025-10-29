@@ -1202,11 +1202,207 @@
             "testStrategy": "Test end-to-end archiving workflow with transcript options enabled, verify YAML frontmatter contains correct transcript fields, validate markdown output matches expected format"
           }
         ]
+      },
+      {
+        "id": 13,
+        "title": "Create Timeline Data Models and Types",
+        "description": "Define TypeScript interfaces and Zod schemas for timeline sharing functionality, including TimelineData, TimelineShareRequest, and API request/response types",
+        "details": "Create timeline-specific data models building on existing ShareInfo patterns. Define TimelineData interface with username, posts array, settings (theme, bio, customCSS, platformFilters), tier, expiration, view metadata. Create TimelineShareRequest interface for plugin API calls. Define API schemas for POST /api/timeline/publish and GET /share/:username endpoints. Use Zod for runtime validation. Integrate with existing ShareManager patterns and ensure compatibility with KV storage structure. Follow existing type patterns in types/api.ts and services/ShareManager.ts.",
+        "testStrategy": "Unit tests for type validation using Zod schemas. Test timeline data serialization/deserialization. Validate API request/response structure matches schemas. Test edge cases for required/optional fields.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Create R2MediaUploader Service",
+        "description": "Implement R2 media upload service to handle batch media uploads for timeline sharing, with error handling and cleanup capabilities",
+        "details": "Create R2MediaUploader class implementing IService interface. Support uploadMedia() for single files and uploadBatch() for multiple files. Implement upload strategy: read media from vault attachments/, convert to streams/base64, upload to R2 with organized structure (timelines/{username}/{postId}_filename). Generate public R2 URLs. Add deleteUserMedia() for cleanup. Include retry logic with exponential backoff using existing ExponentialBackoff service. Add progress tracking for UI. Use existing patterns from MediaHandler service but focused on R2 upload. Structure: R2 bucket key format timelines/{username}/{postId}_{index}_{filename}.",
+        "testStrategy": "Unit tests with mocked R2Bucket. Test single and batch uploads. Test error handling and retry logic. Test cleanup functionality. Integration tests with actual R2 bucket in development environment.",
+        "priority": "high",
+        "dependencies": [
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Extend KVStorageAdapter for Timeline Storage",
+        "description": "Add timeline-specific methods to existing KVStorageAdapter to handle timeline metadata storage and retrieval",
+        "details": "Extend existing KVStorageAdapter.ts with timeline methods: saveTimeline(), getTimeline(), updateTimelineMetadata(), deleteTimeline(), listUserTimelines(). Use key format 'timeline:{username}' for storage. Implement TTL handling (free: 30 days, pro: 365 days). Add timeline-specific migration logic for tier upgrades. Include batch operations for managing multiple timelines per user. Leverage existing patterns from share methods but adapt for timeline data structure. Add username uniqueness validation. Support timeline metadata updates (view count, last modified).",
+        "testStrategy": "Unit tests extending existing KVStorageAdapter tests. Test timeline CRUD operations. Test TTL calculations. Test username conflicts. Test migration between tiers. Mock KV and R2 dependencies.",
+        "priority": "high",
+        "dependencies": [
+          13,
+          14
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Create Timeline API Handler",
+        "description": "Implement Workers API endpoint POST /api/timeline/publish for creating timeline shares with media upload orchestration",
+        "details": "Create workers/src/handlers/timeline-api.ts with POST /api/timeline/publish endpoint. Validate license tier and credit availability. Parse timeline request (username, posts, settings, tier). Validate username availability and format (alphanumeric + hyphens, 3-32 chars, reserve common names). Orchestrate R2 media uploads using R2MediaUploader. Store timeline metadata using extended KVStorageAdapter. Return timeline share response with shareId, shareUrl, expiresAt. Implement rate limiting (10 publishes per user per day). Add comprehensive error handling with user-friendly messages. Follow existing patterns from workers/src/handlers/share.ts.",
+        "testStrategy": "Integration tests with mocked dependencies. Test license validation. Test username conflicts. Test media upload pipeline. Test rate limiting. Test error scenarios (invalid data, upload failures, storage errors).",
+        "priority": "high",
+        "dependencies": [
+          14,
+          15
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Create Public Timeline Renderer",
+        "description": "Implement server-side HTML rendering for public timeline pages at GET /share/:username with responsive design and SEO optimization",
+        "details": "Create workers/src/handlers/public-timeline.ts following public-share.ts patterns. Implement GET /share/:username endpoint with username validation. Fetch timeline data from KV using extended KVStorageAdapter. Generate responsive HTML using Hono html`` templates. Create timeline page layout: header (username, bio, stats), post feed (single column, max-width 672px), filters (platform, sort), footer with disclaimer. Implement post card rendering reusing TimelineContainer patterns but as server-side HTML. Add theme support (dark/light). Include view count tracking and last accessed updates. Add proper meta tags, CSP headers, and robots directives. Implement caching strategy (5min edge cache).",
+        "testStrategy": "Integration tests for HTML rendering. Test responsive design across screen sizes. Test post card rendering for all platforms. Test view tracking. Test caching headers. Manual testing for SEO and performance.",
+        "priority": "high",
+        "dependencies": [
+          15,
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Create ShareTimelineModal Component",
+        "description": "Build Svelte 5 modal component for timeline sharing UI with form validation and API integration",
+        "details": "Create src/modals/ShareTimelineModal.ts using Svelte 5 Runes API. Build modal UI with username input (validation: alphanumeric + hyphens), theme selector (dark/light), bio textarea (Pro only, 280 chars), platform filter checkboxes, advanced options (collapsible). Implement client-side validation with real-time feedback. Add username availability checking via API. Integrate with extended ShareManager for API calls. Show upload progress for media files. Display share URL with copy-to-clipboard. Handle Pro vs Free feature restrictions. Use existing modal patterns and Tailwind CSS following project conventions. Add mobile-responsive design.",
+        "testStrategy": "Unit tests for form validation logic. Test Pro vs Free feature restrictions. Test API integration with mocked responses. Manual testing for mobile responsiveness and user experience.",
+        "priority": "medium",
+        "dependencies": [
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Extend ShareManager for Timeline Operations",
+        "description": "Add timeline-specific methods to existing ShareManager service for timeline creation and management",
+        "details": "Extend src/services/ShareManager.ts with timeline methods: createTimelineShare(), validateTimelineData(), prepareTimelineMedia(), buildTimelineRequest(). Add timeline-specific validation (username format, post count limits, media size limits). Implement media preparation logic to extract and process media from vault posts. Create API request builder for timeline publish endpoint. Add error handling with TimelineShareError class. Support batch operations for multiple post processing. Integrate with existing ShareManager patterns while maintaining SRP. Add methods for timeline URL generation and management.",
+        "testStrategy": "Unit tests extending existing ShareManager tests. Test timeline validation logic. Test media preparation pipeline. Test API request building. Test error handling scenarios.",
+        "priority": "medium",
+        "dependencies": [
+          18
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Update Settings Tab for Timeline Configuration",
+        "description": "Add timeline sharing section to existing settings with enable/disable toggle and management interface",
+        "details": "Extend src/settings/SettingsTab.ts with 'Timeline Sharing' section. Add enable/disable toggle for timeline feature. Include default theme preference setting. Add active timeline management: list user's published timelines with delete buttons, view statistics (views, created date), regenerate options. Add username availability checker. Include link to open ShareTimelineModal. Follow existing settings patterns and styling. Add mobile-responsive design for settings management. Include help text and feature explanation.",
+        "testStrategy": "Unit tests for settings persistence. Test timeline management operations. Manual testing for UI responsiveness and user experience.",
+        "priority": "medium",
+        "dependencies": [
+          19
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Add Timeline Command Integration",
+        "description": "Register 'Share Timeline' command in main plugin for command palette and ribbon access",
+        "details": "Update src/main.ts to register 'Share Timeline' command. Add command to Obsidian command palette with proper icon and description. Optionally add ribbon icon for quick access. Integrate command with ShareTimelineModal opening. Add conditional availability based on settings (timeline sharing enabled). Follow existing command registration patterns in main.ts. Ensure proper cleanup on plugin disable.",
+        "testStrategy": "Manual testing of command registration. Test command availability based on settings. Test modal opening from command palette and ribbon.",
+        "priority": "low",
+        "dependencies": [
+          20
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Implement Timeline Security and Rate Limiting",
+        "description": "Add comprehensive security measures including rate limiting, content validation, and username protection",
+        "details": "Implement rate limiting in timeline-api.ts: 10 publishes per user per day, 1 username change per week. Add content validation and sanitization for user inputs (username, bio, custom CSS). Implement username squatting prevention: reserve common names (admin, api, support, www, etc.), require active vault with posts. Add CORS protection and CSP headers. Implement input sanitization for XSS prevention. Add content moderation hooks for future implementation. Include audit logging for timeline operations. Use existing rate limiting patterns from workers middleware.",
+        "testStrategy": "Unit tests for rate limiting logic. Test username validation and reservation. Test input sanitization. Security testing for XSS and CSRF vulnerabilities.",
+        "priority": "high",
+        "dependencies": [
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Create Timeline Management API Endpoints",
+        "description": "Implement DELETE /api/timeline/:username and GET /api/timeline/:username/stats endpoints for timeline management",
+        "details": "Add DELETE /api/timeline/:username endpoint with license key authentication. Implement timeline deletion including KV cleanup and R2 media removal. Create GET /api/timeline/:username/stats endpoint for analytics (view count, creation date, media usage). Add timeline listing endpoint for user's own timelines. Implement proper authentication and authorization. Add comprehensive error handling and logging. Follow REST API conventions and existing endpoint patterns in workers.",
+        "testStrategy": "Integration tests for CRUD operations. Test authentication and authorization. Test cleanup operations. Test error scenarios.",
+        "priority": "medium",
+        "dependencies": [
+          22
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Implement Timeline Caching Strategy",
+        "description": "Add multi-level caching for timeline pages including edge caching, KV caching, and browser caching",
+        "details": "Implement caching strategy for public timeline pages: edge caching (5 minutes), KV HTML cache (1 hour), browser caching for static assets. Add cache invalidation on timeline updates. Implement smart cache warming for popular timelines. Add cache headers optimization (Cache-Control, ETag, Last-Modified). Include CDN integration for media assets. Add cache statistics and monitoring. Use Cloudflare Workers cache API effectively.",
+        "testStrategy": "Performance testing for cache effectiveness. Test cache invalidation logic. Monitor cache hit rates and performance metrics.",
+        "priority": "medium",
+        "dependencies": [
+          23
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Create Timeline Analytics and Monitoring",
+        "description": "Implement analytics tracking for timeline views, engagement metrics, and performance monitoring",
+        "details": "Add analytics tracking to public timeline pages: view counts, unique visitors, geographic distribution, referrer tracking. Implement engagement metrics: time spent, scroll depth, platform filter usage. Add performance monitoring: page load times, error rates, API response times. Create analytics dashboard accessible to timeline owners. Add privacy-compliant tracking (no personal data). Integrate with existing monitoring infrastructure. Store analytics in KV with appropriate TTL.",
+        "testStrategy": "Test analytics data collection and aggregation. Verify privacy compliance. Test analytics dashboard functionality.",
+        "priority": "low",
+        "dependencies": [
+          24
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Implement Timeline Testing Suite",
+        "description": "Create comprehensive test suite covering unit tests, integration tests, and end-to-end testing for timeline functionality",
+        "details": "Create comprehensive test suite for timeline feature: unit tests for all new services and components, integration tests for API endpoints, end-to-end tests for complete timeline creation and viewing flow. Add performance tests for large timelines (1000+ posts). Include security tests for authentication and authorization. Add mobile testing scenarios. Create test data generators for different timeline configurations. Use existing testing patterns from __tests__ directories.",
+        "testStrategy": "Achieve >80% code coverage for timeline-related code. Test critical user journeys. Verify performance under load. Security testing for common vulnerabilities.",
+        "priority": "medium",
+        "dependencies": [
+          25
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Create Timeline Documentation and User Guide",
+        "description": "Write comprehensive documentation including user guide, API documentation, and troubleshooting guide",
+        "details": "Create user documentation: how-to guide for creating timeline shares, feature comparison (Free vs Pro), privacy and copyright guidelines, troubleshooting common issues. Write technical documentation: API endpoints documentation, architecture overview, deployment guide. Create developer documentation: extending timeline functionality, customization options. Include screenshots and video tutorials. Add FAQ section covering common questions. Follow existing documentation patterns and style.",
+        "testStrategy": "Review documentation with beta users. Test all documented procedures. Verify accuracy of technical documentation.",
+        "priority": "low",
+        "dependencies": [
+          26
+        ],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-08-26T14:09:53.710Z",
-      "updated": "2025-10-29T05:42:17.380Z",
+      "updated": "2025-10-29T14:27:38.782Z",
       "description": "Tasks for master context"
     }
   }
