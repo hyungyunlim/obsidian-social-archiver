@@ -1,0 +1,286 @@
+import { type TFile, type Vault, type App } from 'obsidian';
+import type { PostData, Comment } from '../../../types/post';
+import type { YamlFrontmatter } from '../../../types/archive';
+
+/**
+ * PostDataParser - Handles parsing of archived posts from vault files
+ * Single Responsibility: Parse markdown files into PostData objects
+ */
+export class PostDataParser {
+  constructor(
+    private vault: Vault,
+    private app: App
+  ) {}
+
+  /**
+   * Load all posts from the specified archive path
+   */
+  async loadFromVault(archivePath: string): Promise<PostData[]> {
+    console.log('[PostDataParser] Loading posts from:', archivePath);
+
+    const allFiles = this.vault.getMarkdownFiles();
+    console.log('[PostDataParser] Total markdown files in vault:', allFiles.length);
+
+    const archiveFiles = allFiles.filter(file =>
+      file.path.startsWith(archivePath)
+    );
+
+    console.log(`[PostDataParser] Found ${archiveFiles.length} files in ${archivePath}`);
+
+    const loadedPosts: PostData[] = [];
+
+    for (const file of archiveFiles) {
+      try {
+        const postData = await this.parseFile(file);
+        if (postData) {
+          loadedPosts.push(postData);
+        }
+      } catch (err) {
+        console.warn(`[PostDataParser] Failed to load ${file.path}:`, err);
+      }
+    }
+
+    console.log(`[PostDataParser] Successfully loaded ${loadedPosts.length} posts`);
+    return loadedPosts;
+  }
+
+  /**
+   * Parse a single file into PostData
+   */
+  private async parseFile(file: TFile): Promise<PostData | null> {
+    try {
+      const cache = this.app.metadataCache.getFileCache(file);
+      const frontmatter = cache?.frontmatter as YamlFrontmatter | undefined;
+
+      console.log('[PostDataParser] Loading file:', file.path);
+
+      if (!frontmatter || !frontmatter.platform) {
+        console.log('[PostDataParser] No frontmatter or platform, skipping');
+        return null;
+      }
+
+      const content = await this.vault.read(file);
+      const contentText = this.extractContentText(content);
+      const metadata = this.extractMetadata(content);
+      const mediaUrls = this.extractMedia(content);
+      const comments = this.extractComments(content);
+
+      const postData: PostData = {
+        platform: frontmatter.platform as any,
+        id: file.basename,
+        url: frontmatter.originalUrl || '',
+        videoId: (frontmatter as any).videoId, // YouTube video ID
+        filePath: file.path, // Store file path for opening
+        comment: frontmatter.comment, // User's personal note
+        like: frontmatter.like, // User's personal like
+        archive: frontmatter.archive, // Archive status
+        publishedDate: frontmatter.published ? new Date(frontmatter.published) : undefined,
+        archivedDate: frontmatter.archived ? new Date(frontmatter.archived) : undefined,
+        author: {
+          name: frontmatter.author || 'Unknown',
+          url: frontmatter.authorUrl || '',
+        },
+        content: {
+          text: contentText,
+        },
+        media: mediaUrls.map(url => ({ type: 'image' as const, url })),
+        metadata: {
+          timestamp: new Date(frontmatter.published || frontmatter.archived || file.stat.ctime),
+          likes: metadata.likes,
+          comments: metadata.comments,
+          shares: metadata.shares,
+          views: metadata.views,
+        },
+        comments: comments.length > 0 ? comments : undefined,
+      };
+
+      console.log('[PostDataParser] Loaded post:', postData.platform, postData.id);
+
+      return postData;
+    } catch (err) {
+      console.warn(`[PostDataParser] Failed to load ${file.path}:`, err);
+      return null;
+    }
+  }
+
+  /**
+   * Extract content text from markdown, removing frontmatter and metadata
+   */
+  extractContentText(markdown: string): string {
+    // Remove frontmatter
+    const withoutFrontmatter = markdown.replace(/^---\n[\s\S]*?\n---\n/, '');
+
+    // Split into sections by horizontal rules
+    const sections = withoutFrontmatter.split(/\n---+\n/);
+
+    // Get the first section (before any horizontal rules)
+    const contentSection = sections[0] || '';
+
+    // Remove common markdown headers and metadata
+    const lines = contentSection.split('\n');
+    const contentLines: string[] = [];
+    let contentStarted = false;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Skip headers and metadata at the beginning
+      if (!contentStarted) {
+        if (!trimmed ||
+            trimmed.startsWith('#') ||
+            trimmed.startsWith('**Platform:**') ||
+            trimmed.startsWith('![')) {
+          continue;
+        }
+        contentStarted = true;
+      }
+
+      // Stop at metadata footer
+      if (trimmed.startsWith('**Platform:**') ||
+          trimmed.startsWith('**Original URL:**') ||
+          trimmed.startsWith('**Published:**')) {
+        break;
+      }
+
+      contentLines.push(line);
+    }
+
+    return contentLines.join('\n').trim();
+  }
+
+  /**
+   * Extract metadata from markdown footer (Likes, Comments, Shares, Views)
+   */
+  extractMetadata(markdown: string): { likes?: number; comments?: number; shares?: number; views?: number } {
+    const metadata: { likes?: number; comments?: number; shares?: number; views?: number } = {};
+
+    // Find metadata footer: **Likes:** 6 | **Comments:** 3 | **Shares:** 1
+    const metadataRegex = /\*\*Likes:\*\*\s*(\d+)|\*\*Comments:\*\*\s*(\d+)|\*\*Shares:\*\*\s*(\d+)|\*\*Views:\*\*\s*(\d+)/g;
+
+    let match;
+    while ((match = metadataRegex.exec(markdown)) !== null) {
+      if (match[1]) metadata.likes = parseInt(match[1]);
+      if (match[2]) metadata.comments = parseInt(match[2]);
+      if (match[3]) metadata.shares = parseInt(match[3]);
+      if (match[4]) metadata.views = parseInt(match[4]);
+    }
+
+    return metadata;
+  }
+
+  /**
+   * Extract media URLs from markdown
+   */
+  extractMedia(markdown: string): string[] {
+    const mediaUrls: string[] = [];
+
+    // Match ![image N](path) format
+    const imageRegex = /!\[.*?\]\((.*?)\)/g;
+
+    let match;
+    while ((match = imageRegex.exec(markdown)) !== null) {
+      const url = match[1];
+      if (url && url.startsWith('attachments/')) {
+        mediaUrls.push(url);
+      }
+    }
+
+    return mediaUrls;
+  }
+
+  /**
+   * Extract comments from markdown
+   */
+  extractComments(markdown: string): Comment[] {
+    const comments: Comment[] = [];
+
+    // Find comments section
+    const commentsMatch = markdown.match(/## 💬 Comments\n\n([\s\S]*?)(?=\n---\n\n\*\*Platform:|$)/);
+    if (!commentsMatch || !commentsMatch[1]) {
+      return comments;
+    }
+
+    const commentsSection = commentsMatch[1];
+
+    // Split by comment separator (--- between comments)
+    const commentBlocks = commentsSection.split(/\n---\n\n/).filter(block => block.trim());
+
+    for (const block of commentBlocks) {
+      const lines = block.split('\n');
+      if (lines.length === 0 || !lines[0]) continue;
+
+      // Parse main comment header: **[@username](url)** [· timestamp] [· likes]
+      // Timestamp is optional since Instagram comments don't have timestamp from API
+      const headerMatch = lines[0].match(/\*\*\[?@?([^\]]*)\]?\(?([^)]*)\)?\*\*(?:(?: · ([^·\n]+))?)(?: · (\d+) likes)?/);
+      if (!headerMatch) continue;
+
+      const [, username, url, timestamp, likesStr] = headerMatch;
+
+      // Extract comment content (lines after header, before any replies)
+      const contentLines: string[] = [];
+      let i = 1;
+      while (i < lines.length) {
+        const line = lines[i];
+        if (!line || line.trim().startsWith('↳')) break;
+        contentLines.push(line);
+        i++;
+      }
+      const content = contentLines.join('\n').trim();
+
+      // Parse replies (lines starting with ↳)
+      const replies: Comment[] = [];
+      while (i < lines.length) {
+        const currentLine = lines[i];
+        if (currentLine && currentLine.trim().startsWith('↳')) {
+          // Reply header: ↳ **[@username](url)** [· timestamp] [· likes]
+          const replyHeaderMatch = currentLine.match(/↳ \*\*\[?@?([^\]]*)\]?\(?([^)]*)\)?\*\*(?:(?: · ([^·\n]+))?)(?: · (\d+) likes)?/);
+          if (replyHeaderMatch) {
+            const [, replyUsername, replyUrl, replyTimestamp, replyLikesStr] = replyHeaderMatch;
+            i++;
+
+            // Get reply content (lines starting with "  " but not "  ↳")
+            const replyContentLines: string[] = [];
+            while (i < lines.length) {
+              const line = lines[i];
+              if (!line || !line.startsWith('  ') || line.trim().startsWith('↳')) break;
+              replyContentLines.push(line.substring(2)); // Remove the 2-space indent
+              i++;
+            }
+            const replyContent = replyContentLines.join('\n').trim();
+
+            replies.push({
+              id: `reply-${Date.now()}-${Math.random()}`,
+              author: {
+                name: replyUsername || 'Unknown',
+                url: replyUrl || '',
+                username: replyUsername,
+              },
+              content: replyContent,
+              timestamp: replyTimestamp?.trim() || '',
+              likes: replyLikesStr ? parseInt(replyLikesStr) : undefined,
+            });
+          } else {
+            i++;
+          }
+        } else {
+          i++;
+        }
+      }
+
+      comments.push({
+        id: `comment-${Date.now()}-${Math.random()}`,
+        author: {
+          name: username || 'Unknown',
+          url: url || '',
+          username: username,
+        },
+        content,
+        timestamp: timestamp?.trim() || '',
+        likes: likesStr ? parseInt(likesStr) : undefined,
+        replies: replies.length > 0 ? replies : undefined,
+      });
+    }
+
+    return comments;
+  }
+}

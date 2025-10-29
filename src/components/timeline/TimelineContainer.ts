@@ -1,6 +1,5 @@
 import { setIcon, type TFile, type Vault, type App } from 'obsidian';
-import type { PostData, Comment, TranscriptEntry } from '../../types/post';
-import type { YamlFrontmatter } from '../../types/archive';
+import type { PostData, Comment, Media } from '../../types/post';
 import type SocialArchiverPlugin from '../../main';
 import {
   siFacebook,
@@ -11,6 +10,7 @@ import {
   siYoutube,
   type SimpleIcon
 } from 'simple-icons';
+import { PostDataParser } from './parsers/PostDataParser';
 
 export interface TimelineContainerProps {
   vault: Vault;
@@ -103,6 +103,9 @@ export class TimelineContainer {
   private posts: PostData[] = [];
   private filteredPosts: PostData[] = [];
 
+  // Parser for loading posts from vault
+  private postDataParser: PostDataParser;
+
   // Filter and sort state
   private filterState = {
     platforms: new Set<string>(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube']),
@@ -129,6 +132,9 @@ export class TimelineContainer {
     this.app = props.app;
     this.archivePath = props.archivePath;
     this.plugin = props.plugin;
+
+    // Initialize PostDataParser
+    this.postDataParser = new PostDataParser(this.vault, this.app);
 
     // Load sort settings from plugin settings
     this.sortState = {
@@ -1734,30 +1740,8 @@ export class TimelineContainer {
 
       this.renderLoading();
 
-      const allFiles = this.vault.getMarkdownFiles();
-      console.log('[Timeline] Total markdown files in vault:', allFiles.length);
-
-      const archiveFiles = allFiles.filter(file =>
-        file.path.startsWith(this.archivePath)
-      );
-
-      console.log(`[Timeline] Found ${archiveFiles.length} files in ${this.archivePath}`);
-      console.log('[Timeline] Archive file paths:', archiveFiles.map(f => f.path));
-
-      const loadedPosts: PostData[] = [];
-
-      for (const file of archiveFiles) {
-        try {
-          const postData = await this.loadPostFromFile(file);
-          if (postData) {
-            loadedPosts.push(postData);
-          }
-        } catch (err) {
-          console.warn(`[Timeline] Failed to load ${file.path}:`, err);
-        }
-      }
-
-      this.posts = loadedPosts;
+      // Use PostDataParser to load posts from vault
+      this.posts = await this.postDataParser.loadFromVault(this.archivePath);
       this.applyFiltersAndSort();
 
       console.log(`[Timeline] Loaded ${this.posts.length} posts, ${this.filteredPosts.length} after filtering`);
@@ -1836,104 +1820,6 @@ export class TimelineContainer {
     this.filteredPosts = filtered;
   }
 
-  private async loadPostFromFile(file: TFile): Promise<PostData | null> {
-    try {
-      const cache = this.app.metadataCache.getFileCache(file);
-      const frontmatter = cache?.frontmatter as YamlFrontmatter | undefined;
-
-      console.log('[Timeline] Loading file:', file.path);
-      console.log('[Timeline] Frontmatter:', frontmatter);
-
-      if (!frontmatter || !frontmatter.platform) {
-        console.log('[Timeline] No frontmatter or platform, skipping');
-        return null;
-      }
-
-      const content = await this.vault.read(file);
-      const contentText = this.extractContentText(content);
-      const metadata = this.extractMetadata(content);
-      const mediaUrls = this.extractMedia(content);
-      const comments = this.extractComments(content);
-
-      const postData: PostData = {
-        platform: frontmatter.platform as any,
-        id: file.basename,
-        url: frontmatter.originalUrl || '',
-        videoId: (frontmatter as any).videoId, // YouTube video ID
-        filePath: file.path, // Store file path for opening
-        comment: frontmatter.comment, // User's personal note
-        like: frontmatter.like, // User's personal like
-        archive: frontmatter.archive, // Archive status
-        publishedDate: frontmatter.published ? new Date(frontmatter.published) : undefined,
-        archivedDate: frontmatter.archived ? new Date(frontmatter.archived) : undefined,
-        author: {
-          name: frontmatter.author || 'Unknown',
-          url: frontmatter.authorUrl || '',
-        },
-        content: {
-          text: contentText,
-        },
-        media: mediaUrls.map(url => ({ type: 'image' as const, url })),
-        metadata: {
-          timestamp: new Date(frontmatter.published || frontmatter.archived || file.stat.ctime),
-          likes: metadata.likes,
-          comments: metadata.comments,
-          shares: metadata.shares,
-          views: metadata.views,
-        },
-        comments: comments.length > 0 ? comments : undefined,
-      };
-
-      console.log('[Timeline] Loaded post:', postData.platform, postData.id, 'URL:', postData.url);
-
-      return postData;
-    } catch (err) {
-      console.warn(`[Timeline] Failed to load ${file.path}:`, err);
-      return null;
-    }
-  }
-
-  private extractContentText(markdown: string): string {
-    // Remove frontmatter
-    const withoutFrontmatter = markdown.replace(/^---\n[\s\S]*?\n---\n/, '');
-
-    // Split into sections by horizontal rules
-    const sections = withoutFrontmatter.split(/\n---+\n/);
-
-    // Get the first section (before any horizontal rules)
-    const contentSection = sections[0] || '';
-
-    // Remove common markdown headers and metadata
-    const lines = contentSection.split('\n');
-    const contentLines: string[] = [];
-    let contentStarted = false;
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-
-      // Skip headers and metadata at the beginning
-      if (!contentStarted) {
-        if (!trimmed ||
-            trimmed.startsWith('#') ||
-            trimmed.startsWith('**Platform:**') ||
-            trimmed.startsWith('![')) {
-          continue;
-        }
-        contentStarted = true;
-      }
-
-      // Stop at metadata footer
-      if (trimmed.startsWith('**Platform:**') ||
-          trimmed.startsWith('**Original URL:**') ||
-          trimmed.startsWith('**Published:**')) {
-        break;
-      }
-
-      contentLines.push(line);
-    }
-
-    return contentLines.join('\n').trim();
-  }
 
   private groupPostsByDate(posts: PostData[]): Map<string, PostData[]> {
     const grouped = new Map<string, PostData[]>();
@@ -1976,136 +1862,6 @@ export class TimelineContainer {
     return grouped;
   }
 
-  /**
-   * Extract metadata from markdown footer (Likes, Comments, Shares)
-   */
-  private extractMetadata(markdown: string): { likes?: number; comments?: number; shares?: number; views?: number } {
-    const metadata: { likes?: number; comments?: number; shares?: number; views?: number } = {};
-
-    // Find metadata footer: **Likes:** 6 | **Comments:** 3 | **Shares:** 1
-    const metadataRegex = /\*\*Likes:\*\*\s*(\d+)|\*\*Comments:\*\*\s*(\d+)|\*\*Shares:\*\*\s*(\d+)|\*\*Views:\*\*\s*(\d+)/g;
-
-    let match;
-    while ((match = metadataRegex.exec(markdown)) !== null) {
-      if (match[1]) metadata.likes = parseInt(match[1]);
-      if (match[2]) metadata.comments = parseInt(match[2]);
-      if (match[3]) metadata.shares = parseInt(match[3]);
-      if (match[4]) metadata.views = parseInt(match[4]);
-    }
-
-    return metadata;
-  }
-
-  /**
-   * Extract media URLs from markdown
-   */
-  private extractMedia(markdown: string): string[] {
-    const mediaUrls: string[] = [];
-
-    // Match ![image N](path) format
-    const imageRegex = /!\[.*?\]\((.*?)\)/g;
-
-    let match;
-    while ((match = imageRegex.exec(markdown)) !== null) {
-      const url = match[1];
-      if (url && url.startsWith('attachments/')) {
-        mediaUrls.push(url);
-      }
-    }
-
-    return mediaUrls;
-  }
-
-  /**
-   * Extract comments from markdown
-   */
-  private extractComments(markdown: string): Comment[] {
-    const comments: Comment[] = [];
-
-    // Find comments section
-    const commentsMatch = markdown.match(/## 💬 Comments\n\n([\s\S]*?)(?=\n---\n\n\*\*Platform:|$)/);
-    if (!commentsMatch) {
-      return comments;
-    }
-
-    const commentsSection = commentsMatch[1];
-
-    // Split by comment separator (--- between comments)
-    const commentBlocks = commentsSection.split(/\n---\n\n/).filter(block => block.trim());
-
-    for (const block of commentBlocks) {
-      const lines = block.split('\n');
-      if (lines.length === 0) continue;
-
-      // Parse main comment header: **[@username](url)** [· timestamp] [· likes]
-      // Timestamp is optional since Instagram comments don't have timestamp from API
-      const headerMatch = lines[0].match(/\*\*\[?@?([^\]]*)\]?\(?([^)]*)\)?\*\*(?:(?: · ([^·\n]+))?)(?: · (\d+) likes)?/);
-      if (!headerMatch) continue;
-
-      const [, username, url, timestamp, likesStr] = headerMatch;
-
-      // Extract comment content (lines after header, before any replies)
-      const contentLines: string[] = [];
-      let i = 1;
-      while (i < lines.length && !lines[i].trim().startsWith('↳')) {
-        contentLines.push(lines[i]);
-        i++;
-      }
-      const content = contentLines.join('\n').trim();
-
-      // Parse replies (lines starting with ↳)
-      const replies: Comment[] = [];
-      while (i < lines.length) {
-        if (lines[i].trim().startsWith('↳')) {
-          // Reply header: ↳ **[@username](url)** [· timestamp] [· likes]
-          const replyHeaderMatch = lines[i].match(/↳ \*\*\[?@?([^\]]*)\]?\(?([^)]*)\)?\*\*(?:(?: · ([^·\n]+))?)(?: · (\d+) likes)?/);
-          if (replyHeaderMatch) {
-            const [, replyUsername, replyUrl, replyTimestamp, replyLikesStr] = replyHeaderMatch;
-            i++;
-
-            // Get reply content (lines starting with "  " but not "  ↳")
-            const replyContentLines: string[] = [];
-            while (i < lines.length && lines[i].startsWith('  ') && !lines[i].trim().startsWith('↳')) {
-              replyContentLines.push(lines[i].substring(2)); // Remove the 2-space indent
-              i++;
-            }
-            const replyContent = replyContentLines.join('\n').trim();
-
-            replies.push({
-              id: `reply-${Date.now()}-${Math.random()}`,
-              author: {
-                name: replyUsername || 'Unknown',
-                url: replyUrl || '',
-                username: replyUsername,
-              },
-              content: replyContent,
-              timestamp: replyTimestamp?.trim() || '',
-              likes: replyLikesStr ? parseInt(replyLikesStr) : undefined,
-            });
-          } else {
-            i++;
-          }
-        } else {
-          i++;
-        }
-      }
-
-      comments.push({
-        id: `comment-${Date.now()}-${Math.random()}`,
-        author: {
-          name: username || 'Unknown',
-          url: url || '',
-          username: username,
-        },
-        content,
-        timestamp: timestamp?.trim() || '',
-        likes: likesStr ? parseInt(likesStr) : undefined,
-        replies: replies.length > 0 ? replies : undefined,
-      });
-    }
-
-    return comments;
-  }
 
   /**
    * Get platform-specific Simple Icon
