@@ -875,19 +875,31 @@ export class TimelineContainer {
     personalLikeBtn.setAttribute('title', post.like ? 'Remove from favorites' : 'Add to favorites');
 
     const personalLikeIcon = personalLikeBtn.createDiv();
-    personalLikeIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+    personalLikeIcon.style.cssText = 'width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s;';
 
     // Set initial state
     if (post.like) {
       setIcon(personalLikeIcon, 'star');
-      // Fill the star when liked
+      // Invert effect: filled background with light icon
+      personalLikeIcon.style.backgroundColor = 'var(--interactive-accent)';
+      personalLikeIcon.style.padding = '2px';
       const svgEl = personalLikeIcon.querySelector('svg');
       if (svgEl) {
-        svgEl.style.fill = 'currentColor';
+        svgEl.style.stroke = 'var(--background-primary)';
+        svgEl.style.fill = 'none';
+        svgEl.style.strokeWidth = '2';
       }
       personalLikeBtn.style.color = 'var(--interactive-accent)';
     } else {
       setIcon(personalLikeIcon, 'star');
+      personalLikeIcon.style.backgroundColor = 'transparent';
+      personalLikeIcon.style.padding = '2px';
+      const svgEl = personalLikeIcon.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.stroke = 'currentColor';
+        svgEl.style.fill = 'none';
+        svgEl.style.strokeWidth = '2';
+      }
       personalLikeBtn.style.color = 'var(--text-muted)';
     }
 
@@ -910,19 +922,31 @@ export class TimelineContainer {
     archiveBtn.setAttribute('title', post.archive ? 'Unarchive this post' : 'Archive this post');
 
     const archiveIcon = archiveBtn.createDiv();
-    archiveIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+    archiveIcon.style.cssText = 'width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s;';
 
     // Set initial state
     if (post.archive) {
       setIcon(archiveIcon, 'archive');
-      // Fill the archive icon when archived
+      // Invert effect: filled background with light icon
+      archiveIcon.style.backgroundColor = 'var(--interactive-accent)';
+      archiveIcon.style.padding = '2px';
       const svgEl = archiveIcon.querySelector('svg');
       if (svgEl) {
-        svgEl.style.fill = 'currentColor';
+        svgEl.style.stroke = 'var(--background-primary)';
+        svgEl.style.fill = 'none';
+        svgEl.style.strokeWidth = '2';
       }
       archiveBtn.style.color = 'var(--interactive-accent)';
     } else {
       setIcon(archiveIcon, 'archive');
+      archiveIcon.style.backgroundColor = 'transparent';
+      archiveIcon.style.padding = '2px';
+      const svgEl = archiveIcon.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.stroke = 'currentColor';
+        svgEl.style.fill = 'none';
+        svgEl.style.strokeWidth = '2';
+      }
       archiveBtn.style.color = 'var(--text-muted)';
     }
 
@@ -1415,13 +1439,22 @@ export class TimelineContainer {
       btn.setAttribute('title', newLikeStatus ? 'Remove from favorites' : 'Add to favorites');
       btn.style.color = newLikeStatus ? 'var(--interactive-accent)' : 'var(--text-muted)';
 
-      // Update star icon fill
-      const svgEl = icon.querySelector('svg');
-      if (svgEl) {
-        if (newLikeStatus) {
-          svgEl.style.fill = 'currentColor';
-        } else {
+      // Update star icon with invert effect
+      if (newLikeStatus) {
+        icon.style.backgroundColor = 'var(--interactive-accent)';
+        const svgEl = icon.querySelector('svg');
+        if (svgEl) {
+          svgEl.style.stroke = 'var(--background-primary)';
           svgEl.style.fill = 'none';
+          svgEl.style.strokeWidth = '2';
+        }
+      } else {
+        icon.style.backgroundColor = 'transparent';
+        const svgEl = icon.querySelector('svg');
+        if (svgEl) {
+          svgEl.style.stroke = 'currentColor';
+          svgEl.style.fill = 'none';
+          svgEl.style.strokeWidth = '2';
         }
       }
 
@@ -1469,13 +1502,22 @@ export class TimelineContainer {
       btn.style.color = newArchiveStatus ? 'var(--interactive-accent)' : 'var(--text-muted)';
       btn.setAttribute('title', newArchiveStatus ? 'Unarchive this post' : 'Archive this post');
 
-      // Update archive icon fill
-      const svgEl = icon.querySelector('svg');
-      if (svgEl) {
-        if (newArchiveStatus) {
-          svgEl.style.fill = 'currentColor'; // Filled archive icon
-        } else {
-          svgEl.style.fill = 'none'; // Outline archive icon
+      // Update archive icon with invert effect
+      if (newArchiveStatus) {
+        icon.style.backgroundColor = 'var(--interactive-accent)';
+        const svgEl = icon.querySelector('svg');
+        if (svgEl) {
+          svgEl.style.stroke = 'var(--background-primary)';
+          svgEl.style.fill = 'none';
+          svgEl.style.strokeWidth = '2';
+        }
+      } else {
+        icon.style.backgroundColor = 'transparent';
+        const svgEl = icon.querySelector('svg');
+        if (svgEl) {
+          svgEl.style.stroke = 'currentColor';
+          svgEl.style.fill = 'none';
+          svgEl.style.strokeWidth = '2';
         }
       }
 
