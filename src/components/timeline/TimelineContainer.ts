@@ -2,6 +2,15 @@ import { setIcon, type TFile, type Vault, type App } from 'obsidian';
 import type { PostData, Comment, TranscriptEntry } from '../../types/post';
 import type { YamlFrontmatter } from '../../types/archive';
 import type SocialArchiverPlugin from '../../main';
+import {
+  siFacebook,
+  siInstagram,
+  siTiktok,
+  siX,
+  siThreads,
+  siYoutube,
+  type SimpleIcon
+} from 'simple-icons';
 
 export interface TimelineContainerProps {
   vault: Vault;
@@ -491,8 +500,20 @@ export class TimelineContainer {
       // Use actual platform icon (same as card)
       const iconWrapper = checkbox.createDiv();
       iconWrapper.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
-      const iconName = this.getPlatformIcon(platform.id);
-      setIcon(iconWrapper, iconName);
+      const icon = this.getPlatformSimpleIcon(platform.id);
+      if (icon) {
+        // Use Simple Icon
+        iconWrapper.innerHTML = `
+          <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: #${icon.hex}; width: 100%; height: 100%;">
+            <title>${icon.title}</title>
+            <path d="${icon.path}"/>
+          </svg>
+        `;
+      } else {
+        // Use Lucide icon for platforms not in simple-icons (e.g., LinkedIn)
+        const lucideIconName = this.getLucideIcon(platform.id);
+        setIcon(iconWrapper, lucideIconName);
+      }
 
       const label = checkbox.createSpan({ text: platform.label });
       label.style.cssText = 'font-size: 13px; flex: 1;';
@@ -772,8 +793,20 @@ export class TimelineContainer {
 
     const iconWrapper = avatarContainer.createDiv();
     iconWrapper.style.cssText = 'width: 24px; height: 24px;';
-    const iconName = this.getPlatformIcon(post.platform);
-    setIcon(iconWrapper, iconName);
+    const icon = this.getPlatformSimpleIcon(post.platform);
+    if (icon) {
+      // Use Simple Icon
+      iconWrapper.innerHTML = `
+        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: #${icon.hex}; width: 100%; height: 100%;">
+          <title>${icon.title}</title>
+          <path d="${icon.path}"/>
+        </svg>
+      `;
+    } else {
+      // Use Lucide icon for platforms not in simple-icons (e.g., LinkedIn)
+      const lucideIconName = this.getLucideIcon(post.platform);
+      setIcon(iconWrapper, lucideIconName);
+    }
 
     // Content area
     const contentArea = card.createDiv({ cls: 'pr-14' });
@@ -2074,18 +2107,29 @@ export class TimelineContainer {
   }
 
   /**
-   * Get platform-specific lucide icon name
+   * Get platform-specific Simple Icon
+   * Returns null for LinkedIn (not available in simple-icons)
    */
-  private getPlatformIcon(platform: string): string {
+  private getPlatformSimpleIcon(platform: string): SimpleIcon | null {
+    const iconMap: Record<string, SimpleIcon | null> = {
+      facebook: siFacebook,
+      instagram: siInstagram,
+      linkedin: null, // Use Lucide icon instead
+      x: siX,
+      twitter: siX, // X/Twitter alias
+      tiktok: siTiktok,
+      threads: siThreads,
+      youtube: siYoutube
+    };
+    return iconMap[platform.toLowerCase()] || siX; // Default fallback
+  }
+
+  /**
+   * Get Lucide icon name for platforms not in simple-icons
+   */
+  private getLucideIcon(platform: string): string {
     const iconMap: Record<string, string> = {
-      facebook: 'facebook',
-      instagram: 'instagram',
-      linkedin: 'linkedin',
-      x: 'twitter', // X/Twitter (lucide doesn't have X icon yet)
-      twitter: 'twitter',
-      tiktok: 'video', // TikTok video platform
-      threads: 'at-sign',
-      youtube: 'youtube'
+      linkedin: 'linkedin'
     };
     return iconMap[platform.toLowerCase()] || 'share-2';
   }
