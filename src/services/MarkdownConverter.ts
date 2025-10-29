@@ -779,15 +779,24 @@ export class MarkdownConverter implements IService {
           }
 
           // Main comment - support both handle and username
+          // LinkedIn: use name instead of handle (handles can be URL-encoded)
+          // Instagram: use handle with link
+          // Others: use handle if available, otherwise name
           const authorHandle = comment.author.handle || comment.author.username;
-          const authorName = authorHandle
-            ? `@${authorHandle}`
-            : comment.author.name;
 
-          // Convert author name to link for Instagram
-          const authorDisplay = authorHandle && platform === 'instagram'
-            ? `[@${authorHandle}](https://instagram.com/${authorHandle})`
-            : authorName;
+          let authorDisplay: string;
+          if (platform === 'linkedin') {
+            // LinkedIn: always use display name with link
+            authorDisplay = comment.author.url
+              ? `[${comment.author.name}](${comment.author.url})`
+              : comment.author.name;
+          } else if (platform === 'instagram' && authorHandle) {
+            // Instagram: use handle with link
+            authorDisplay = `[@${authorHandle}](https://instagram.com/${authorHandle})`;
+          } else {
+            // Others: use handle or name
+            authorDisplay = authorHandle ? `@${authorHandle}` : comment.author.name;
+          }
 
           const timestamp = this.formatDate(comment.timestamp);
           const likes = comment.likes ? ` · ${comment.likes} likes` : '';
@@ -809,14 +818,21 @@ export class MarkdownConverter implements IService {
                   return '';
                 }
                 const replyHandle = reply.author.handle || reply.author.username;
-                const replyAuthor = replyHandle
-                  ? `@${replyHandle}`
-                  : reply.author.name;
 
-                // Convert reply author to link for Instagram
-                const replyAuthorDisplay = replyHandle && platform === 'instagram'
-                  ? `[@${replyHandle}](https://instagram.com/${replyHandle})`
-                  : replyAuthor;
+                // Same logic as main comment
+                let replyAuthorDisplay: string;
+                if (platform === 'linkedin') {
+                  // LinkedIn: always use display name with link
+                  replyAuthorDisplay = reply.author.url
+                    ? `[${reply.author.name}](${reply.author.url})`
+                    : reply.author.name;
+                } else if (platform === 'instagram' && replyHandle) {
+                  // Instagram: use handle with link
+                  replyAuthorDisplay = `[@${replyHandle}](https://instagram.com/${replyHandle})`;
+                } else {
+                  // Others: use handle or name
+                  replyAuthorDisplay = replyHandle ? `@${replyHandle}` : reply.author.name;
+                }
 
                 const replyTime = this.formatDate(reply.timestamp);
                 const replyLikes = reply.likes ? ` · ${reply.likes} likes` : '';

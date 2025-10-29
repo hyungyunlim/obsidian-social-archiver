@@ -516,12 +516,13 @@ export class TimelineContainer {
       ? 'font-size: 13px; line-height: 1.4; margin-left: 24px;'
       : 'font-size: 13px; line-height: 1.4;';
 
-    // Comment content: **username** content (on same line)
+    // Comment content: **name** content (on same line)
     const contentSpan = commentDiv.createSpan();
 
     const usernameSpan = contentSpan.createEl('strong');
     usernameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal); cursor: pointer;';
-    usernameSpan.setText(comment.author.username || comment.author.name);
+    // Use author.name for display (e.g., "Charlie Moon" for LinkedIn)
+    usernameSpan.setText(comment.author.name);
 
     if (comment.author.url) {
       usernameSpan.addEventListener('click', (e) => {
