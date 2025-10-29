@@ -32,7 +32,8 @@ export class TimelineContainer {
   }
 
   private render(): void {
-    this.containerEl.addClass('w-full h-full overflow-y-auto p-4');
+    // Add Tailwind classes individually
+    this.containerEl.className = 'w-full h-full overflow-y-auto p-4';
     this.renderLoading();
   }
 
