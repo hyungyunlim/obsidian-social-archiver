@@ -267,9 +267,13 @@ export class TimelineContainer {
       }
     });
 
+    // Sort controls container (group dropdown and toggle tightly)
+    const sortControls = leftButtons.createDiv();
+    sortControls.style.cssText = 'display: flex; align-items: center; gap: 2px;';
+
     // Sort by dropdown (Published / Archived)
-    const sortByBtn = leftButtons.createDiv();
-    sortByBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
+    const sortByBtn = sortControls.createDiv();
+    sortByBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px 0 0 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
 
     const updateSortByButton = () => {
       const text = this.sortState.by === 'published' ? 'Published' : 'Archived';
@@ -311,8 +315,8 @@ export class TimelineContainer {
     });
 
     // Order toggle button (Newest ⬇️ / Oldest ⬆️)
-    const orderBtn = leftButtons.createDiv();
-    orderBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
+    const orderBtn = sortControls.createDiv();
+    orderBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 0 8px 8px 0; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
 
     const orderIcon = orderBtn.createDiv();
     orderIcon.style.cssText = 'width: 18px; height: 18px; color: var(--text-muted); transition: all 0.2s;';
