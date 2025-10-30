@@ -62,6 +62,7 @@ export class FilterPanel {
     this.renderPlatformFilters(this.panelEl, filterState, updateFilterButton);
     this.renderDivider(this.panelEl);
     this.renderLikeFilter(this.panelEl, filterState, updateFilterButton);
+    this.renderCommentFilter(this.panelEl, filterState, updateFilterButton);
     this.renderArchiveFilter(this.panelEl, filterState, updateFilterButton);
 
     this.attachOutsideClickHandler();
@@ -235,6 +236,47 @@ export class FilterPanel {
       likeCheckIcon.style.display = newLikedOnly ? 'block' : 'none';
 
       this.onFilterChangeCallback?.({ likedOnly: newLikedOnly });
+      this.onRerenderCallback?.();
+      updateFilterButton();
+    });
+  }
+
+  /**
+   * Render comment filter
+   */
+  private renderCommentFilter(panel: HTMLElement, filterState: FilterState, updateFilterButton: () => void): void {
+    const commentOption = panel.createDiv();
+    commentOption.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+      background: ${filterState.commentedOnly ? 'var(--background-modifier-hover)' : 'transparent'};
+    `;
+
+    const commentIcon = commentOption.createDiv();
+    commentIcon.style.cssText = 'width: 16px; height: 16px; color: var(--text-accent);';
+    setIcon(commentIcon, 'message-square');
+
+    const commentLabel = commentOption.createSpan({ text: 'With notes only' });
+    commentLabel.style.cssText = 'font-size: 13px; flex: 1;';
+
+    const commentCheckIcon = commentOption.createDiv();
+    commentCheckIcon.style.cssText = `width: 16px; height: 16px; display: ${filterState.commentedOnly ? 'block' : 'none'};`;
+    setIcon(commentCheckIcon, 'check');
+
+    commentOption.addEventListener('click', () => {
+      // Get latest filter state
+      const currentState = this.getFilterStateCallback?.() || filterState;
+      const newCommentedOnly = !currentState.commentedOnly;
+      commentOption.style.background = newCommentedOnly ? 'var(--background-modifier-hover)' : 'transparent';
+      commentCheckIcon.style.display = newCommentedOnly ? 'block' : 'none';
+
+      this.onFilterChangeCallback?.({ commentedOnly: newCommentedOnly });
       this.onRerenderCallback?.();
       updateFilterButton();
     });

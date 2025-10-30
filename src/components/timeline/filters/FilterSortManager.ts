@@ -6,6 +6,7 @@ import type { PostData } from '../../../types/post';
 export interface FilterState {
   platforms: Set<string>;
   likedOnly: boolean;
+  commentedOnly: boolean;
   includeArchived: boolean;
   dateRange: { start: Date | null; end: Date | null };
 }
@@ -34,6 +35,7 @@ export class FilterSortManager {
     this.filterState = {
       platforms: new Set<string>(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube']),
       likedOnly: false,
+      commentedOnly: false,
       includeArchived: false,
       dateRange: { start: null, end: null },
       ...initialFilterState
@@ -68,6 +70,11 @@ export class FilterSortManager {
     // Filter by liked only
     if (this.filterState.likedOnly) {
       filtered = filtered.filter(post => post.like === true);
+    }
+
+    // Filter by commented only
+    if (this.filterState.commentedOnly) {
+      filtered = filtered.filter(post => post.comment && post.comment.trim().length > 0);
     }
 
     // Filter by archive status
@@ -158,6 +165,7 @@ export class FilterSortManager {
     return (
       this.filterState.platforms.size < 7 ||
       this.filterState.likedOnly ||
+      this.filterState.commentedOnly ||
       this.filterState.includeArchived ||
       this.filterState.dateRange.start !== null ||
       this.filterState.dateRange.end !== null

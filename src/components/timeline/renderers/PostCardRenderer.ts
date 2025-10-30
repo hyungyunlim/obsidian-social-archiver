@@ -73,8 +73,12 @@ export class PostCardRenderer {
     const archivedTime = this.getRelativeTime(post.archivedDate);
 
     if (post.comment) {
+      // Comment section container (editable)
+      const commentSection = wrapper.createDiv({ cls: 'mb-3' });
+      commentSection.style.cssText = 'position: relative; cursor: pointer;';
+
       // Comment header: "Jun commented on this post · 2h ago"
-      const commentHeader = wrapper.createDiv({ cls: 'mb-2' });
+      const commentHeader = commentSection.createDiv({ cls: 'mb-2' });
       commentHeader.style.cssText = 'font-size: 13px; color: var(--text-muted);';
 
       const userNameSpan = commentHeader.createSpan({ text: userName });
@@ -87,14 +91,49 @@ export class PostCardRenderer {
         commentHeader.createSpan({ text: ` · ${archivedTime}` });
       }
 
-      // Comment text
-      const commentTextDiv = wrapper.createDiv({ cls: 'mb-3' });
+      // Comment text with inline edit icon
+      const commentTextContainer = commentSection.createDiv();
+      commentTextContainer.style.cssText = 'display: inline;';
+
+      const commentTextDiv = commentTextContainer.createSpan();
       commentTextDiv.style.cssText = 'font-size: 14px; line-height: 1.5; color: var(--text-normal);';
       this.renderMarkdownLinks(commentTextDiv, post.comment, undefined, post.platform);
+
+      // Edit icon (appears on hover, inline at the end of text)
+      const editIcon = commentTextContainer.createSpan();
+      editIcon.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        margin-left: 6px;
+        width: 14px;
+        height: 14px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        color: var(--text-muted);
+        vertical-align: middle;
+      `;
+      setIcon(editIcon, 'pencil');
+
+      // Hover effects
+      commentSection.addEventListener('mouseenter', () => {
+        editIcon.style.opacity = '0.6';
+      });
+      commentSection.addEventListener('mouseleave', () => {
+        editIcon.style.opacity = '0';
+      });
+
+      // Click to edit inline
+      commentSection.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.editCommentInline(post, commentSection);
+      });
     } else {
-      // Saved header: "Jun saved this post · 2h ago"
-      const savedHeader = wrapper.createDiv({ cls: 'mb-2' });
-      savedHeader.style.cssText = 'font-size: 13px; color: var(--text-muted);';
+      // Saved header: "Jun saved this post · 2h ago" (clickable to add note inline)
+      const savedSection = wrapper.createDiv({ cls: 'mb-3' });
+      savedSection.style.cssText = 'position: relative; cursor: pointer;';
+
+      const savedHeader = savedSection.createDiv();
+      savedHeader.style.cssText = 'font-size: 13px; color: var(--text-muted); display: inline;';
 
       const userNameSpan = savedHeader.createSpan({ text: userName });
       userNameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal);';
@@ -105,6 +144,35 @@ export class PostCardRenderer {
       if (archivedTime) {
         savedHeader.createSpan({ text: ` · ${archivedTime}` });
       }
+
+      // Edit icon (appears on hover, inline at the end)
+      const editIcon = savedSection.createSpan();
+      editIcon.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        margin-left: 6px;
+        width: 14px;
+        height: 14px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        color: var(--text-muted);
+        vertical-align: middle;
+      `;
+      setIcon(editIcon, 'pencil');
+
+      // Hover effects - only show icon
+      savedSection.addEventListener('mouseenter', () => {
+        editIcon.style.opacity = '0.6';
+      });
+      savedSection.addEventListener('mouseleave', () => {
+        editIcon.style.opacity = '0';
+      });
+
+      // Click to add note inline (same as comment editing)
+      savedSection.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.editCommentInline(post, savedSection);
+      });
     }
 
     // Create nested container for the actual card (always nested now)
@@ -739,6 +807,224 @@ export class PostCardRenderer {
   }
 
   /**
+   * Edit comment inline (replace with textarea)
+   */
+  private async editCommentInline(post: PostData, commentSection: HTMLElement): Promise<void> {
+    try {
+      const filePath = (post as any).filePath;
+      if (!filePath) {
+        console.warn('[PostCardRenderer] No file path for post:', post.id);
+        return;
+      }
+
+      const file = this.vault.getAbstractFileByPath(filePath);
+      if (!file || !('extension' in file)) {
+        console.warn('[PostCardRenderer] File not found:', filePath);
+        return;
+      }
+
+      const tfile = file as TFile;
+
+      // Save original comment value
+      const originalComment = post.comment;
+      const hasComment = !!originalComment;
+
+      // Helper function to restore original UI
+      const restoreOriginalUI = () => {
+        commentSection.empty();
+        commentSection.style.cssText = 'position: relative; cursor: pointer;';
+
+        const userName = this.plugin.settings.userName || 'You';
+        const archivedTime = this.getRelativeTime(post.archivedDate);
+
+        if (hasComment) {
+          // Restore comment UI: "Jun commented on this post · 2h ago"
+          const commentHeader = commentSection.createDiv({ cls: 'mb-2' });
+          commentHeader.style.cssText = 'font-size: 13px; color: var(--text-muted);';
+
+          const userNameSpan = commentHeader.createSpan({ text: userName });
+          userNameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal);';
+
+          commentHeader.createSpan({ text: ' commented on this post' });
+
+          if (archivedTime) {
+            commentHeader.createSpan({ text: ` · ${archivedTime}` });
+          }
+
+          // Comment text with inline edit icon
+          const commentTextContainer = commentSection.createDiv();
+          commentTextContainer.style.cssText = 'display: inline;';
+
+          const commentTextDiv = commentTextContainer.createSpan();
+          commentTextDiv.style.cssText = 'font-size: 14px; line-height: 1.5; color: var(--text-normal);';
+          this.renderMarkdownLinks(commentTextDiv, originalComment || '', undefined, post.platform);
+
+          // Edit icon
+          const editIcon = commentTextContainer.createSpan();
+          editIcon.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
+            width: 14px;
+            height: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: var(--text-muted);
+            vertical-align: middle;
+          `;
+          setIcon(editIcon, 'pencil');
+
+          // Hover effects
+          commentSection.addEventListener('mouseenter', () => {
+            editIcon.style.opacity = '0.6';
+          });
+          commentSection.addEventListener('mouseleave', () => {
+            editIcon.style.opacity = '0';
+          });
+        } else {
+          // Restore saved UI: "Jun saved this post · 2h ago"
+          const savedHeader = commentSection.createDiv();
+          savedHeader.style.cssText = 'font-size: 13px; color: var(--text-muted); display: inline;';
+
+          const userNameSpan = savedHeader.createSpan({ text: userName });
+          userNameSpan.style.cssText = 'font-weight: 600; color: var(--text-normal);';
+
+          savedHeader.createSpan({ text: ' saved this post' });
+
+          if (archivedTime) {
+            savedHeader.createSpan({ text: ` · ${archivedTime}` });
+          }
+
+          // Edit icon
+          const editIcon = commentSection.createSpan();
+          editIcon.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
+            width: 14px;
+            height: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: var(--text-muted);
+            vertical-align: middle;
+          `;
+          setIcon(editIcon, 'pencil');
+
+          // Hover effects
+          commentSection.addEventListener('mouseenter', () => {
+            editIcon.style.opacity = '0.6';
+          });
+          commentSection.addEventListener('mouseleave', () => {
+            editIcon.style.opacity = '0';
+          });
+        }
+
+        // Click to edit
+        commentSection.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.editCommentInline(post, commentSection);
+        });
+      };
+
+      // Clear section and create edit UI
+      commentSection.empty();
+      commentSection.style.cssText = 'position: relative;';
+
+      // Textarea
+      const textarea = commentSection.createEl('textarea');
+      textarea.style.cssText = `
+        width: 100%;
+        min-height: 60px;
+        padding: 8px;
+        font-family: var(--font-text);
+        font-size: 14px;
+        line-height: 1.5;
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+        background: var(--background-primary);
+        color: var(--text-normal);
+        resize: vertical;
+        margin-bottom: 8px;
+      `;
+      textarea.value = post.comment || '';
+
+      // Focus and select
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      }, 10);
+
+      // Button container
+      const btnContainer = commentSection.createDiv();
+      btnContainer.style.cssText = 'display: flex; gap: 8px;';
+
+      // Save button
+      const saveBtn = btnContainer.createEl('button', {
+        text: 'Save',
+        cls: 'mod-cta'
+      });
+      saveBtn.style.cssText = 'font-size: 13px; padding: 4px 12px;';
+
+      // Cancel button
+      const cancelBtn = btnContainer.createEl('button', { text: 'Cancel' });
+      cancelBtn.style.cssText = 'font-size: 13px; padding: 4px 12px;';
+
+      // Save handler
+      const handleSave = async () => {
+        const newComment = textarea.value.trim();
+
+        try {
+          const content = await this.vault.read(tfile);
+          const updatedContent = this.updateYamlFrontmatter(content, {
+            comment: newComment || null
+          });
+          await this.vault.modify(tfile, updatedContent);
+
+          post.comment = newComment || undefined;
+          console.log('[PostCardRenderer] Updated comment inline:', post.id);
+
+          // Note: UI will auto-refresh via vault modify event listener
+        } catch (err) {
+          console.error('[PostCardRenderer] Failed to update comment:', err);
+          new Notice('Failed to save note');
+          // Restore original on error
+          restoreOriginalUI();
+        }
+      };
+
+      saveBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await handleSave();
+      });
+
+      // Cancel handler
+      cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        restoreOriginalUI();
+      });
+
+      // Keyboard shortcuts
+      textarea.addEventListener('keydown', (e) => {
+        // ESC to cancel
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          restoreOriginalUI();
+        }
+        // Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux) to save
+        else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSave();
+        }
+      });
+
+    } catch (err) {
+      console.error('[PostCardRenderer] Failed to edit comment inline:', err);
+    }
+  }
+
+  /**
    * Toggle archive status for a post
    */
   private async toggleArchive(post: PostData, btn: HTMLElement, icon: HTMLElement, rootElement: HTMLElement): Promise<void> {
@@ -810,10 +1096,23 @@ export class PostCardRenderer {
     const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
     const match = content.match(frontmatterRegex);
 
+    // Helper function to format YAML value
+    const formatYamlValue = (value: any): string => {
+      if (value === null || value === undefined) {
+        return '';
+      }
+      if (typeof value === 'string') {
+        // Use JSON.stringify for strings to handle newlines and quotes properly
+        return JSON.stringify(value);
+      }
+      return String(value);
+    };
+
     if (!match || !match[1]) {
       // No frontmatter found, add it
       const yamlLines = Object.entries(updates)
-        .map(([key, value]) => `${key}: ${value}`)
+        .filter(([, value]) => value !== null && value !== undefined)
+        .map(([key, value]) => `${key}: ${formatYamlValue(value)}`)
         .join('\n');
       return `---\n${yamlLines}\n---\n\n${content}`;
     }
@@ -832,7 +1131,13 @@ export class PostCardRenderer {
       if (keyMatch) {
         const key = keyMatch[1];
         if (key && updates.hasOwnProperty(key)) {
-          updatedLines.push(`${key}: ${updates[key]}`);
+          const value = updates[key];
+          if (value === null || value === undefined) {
+            // Skip this line to remove the field
+            processedKeys.add(key);
+            continue;
+          }
+          updatedLines.push(`${key}: ${formatYamlValue(value)}`);
           processedKeys.add(key);
         } else {
           updatedLines.push(line);
@@ -844,8 +1149,8 @@ export class PostCardRenderer {
 
     // Add new keys
     for (const [key, value] of Object.entries(updates)) {
-      if (!processedKeys.has(key)) {
-        updatedLines.push(`${key}: ${value}`);
+      if (!processedKeys.has(key) && value !== null && value !== undefined) {
+        updatedLines.push(`${key}: ${formatYamlValue(value)}`);
       }
     }
 

@@ -325,8 +325,20 @@ export class PostDataParser {
         const value = match[2];
         currentKey = key;
 
-        // Remove quotes if present
-        const cleanValue = value.replace(/^["']|["']$/g, '').trim();
+        // Remove quotes if present (handle both regular and JSON-escaped quotes)
+        let cleanValue = value.trim();
+
+        // If value is JSON-stringified (starts and ends with quotes)
+        if ((cleanValue.startsWith('"') && cleanValue.endsWith('"')) ||
+            (cleanValue.startsWith("'") && cleanValue.endsWith("'"))) {
+          try {
+            // Try to parse as JSON to handle escaped characters
+            cleanValue = JSON.parse(cleanValue);
+          } catch {
+            // If JSON parsing fails, just remove the quotes
+            cleanValue = cleanValue.slice(1, -1);
+          }
+        }
 
         // Check if this starts an array (value is empty, next line will have array items)
         if (cleanValue === '') {
@@ -342,6 +354,12 @@ export class PostDataParser {
           } else {
             frontmatter[key] = cleanValue;
           }
+
+          // Debug log for comment field
+          if (key === 'comment') {
+            console.log('[PostDataParser] Loaded comment:', cleanValue);
+          }
+
           currentKey = null;
         }
       }
