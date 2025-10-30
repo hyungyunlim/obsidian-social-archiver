@@ -1,13 +1,56 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import PostCard from '$lib/components/PostCard.svelte';
+	import { generatePostMetaTags, generatePostStructuredData } from '$lib/utils/seo';
 
 	let { data }: { data: PageData } = $props();
+
+	// Generate SEO meta tags and structured data
+	const metaTags = $derived(data.post ? generatePostMetaTags(data.post, data.username) : null);
+	const structuredData = $derived(data.post ? generatePostStructuredData(data.post, data.username) : null);
 </script>
 
 <svelte:head>
-	<title>Post by {data.username} - Social Archiver</title>
-	<meta name="description" content="View this post shared on Social Archiver" />
+	{#if metaTags}
+		<title>{metaTags.title}</title>
+		<meta name="description" content={metaTags.description} />
+		{#if metaTags.canonical}
+			<link rel="canonical" href={metaTags.canonical} />
+		{/if}
+
+		<!-- Open Graph -->
+		{#if metaTags.openGraph}
+			<meta property="og:title" content={metaTags.openGraph.title} />
+			<meta property="og:description" content={metaTags.openGraph.description} />
+			<meta property="og:url" content={metaTags.openGraph.url} />
+			<meta property="og:type" content={metaTags.openGraph.type} />
+			<meta property="og:site_name" content={metaTags.openGraph.siteName} />
+			{#if metaTags.openGraph.image}
+				<meta property="og:image" content={metaTags.openGraph.image} />
+			{/if}
+		{/if}
+
+		<!-- Twitter Card -->
+		{#if metaTags.twitter}
+			<meta name="twitter:card" content={metaTags.twitter.card} />
+			<meta name="twitter:title" content={metaTags.twitter.title} />
+			<meta name="twitter:description" content={metaTags.twitter.description} />
+			{#if metaTags.twitter.image}
+				<meta name="twitter:image" content={metaTags.twitter.image} />
+			{/if}
+			{#if metaTags.twitter.site}
+				<meta name="twitter:site" content={metaTags.twitter.site} />
+			{/if}
+		{/if}
+	{:else}
+		<title>Post not found - Social Archiver</title>
+		<meta name="description" content="The requested post could not be found" />
+	{/if}
+
+	<!-- Structured Data -->
+	{#if structuredData}
+		{@html `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`}
+	{/if}
 </svelte:head>
 
 <div class="page-container">

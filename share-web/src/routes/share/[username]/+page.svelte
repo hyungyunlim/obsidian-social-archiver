@@ -1,13 +1,39 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import Timeline from '$lib/components/Timeline.svelte';
+	import { generateTimelineMetaTags } from '$lib/utils/seo';
 
 	let { data }: { data: PageData } = $props();
+
+	// Generate SEO meta tags
+	const metaTags = $derived(generateTimelineMetaTags(data.username, data.posts.length));
 </script>
 
 <svelte:head>
-	<title>{data.username}'s Timeline - Social Archiver</title>
-	<meta name="description" content="View {data.username}'s shared posts on Social Archiver" />
+	<title>{metaTags.title}</title>
+	<meta name="description" content={metaTags.description} />
+	{#if metaTags.canonical}
+		<link rel="canonical" href={metaTags.canonical} />
+	{/if}
+
+	<!-- Open Graph -->
+	{#if metaTags.openGraph}
+		<meta property="og:title" content={metaTags.openGraph.title} />
+		<meta property="og:description" content={metaTags.openGraph.description} />
+		<meta property="og:url" content={metaTags.openGraph.url} />
+		<meta property="og:type" content={metaTags.openGraph.type} />
+		<meta property="og:site_name" content={metaTags.openGraph.siteName} />
+	{/if}
+
+	<!-- Twitter Card -->
+	{#if metaTags.twitter}
+		<meta name="twitter:card" content={metaTags.twitter.card} />
+		<meta name="twitter:title" content={metaTags.twitter.title} />
+		<meta name="twitter:description" content={metaTags.twitter.description} />
+		{#if metaTags.twitter.site}
+			<meta name="twitter:site" content={metaTags.twitter.site} />
+		{/if}
+	{/if}
 </svelte:head>
 
 <div class="page-container">
