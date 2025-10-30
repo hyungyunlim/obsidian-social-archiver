@@ -317,7 +317,8 @@ export class ArchiveModal extends Modal {
       tiktok: 'TikTok',
       x: 'X',
       threads: 'Threads',
-      youtube: 'YouTube'
+      youtube: 'YouTube',
+      reddit: 'Reddit'
     };
 
     return names[platform] || platform;

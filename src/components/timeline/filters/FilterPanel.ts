@@ -102,7 +102,8 @@ export class FilterPanel {
       { id: 'tiktok', label: 'TikTok' },
       { id: 'x', label: 'X' },
       { id: 'threads', label: 'Threads' },
-      { id: 'youtube', label: 'YouTube' }
+      { id: 'youtube', label: 'YouTube' },
+      { id: 'reddit', label: 'Reddit' }
     ];
 
     platforms.forEach(platform => {

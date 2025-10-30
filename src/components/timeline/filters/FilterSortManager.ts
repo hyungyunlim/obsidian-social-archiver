@@ -33,7 +33,7 @@ export class FilterSortManager {
   ) {
     // Initialize filter state with defaults
     this.filterState = {
-      platforms: new Set<string>(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube']),
+      platforms: new Set<string>(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube', 'reddit']),
       likedOnly: false,
       commentedOnly: false,
       includeArchived: false,
@@ -163,7 +163,7 @@ export class FilterSortManager {
    */
   hasActiveFilters(): boolean {
     return (
-      this.filterState.platforms.size < 7 ||
+      this.filterState.platforms.size < 8 ||
       this.filterState.likedOnly ||
       this.filterState.commentedOnly ||
       this.filterState.includeArchived ||

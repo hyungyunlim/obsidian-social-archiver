@@ -316,6 +316,50 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 
 **Original URL:** {{url}}
 `,
+
+  reddit: `{{content.text}}
+
+{{#if media}}
+
+---
+
+{{media}}
+{{/if}}
+
+{{#if comments}}
+
+---
+
+## 💬 Comments
+
+{{comments}}
+{{/if}}
+
+{{#if ai}}
+
+---
+
+## 🤖 AI Analysis
+
+**Summary:** {{ai.summary}}
+
+**Sentiment:** {{ai.sentiment}}
+
+**Topics:** {{ai.topics}}
+
+{{#if ai.factCheck}}
+
+### Fact Checks
+{{ai.factCheck}}
+{{/if}}
+{{/if}}
+
+---
+
+**Platform:** Reddit | **Community:** r/{{author.name}} | **Author:** {{author.username}} | **Published:** {{metadata.timestamp}}{{#if metadata.upvotes}} | **Upvotes:** {{metadata.upvotes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
+
+**Original URL:** {{url}}
+`,
 };
 
 /**

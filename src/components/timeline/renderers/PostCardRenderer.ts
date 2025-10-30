@@ -8,6 +8,7 @@ import {
   siX,
   siThreads,
   siYoutube,
+  siReddit,
   type PlatformIcon as SimpleIcon
 } from '../../../constants/platform-icons';
 import { MediaGalleryRenderer } from './MediaGalleryRenderer';
@@ -1182,7 +1183,8 @@ export class PostCardRenderer {
       twitter: siX, // X/Twitter alias
       tiktok: siTiktok,
       threads: siThreads,
-      youtube: siYoutube
+      youtube: siYoutube,
+      reddit: siReddit
     };
     const key = platform.toLowerCase();
     // Check if key exists in map (including null values)

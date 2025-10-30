@@ -163,6 +163,24 @@ export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
       threads: false,
     },
   },
+  reddit: {
+    platform: 'reddit',
+    displayName: 'Reddit',
+    domains: ['reddit.com', 'old.reddit.com', 'new.reddit.com', 'redd.it'],
+    supportsMedia: true,
+    supportsAI: true,
+    maxMediaSize: 100 * 1024 * 1024, // 100MB
+    rateLimit: {
+      requestsPerHour: 200,
+      requestsPerDay: 2000,
+    },
+    features: {
+      stories: false,
+      live: false,
+      reels: false,
+      threads: true, // Reddit comment threads
+    },
+  },
 };
 
 /**

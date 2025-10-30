@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Platform types
-export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube';
+export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube' | 'reddit';
 
 // Media types
 export interface Media {
@@ -135,7 +135,7 @@ export interface PostData {
 // Zod schema for validation with version
 export const PostDataSchema = z.object({
   schemaVersion: z.literal('1.0.0'),
-  platform: z.enum(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube']),
+  platform: z.enum(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube', 'reddit']),
   id: z.string(),
   url: z.string().url(),
   author: z.object({

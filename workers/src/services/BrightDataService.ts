@@ -49,6 +49,7 @@ const PLATFORM_ENDPOINTS: Record<Platform, string> = {
   x: 'https://api.brightdata.com/datasets/v3/trigger',
   threads: 'https://api.brightdata.com/datasets/v3/trigger',
   youtube: 'https://api.brightdata.com/datasets/v3/trigger',
+  reddit: 'https://api.brightdata.com/datasets/v3/trigger',
 };
 
 /**
@@ -63,6 +64,7 @@ const DATASET_IDS: Record<Platform, string> = {
   x: 'gd_lwxkxvnf1cynvib9co', // X (Twitter) posts dataset (confirmed)
   threads: 'gd_md75myxy14rihbjksa', // Threads posts dataset (confirmed)
   youtube: 'gd_lk56epmy2i5g7lzu0k', // YouTube videos dataset (confirmed)
+  reddit: 'gd_lvz8ah06191smkebj4', // Reddit posts dataset (confirmed)
 };
 
 export class BrightDataService {
@@ -491,6 +493,8 @@ export class BrightDataService {
         return this.parseThreadsPost(rawData, url);
       case 'youtube':
         return this.parseYouTubePost(rawData, url);
+      case 'reddit':
+        return this.parseRedditPost(rawData, url);
       default:
         throw new Error(`Unsupported platform: ${platform}`);
     }
@@ -1220,6 +1224,99 @@ export class BrightDataService {
         formatted: data.formatted_transcript,
         language: data.transcript_language?.[0] || data.transcription_language || 'unknown',
       } : undefined,
+      raw: data,
+    };
+  }
+
+  private parseRedditPost(data: any, url: string): PostData {
+    // Parse media from photos and videos
+    const media: Media[] = [];
+
+    this.logger.info('🔍 Parsing Reddit post', {
+      hasPhotos: !!data.photos,
+      photosCount: data.photos?.length || 0,
+      hasVideos: !!data.videos,
+      postId: data.post_id,
+      community: data.community_name,
+    });
+
+    // Process photos
+    if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
+      data.photos.forEach((photoUrl: string, index: number) => {
+        media.push({
+          type: 'image',
+          url: photoUrl,
+        });
+        this.logger.info(`✅ Added image ${index + 1}`);
+      });
+    }
+
+    // Process videos
+    if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
+      data.videos.forEach((videoUrl: string, index: number) => {
+        media.push({
+          type: 'video',
+          url: videoUrl,
+        });
+        this.logger.info(`✅ Added video ${index + 1}`);
+      });
+    }
+
+    // Parse comments
+    const comments: Comment[] = [];
+    if (data.comments && Array.isArray(data.comments)) {
+      data.comments.forEach((comment: any) => {
+        comments.push({
+          id: comment.url || `comment-${Date.now()}`,
+          author: {
+            name: comment.user_commenting || 'Unknown',
+            url: comment.user_url || '#',
+            username: comment.user_commenting,
+          },
+          content: comment.comment || '',
+          timestamp: comment.date_of_comment,
+          likes: comment.num_upvotes || 0,
+          replies: comment.replies && Array.isArray(comment.replies)
+            ? comment.replies.map((reply: any) => ({
+                id: reply.url || `reply-${Date.now()}`,
+                author: {
+                  name: reply.user_replying || 'Unknown',
+                  url: reply.user_url || '#',
+                  username: reply.user_replying,
+                },
+                content: reply.reply || '',
+                timestamp: reply.date_of_reply,
+                likes: reply.num_upvotes || 0,
+              }))
+            : [],
+        });
+      });
+    }
+
+    return {
+      platform: 'reddit',
+      id: data.post_id || this.extractIdFromUrl(url),
+      url: data.url || url,
+      author: {
+        name: data.community_name || 'Unknown',
+        url: data.community_url || '#',
+        username: data.user_posted || 'Unknown',
+        avatar: undefined,
+        verified: false,
+      },
+      content: {
+        text: `# ${data.title || ''}\n\n${data.description || ''}`,
+        hashtags: data.tag ? [data.tag] : [],
+      },
+      media,
+      metadata: {
+        likes: data.num_upvotes || 0,
+        comments: data.num_comments || 0,
+        shares: 0,
+        views: 0,
+        timestamp: data.date_posted || new Date().toISOString(),
+      },
+      comments,
       raw: data,
     };
   }

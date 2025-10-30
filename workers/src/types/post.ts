@@ -2,7 +2,7 @@
  * Post data types for Workers API
  */
 
-export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube';
+export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube' | 'reddit';
 
 export interface Author {
   name: string;
