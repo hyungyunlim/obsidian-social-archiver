@@ -16,6 +16,8 @@ import { healthRouter } from './handlers/health';
 import { webhookRouter } from './handlers/webhook';
 import { mediaProxyRouter } from './handlers/media-proxy-router';
 import { statsRouter } from './handlers/stats-router';
+import { uploadMediaRouter } from './handlers/upload-media';
+import { userPostsRouter } from './handlers/user-posts';
 
 const app = new Hono<Env>();
 
@@ -54,12 +56,17 @@ app.route('/', healthRouter);
 // API routes
 app.route('/api/archive', archiveRouter);
 app.route('/api/share', shareRouter);
+app.route('/api/upload-share-media', uploadMediaRouter);
 app.route('/api/license', licenseRouter);
 app.route('/api/proxy-media', mediaProxyRouter);
 app.route('/api/stats', statsRouter);
+app.route('/api/users', userPostsRouter);
 
 // Public share pages (no rate limiting, no CORS)
 app.route('/share', publicShareRouter);
+
+// Public media serving (no rate limiting, no CORS)
+app.route('/media', uploadMediaRouter);
 
 // Webhook routes (no rate limiting for webhooks)
 app.route('/webhook', webhookRouter);
