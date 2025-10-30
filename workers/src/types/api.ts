@@ -27,13 +27,17 @@ export interface ArchiveResponse {
 export const CreateShareRequestSchema = z.object({
   content: z.string(),
   metadata: z.object({
+    title: z.string(),
     platform: z.string(),
     author: z.string(),
-    originalUrl: z.string()
+    originalUrl: z.string(),
+    tags: z.array(z.string()).optional(),
+    thumbnail: z.string().optional()
   }),
   options: z.object({
     expiry: z.number().optional(), // Unix timestamp
-    password: z.string().optional()
+    password: z.string().optional(),
+    username: z.string().optional() // Username for timeline indexing
   }).optional()
 });
 

@@ -2180,8 +2180,8 @@
             "dependencies": [
               1
             ],
-            "details": "Update workers/src/handlers/share.ts to extract username from request metadata or headers. After successful share creation, update user_posts:{username} array in KV store with new shareId. Implement deduplication logic to prevent duplicate entries. Maintain backward compatibility with existing share functionality. Add proper error handling for KV operations without breaking share flow. Use atomic operations where possible to prevent race conditions.",
-            "status": "pending",
+            "details": "Update workers/src/handlers/share.ts to extract username from request metadata or headers. After successful share creation, update user_posts:{username} array in KV store with new shareId. Implement deduplication logic to prevent duplicate entries. Maintain backward compatibility with existing share functionality. Add proper error handling for KV operations without breaking share flow. Use atomic operations where possible to prevent race conditions.\n<info added on 2025-10-30T13:06:56.742Z>\nImplementation completed with comprehensive user timeline indexing functionality. Added username field to CreateShareRequestSchema for backward compatibility. Modified POST /api/share handler to extract username and call addPostToUserIndex() after successful share creation, with non-blocking error handling to prevent indexing failures from breaking share operations. Updated DELETE handler to remove entries from user index when deleting shares. Implemented consistent TTL handling, automatic deduplication, and comprehensive logging. Share URLs now include username path when provided. TypeScript compilation successful and ready for integration testing.\n</info added on 2025-10-30T13:06:56.742Z>",
+            "status": "done",
             "testStrategy": "Unit tests for user indexing logic and deduplication. Integration tests verifying share flow continues working with new indexing."
           },
           {
@@ -2682,7 +2682,7 @@
     ],
     "metadata": {
       "created": "2025-08-26T14:09:53.710Z",
-      "updated": "2025-10-30T13:02:20.657Z",
+      "updated": "2025-10-30T13:07:21.788Z",
       "description": "Tasks for master context"
     }
   }

@@ -5,46 +5,78 @@ import { CreateShareRequestSchema, type ShareResponse } from '@/types/api';
 import { generateShareId } from '@/utils/id';
 import { ValidationError, NotFoundError, AuthenticationError } from '@/utils/errors';
 import { Logger } from '@/utils/logger';
+import { addPostToUserIndex, removePostFromUserIndex } from '@/utils/user-index';
 
 export const shareRouter = new Hono<Env>();
 
 // POST /api/share - Create share link
 shareRouter.post('/', async (c) => {
+  const logger = Logger.fromContext(c);
+
   try {
     const body = await c.req.json();
     const request = CreateShareRequestSchema.parse(body);
-    
+
     const shareId = generateShareId();
     const shareData = {
       ...request,
       createdAt: Date.now(),
       viewCount: 0
     };
-    
+
     // Calculate expiration
-    const ttl = request.options?.expiry 
+    const ttl = request.options?.expiry
       ? Math.floor((request.options.expiry - Date.now()) / 1000)
       : 30 * 24 * 60 * 60; // 30 days default
-    
+
     // Store in KV
     await c.env.SHARE_LINKS.put(
       `share:${shareId}`,
       JSON.stringify(shareData),
       { expirationTtl: ttl }
     );
-    
+
+    // Add to user index if username is provided
+    const username = request.options?.username;
+    if (username) {
+      try {
+        await addPostToUserIndex(
+          c.env.SHARE_LINKS,
+          username,
+          shareId,
+          { ttl }
+        );
+        logger.info('Added share to user index', { username, shareId });
+      } catch (indexError) {
+        // Log error but don't fail the share creation
+        logger.error('Failed to add share to user index', {
+          error: indexError,
+          username,
+          shareId
+        });
+      }
+    }
+
+    // Generate share URL using current host
+    const host = new URL(c.req.url).origin;
+
+    // Build share URL with username if provided
+    const shareUrl = username
+      ? `${host}/share/${username}/${shareId}`
+      : `${host}/share/${shareId}`;
+
     const response: ShareResponse = {
       shareId,
-      shareUrl: `https://share.social-archiver.com/${shareId}`,
+      shareUrl,
       expiresAt: request.options?.expiry,
       passwordProtected: !!request.options?.password
     };
-    
+
     return c.json({
       success: true,
       data: response
     }, 201);
-    
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       return c.json({
@@ -108,9 +140,10 @@ shareRouter.get('/:shareId', async (c) => {
 
 // DELETE /api/share/:shareId - Delete share link
 shareRouter.delete('/:shareId', async (c) => {
+  const logger = Logger.fromContext(c);
   const shareId = c.req.param('shareId');
   const licenseKey = c.req.header('X-License-Key');
-  
+
   if (!licenseKey) {
     return c.json({
       success: false,
@@ -120,10 +153,31 @@ shareRouter.delete('/:shareId', async (c) => {
       }
     }, 401);
   }
-  
-  // Verify ownership (simplified - in production, store owner info)
+
+  // Get share data before deletion to remove from user index
+  const shareData = await c.env.SHARE_LINKS.get(`share:${shareId}`, 'json') as any;
+
+  if (shareData) {
+    // Remove from user index if username exists
+    const username = shareData.options?.username;
+    if (username) {
+      try {
+        await removePostFromUserIndex(c.env.SHARE_LINKS, username, shareId);
+        logger.info('Removed share from user index', { username, shareId });
+      } catch (indexError) {
+        // Log error but don't fail the deletion
+        logger.error('Failed to remove share from user index', {
+          error: indexError,
+          username,
+          shareId
+        });
+      }
+    }
+  }
+
+  // Delete the share
   await c.env.SHARE_LINKS.delete(`share:${shareId}`);
-  
+
   return c.json({
     success: true,
     data: {
