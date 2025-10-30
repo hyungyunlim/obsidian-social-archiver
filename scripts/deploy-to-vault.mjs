@@ -1,7 +1,7 @@
 import { mkdir, copyFile } from 'fs/promises';
 import path from 'path';
 
-const DEFAULT_OBSIDIAN_PATH = '/Users/hyungyunlim/Library/Mobile Documents/iCloud~md~obsidian/Documents/test/.obsidian';
+const DEFAULT_OBSIDIAN_PATH = '/Users/hyungyunlim/vaults/test/.obsidian';
 const obRoot = process.env.SOCIAL_ARCHIVER_TEST_VAULT ?? DEFAULT_OBSIDIAN_PATH;
 const pluginId = 'obsidian-social-archiver';
 const pluginDir = path.join(obRoot, 'plugins', pluginId);

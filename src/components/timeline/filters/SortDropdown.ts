@@ -51,11 +51,11 @@ export class SortDropdown {
     };
 
     const sortByIcon = sortByBtn.createDiv();
-    sortByIcon.style.cssText = 'width: 16px; height: 16px; transition: color 0.2s;';
+    sortByIcon.style.cssText = 'width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: color 0.2s;';
     setIcon(sortByIcon, 'calendar');
 
     const sortByText = sortByBtn.createSpan();
-    sortByText.style.cssText = 'font-weight: 500;';
+    sortByText.style.cssText = 'font-weight: 500; line-height: 1;';
     updateSortByButton();
 
     sortByBtn.addEventListener('mouseenter', () => {
@@ -87,7 +87,7 @@ export class SortDropdown {
     orderBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 0 8px 8px 0; background: transparent; cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
 
     const orderIcon = orderBtn.createDiv();
-    orderIcon.style.cssText = 'width: 16px; height: 16px; color: var(--text-muted); transition: all 0.2s;';
+    orderIcon.style.cssText = 'width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-muted); transition: all 0.2s;';
 
     const updateOrderButton = () => {
       const iconName = sortState.order === 'newest' ? 'arrow-down' : 'arrow-up';

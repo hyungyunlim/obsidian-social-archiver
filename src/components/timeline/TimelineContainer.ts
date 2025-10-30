@@ -8,8 +8,8 @@ import {
   siX,
   siThreads,
   siYoutube,
-  type SimpleIcon
-} from 'simple-icons';
+  type PlatformIcon as SimpleIcon
+} from '../../constants/platform-icons';
 import { PostDataParser } from './parsers/PostDataParser';
 import { FilterSortManager } from './filters/FilterSortManager';
 import { FilterPanel } from './filters/FilterPanel';
@@ -284,11 +284,11 @@ export class TimelineContainer {
     filterBtn.setAttribute('title', 'Filter posts');
 
     const filterIcon = filterBtn.createDiv();
-    filterIcon.style.cssText = 'width: 16px; height: 16px; transition: color 0.2s;';
+    filterIcon.style.cssText = 'width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: color 0.2s;';
     setIcon(filterIcon, 'filter');
 
     const filterText = filterBtn.createSpan({ text: 'Filter' });
-    filterText.style.cssText = 'font-weight: 500;';
+    filterText.style.cssText = 'font-weight: 500; line-height: 1;';
 
     // Update filter button based on active filters
     const updateFilterButton = () => {
@@ -334,7 +334,7 @@ export class TimelineContainer {
     refreshBtn.setAttribute('title', 'Refresh timeline');
 
     const refreshIcon = refreshBtn.createDiv();
-    refreshIcon.style.cssText = 'width: 16px; height: 16px; color: var(--text-muted); transition: color 0.2s;';
+    refreshIcon.style.cssText = 'width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-muted); transition: color 0.2s;';
     setIcon(refreshIcon, 'refresh-cw');
 
     refreshBtn.addEventListener('mouseenter', () => {

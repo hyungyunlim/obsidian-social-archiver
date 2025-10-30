@@ -1,6 +1,6 @@
 import { setIcon } from 'obsidian';
 import type { FilterState } from './FilterSortManager';
-import type { SimpleIcon } from 'simple-icons';
+import type { PlatformIcon as SimpleIcon } from '../../../constants/platform-icons';
 
 interface Platform {
   id: string;

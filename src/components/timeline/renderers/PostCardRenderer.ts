@@ -8,8 +8,8 @@ import {
   siX,
   siThreads,
   siYoutube,
-  type SimpleIcon
-} from 'simple-icons';
+  type PlatformIcon as SimpleIcon
+} from '../../../constants/platform-icons';
 import { MediaGalleryRenderer } from './MediaGalleryRenderer';
 import { CommentRenderer } from './CommentRenderer';
 import { YouTubeEmbedRenderer } from './YouTubeEmbedRenderer';
