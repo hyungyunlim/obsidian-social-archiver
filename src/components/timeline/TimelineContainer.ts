@@ -269,8 +269,12 @@ export class TimelineContainer {
     const sortState = this.filterSortManager.getSortState();
     this.sortDropdown.renderSortControls(leftButtons, sortState);
 
-    // Right side: Refresh button
-    this.renderRefreshButton(header);
+    // Right side: Refresh and Settings buttons
+    const rightButtons = header.createDiv();
+    rightButtons.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+
+    this.renderRefreshButton(rightButtons);
+    this.renderSettingsButton(rightButtons);
 
     return header;
   }
@@ -349,6 +353,37 @@ export class TimelineContainer {
 
     refreshBtn.addEventListener('click', () => {
       this.loadPosts();
+    });
+  }
+
+  /**
+   * Render settings button
+   */
+  private renderSettingsButton(parent: HTMLElement): void {
+    const settingsBtn = parent.createDiv();
+    settingsBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: transparent; cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
+    settingsBtn.setAttribute('title', 'Open plugin settings');
+
+    const settingsIcon = settingsBtn.createDiv();
+    settingsIcon.style.cssText = 'width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-muted); transition: color 0.2s;';
+    setIcon(settingsIcon, 'settings');
+
+    settingsBtn.addEventListener('mouseenter', () => {
+      settingsBtn.style.background = 'var(--background-modifier-hover)';
+      settingsIcon.style.color = 'var(--interactive-accent)';
+    });
+
+    settingsBtn.addEventListener('mouseleave', () => {
+      settingsBtn.style.background = 'transparent';
+      settingsIcon.style.color = 'var(--text-muted)';
+    });
+
+    settingsBtn.addEventListener('click', () => {
+      // Open plugin settings tab
+      // @ts-ignore - app.setting is available but not typed
+      this.app.setting.open();
+      // @ts-ignore
+      this.app.setting.openTabById(this.plugin.manifest.id);
     });
   }
 
