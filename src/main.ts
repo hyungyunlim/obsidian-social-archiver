@@ -108,6 +108,21 @@ export default class SocialArchiverPlugin extends Plugin {
 
   async loadSettings(): Promise<void> {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+    // Migrate old settings to new defaults
+    let needsSave = false;
+
+    // Migrate old mediaPath (assets/social) to new default (attachments/social-archives)
+    if (this.settings.mediaPath === 'assets/social') {
+      this.settings.mediaPath = 'attachments/social-archives';
+      needsSave = true;
+      console.log('[Social Archiver] Migrated mediaPath: assets/social -> attachments/social-archives');
+    }
+
+    // Save if migration occurred
+    if (needsSave) {
+      await this.saveData(this.settings);
+    }
   }
 
   async saveSettings(): Promise<void> {

@@ -49,23 +49,25 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Archive path')
-      .setDesc('Where to save archived posts')
+      .setDesc('Folder where archived posts will be saved (e.g., Social Archives)')
       .addText(text => text
         .setPlaceholder('Social Archives')
         .setValue(this.plugin.settings.archivePath)
         .onChange(async (value) => {
-          this.plugin.settings.archivePath = value;
+          // Set to default if empty
+          this.plugin.settings.archivePath = value || 'Social Archives';
           await this.plugin.saveSettings();
         }));
 
     new Setting(containerEl)
       .setName('Media path')
-      .setDesc('Where to save downloaded media files')
+      .setDesc('Folder where downloaded media files will be saved (e.g., attachments/social-archives)')
       .addText(text => text
         .setPlaceholder('attachments/social-archives')
         .setValue(this.plugin.settings.mediaPath)
         .onChange(async (value) => {
-          this.plugin.settings.mediaPath = value;
+          // Set to default if empty
+          this.plugin.settings.mediaPath = value || 'attachments/social-archives';
           await this.plugin.saveSettings();
         }));
 
