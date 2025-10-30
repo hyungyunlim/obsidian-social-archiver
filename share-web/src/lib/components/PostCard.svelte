@@ -72,7 +72,7 @@
 	}
 </script>
 
-<article class="post-card">
+<article class="post-card" role="article" aria-label={`Post by ${post.author.name} on ${post.platform}`}>
 	<!-- Platform Icon (top right) -->
 	<div class="platform-icon">
 		<a
@@ -80,7 +80,7 @@
 			target="_blank"
 			rel="noopener noreferrer"
 			title="Open on {post.platform}"
-			aria-label="Open on {post.platform}"
+			aria-label={`View original post on ${post.platform}`}
 		>
 			<PlatformIcon platform={post.platform} size={20} />
 		</a>
@@ -95,10 +95,11 @@
 				target="_blank"
 				rel="noopener noreferrer"
 				class="author-link"
+				aria-label={`View ${post.author.name}'s profile`}
 			>
 				<strong class="author-name">{post.author.name}</strong>
 			</a>
-			<time class="timestamp">
+			<time class="timestamp" datetime={post.metadata.timestamp}>
 				{getRelativeTime(post.metadata.timestamp)}
 			</time>
 		</header>
