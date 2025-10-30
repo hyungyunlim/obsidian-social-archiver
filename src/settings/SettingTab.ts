@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import type SocialArchiverPlugin from '../main';
+import { FolderSuggest } from './FolderSuggest';
 
 export class SocialArchiverSettingTab extends PluginSettingTab {
   plugin: SocialArchiverPlugin;
@@ -49,27 +50,37 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Archive path')
-      .setDesc('Folder where archived posts will be saved (e.g., Social Archives)')
-      .addText(text => text
-        .setPlaceholder('Social Archives')
-        .setValue(this.plugin.settings.archivePath)
-        .onChange(async (value) => {
-          // Set to default if empty
-          this.plugin.settings.archivePath = value || 'Social Archives';
-          await this.plugin.saveSettings();
-        }));
+      .setDesc('Folder where archived posts will be saved')
+      .addText(text => {
+        text
+          .setPlaceholder('Social Archives')
+          .setValue(this.plugin.settings.archivePath)
+          .onChange(async (value) => {
+            // Set to default if empty
+            this.plugin.settings.archivePath = value || 'Social Archives';
+            await this.plugin.saveSettings();
+          });
+
+        // Add folder suggestions
+        new FolderSuggest(this.app, text.inputEl);
+      });
 
     new Setting(containerEl)
       .setName('Media path')
-      .setDesc('Folder where downloaded media files will be saved (e.g., attachments/social-archives)')
-      .addText(text => text
-        .setPlaceholder('attachments/social-archives')
-        .setValue(this.plugin.settings.mediaPath)
-        .onChange(async (value) => {
-          // Set to default if empty
-          this.plugin.settings.mediaPath = value || 'attachments/social-archives';
-          await this.plugin.saveSettings();
-        }));
+      .setDesc('Folder where downloaded media files will be saved')
+      .addText(text => {
+        text
+          .setPlaceholder('attachments/social-archives')
+          .setValue(this.plugin.settings.mediaPath)
+          .onChange(async (value) => {
+            // Set to default if empty
+            this.plugin.settings.mediaPath = value || 'attachments/social-archives';
+            await this.plugin.saveSettings();
+          });
+
+        // Add folder suggestions
+        new FolderSuggest(this.app, text.inputEl);
+      });
 
     // License Section
     containerEl.createEl('h3', { text: 'License' });
