@@ -15,6 +15,7 @@ import { MediaGalleryRenderer } from './MediaGalleryRenderer';
 import { CommentRenderer } from './CommentRenderer';
 import { YouTubeEmbedRenderer } from './YouTubeEmbedRenderer';
 import { YouTubePlayerController } from '../controllers/YouTubePlayerController';
+import { ShareManager } from '../../../services/ShareManager';
 
 /**
  * PostCardRenderer - Renders individual post cards
@@ -466,6 +467,9 @@ export class PostCardRenderer {
     // Personal Like button (star icon, right-aligned)
     this.renderPersonalLikeButton(interactions, post);
 
+    // Share button (right-aligned)
+    this.renderShareButton(interactions, post);
+
     // Archive button (right-aligned)
     this.renderArchiveButton(interactions, post, rootElement);
 
@@ -606,6 +610,131 @@ export class PostCardRenderer {
       e.stopPropagation();
       await this.deletePost(post, rootElement);
     });
+  }
+
+  /**
+   * Render share button
+   */
+  private renderShareButton(parent: HTMLElement, post: PostData): void {
+    const shareBtn = parent.createDiv();
+    shareBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; transition: color 0.2s;';
+
+    // Check if already shared
+    const isShared = !!(post as any).shareUrl;
+    shareBtn.setAttribute('title', isShared ? 'Already published' : 'Publish to web');
+
+    const shareIcon = shareBtn.createDiv();
+    shareIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+    setIcon(shareIcon, 'share-2');
+
+    // Set initial state
+    if (isShared) {
+      shareBtn.style.color = 'var(--interactive-accent)';
+    } else {
+      shareBtn.addEventListener('mouseenter', () => {
+        shareBtn.style.color = 'var(--interactive-accent)';
+      });
+      shareBtn.addEventListener('mouseleave', () => {
+        shareBtn.style.color = 'var(--text-muted)';
+      });
+    }
+
+    // Share button click handler
+    shareBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+
+      if (isShared) {
+        // Copy share URL to clipboard
+        const shareUrl = (post as any).shareUrl;
+        await navigator.clipboard.writeText(shareUrl);
+        new Notice('Share link copied to clipboard!');
+      } else {
+        // Create new share
+        await this.createShare(post, shareBtn);
+      }
+    });
+  }
+
+  /**
+   * Create share link for post
+   */
+  private async createShare(post: PostData, shareBtn: HTMLElement): Promise<void> {
+    try {
+      const filePath = (post as any).filePath;
+      if (!filePath) {
+        new Notice('Cannot share: file path not found');
+        return;
+      }
+
+      const file = this.vault.getAbstractFileByPath(filePath);
+      if (!file || !('extension' in file)) {
+        new Notice('Cannot share: file not found');
+        return;
+      }
+
+      const tfile = file as TFile;
+
+      // Show loading state
+      shareBtn.style.color = 'var(--text-muted)';
+      shareBtn.style.opacity = '0.5';
+      shareBtn.style.cursor = 'wait';
+
+      // Create share via ShareManager
+      const workerUrl = 'https://social-archiver-api.junlim.org';
+      const shareManager = new ShareManager(workerUrl);
+      const shareInfo = await shareManager.createShareInfo(tfile, this.vault, {
+        tier: 'free' // or 'pro' based on license
+      });
+
+      // Call Worker API to create share
+      const response = await fetch(`${workerUrl}/api/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(shareManager.createShareRequest(shareInfo)),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Share creation failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const shareData = shareManager.parseShareResponse(result);
+
+      // Update YAML frontmatter
+      const content = await this.vault.read(tfile);
+      const updatedContent = this.updateYamlFrontmatter(content, {
+        share: true,
+        shareUrl: shareData.shareUrl,
+        shareExpiry: shareData.expiresAt ? new Date(shareData.expiresAt) : undefined,
+      });
+      await this.vault.modify(tfile, updatedContent);
+
+      // Update post object
+      (post as any).shareUrl = shareData.shareUrl;
+
+      // Update UI
+      shareBtn.style.opacity = '1';
+      shareBtn.style.cursor = 'pointer';
+      shareBtn.style.color = 'var(--interactive-accent)';
+      shareBtn.setAttribute('title', 'Already published');
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareData.shareUrl);
+      new Notice('Published! Share link copied to clipboard.');
+
+      console.log('[PostCardRenderer] Share created:', shareData);
+
+    } catch (err) {
+      console.error('[PostCardRenderer] Failed to create share:', err);
+      new Notice('Failed to publish post');
+
+      // Reset button state
+      shareBtn.style.opacity = '1';
+      shareBtn.style.cursor = 'pointer';
+      shareBtn.style.color = 'var(--text-muted)';
+    }
   }
 
   /**

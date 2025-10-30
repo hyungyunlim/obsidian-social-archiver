@@ -76,6 +76,7 @@ export class PostDataParser {
         comment: frontmatter.comment, // User's personal note
         like: frontmatter.like, // User's personal like
         archive: frontmatter.archive, // Archive status
+        shareUrl: (frontmatter as any).shareUrl, // Public share URL
         publishedDate: publishedDate,
         archivedDate: archivedDate,
         author: {

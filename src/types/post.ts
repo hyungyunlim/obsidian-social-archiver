@@ -125,6 +125,7 @@ export interface PostData {
   comment?: string;         // User's personal note/comment
   like?: boolean;           // User's personal like (for sorting/filtering)
   archive?: boolean;        // Whether post is archived (hidden by default)
+  shareUrl?: string;        // Public share URL (if published)
   publishedDate?: Date;     // Original post publication date
   archivedDate?: Date;      // Date when post was archived
   mediaSourceUrls?: string[]; // Original media URLs (before proxy download)
