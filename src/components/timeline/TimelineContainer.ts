@@ -271,7 +271,7 @@ export class TimelineContainer {
 
     // Right side: Refresh and Settings buttons
     const rightButtons = header.createDiv();
-    rightButtons.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+    rightButtons.style.cssText = 'display: flex; align-items: center; gap: 4px;';
 
     this.renderRefreshButton(rightButtons);
     this.renderSettingsButton(rightButtons);
