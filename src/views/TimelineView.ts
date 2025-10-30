@@ -22,6 +22,7 @@ export const VIEW_TYPE_TIMELINE = 'social-archiver-timeline';
 export class TimelineView extends ItemView {
   private plugin: SocialArchiverPlugin;
   private component: any;
+  private refreshTimeout: number | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: SocialArchiverPlugin) {
     super(leaf);
@@ -65,6 +66,57 @@ export class TimelineView extends ItemView {
       archivePath: this.plugin.settings.archivePath || 'Social Archives',
       plugin: this.plugin,
     });
+
+    // Register vault file change listeners
+    const archivePath = this.plugin.settings.archivePath || 'Social Archives';
+
+    // Listen for file creation (new posts archived)
+    this.registerEvent(
+      this.app.vault.on('create', (file) => {
+        if (file.path.startsWith(archivePath)) {
+          console.log('[TimelineView] New file created in archive path');
+          this.debouncedRefresh();
+        }
+      })
+    );
+
+    // Listen for file deletion (posts deleted)
+    this.registerEvent(
+      this.app.vault.on('delete', (file) => {
+        if (file.path.startsWith(archivePath)) {
+          console.log('[TimelineView] File deleted from archive path');
+          this.debouncedRefresh();
+        }
+      })
+    );
+
+    // Listen for file modification (posts edited)
+    this.registerEvent(
+      this.app.vault.on('modify', (file) => {
+        if (file.path.startsWith(archivePath)) {
+          console.log('[TimelineView] File modified in archive path');
+          this.debouncedRefresh();
+        }
+      })
+    );
+
+    // Listen for file rename (posts renamed)
+    this.registerEvent(
+      this.app.vault.on('rename', (file, oldPath) => {
+        if (file.path.startsWith(archivePath) || oldPath.startsWith(archivePath)) {
+          console.log('[TimelineView] File renamed in archive path');
+          this.debouncedRefresh();
+        }
+      })
+    );
+
+    // Listen for settings change (archive path changed)
+    this.registerEvent(
+      this.plugin.events.on('settings-changed', () => {
+        console.log('[TimelineView] Settings changed');
+        this.debouncedRefresh();
+      })
+    );
   }
 
   /**
@@ -72,6 +124,12 @@ export class TimelineView extends ItemView {
    * Cleanup resources and destroy timeline
    */
   async onClose(): Promise<void> {
+    // Clear any pending refresh timeout
+    if (this.refreshTimeout !== null) {
+      window.clearTimeout(this.refreshTimeout);
+      this.refreshTimeout = null;
+    }
+
     if (this.component) {
       this.component.destroy();
       this.component = undefined;
@@ -87,5 +145,19 @@ export class TimelineView extends ItemView {
     if (this.component && this.component.reload) {
       await this.component.reload();
     }
+  }
+
+  /**
+   * Debounced refresh to prevent excessive reloads
+   * Waits 500ms after last change before refreshing
+   */
+  private debouncedRefresh(): void {
+    if (this.refreshTimeout !== null) {
+      window.clearTimeout(this.refreshTimeout);
+    }
+    this.refreshTimeout = window.setTimeout(() => {
+      this.refresh();
+      this.refreshTimeout = null;
+    }, 500);
   }
 }

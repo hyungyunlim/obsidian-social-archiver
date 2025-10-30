@@ -1,4 +1,4 @@
-import { Plugin, Notice, addIcon, Platform } from 'obsidian';
+import { Plugin, Notice, addIcon, Platform, Events } from 'obsidian';
 import { SocialArchiverSettingTab } from './settings/SettingTab';
 import { SocialArchiverSettings, DEFAULT_SETTINGS, API_ENDPOINT, MediaDownloadMode } from './types/settings';
 import { WorkersAPIClient } from './services/WorkersAPIClient';
@@ -15,6 +15,7 @@ export default class SocialArchiverPlugin extends Plugin {
   settings: SocialArchiverSettings = DEFAULT_SETTINGS;
   private apiClient?: WorkersAPIClient;
   private orchestrator?: ArchiveOrchestrator;
+  public events: Events = new Events();
 
   async onload(): Promise<void> {
     // TEMPORARILY ENABLE console logs for debugging
@@ -113,6 +114,8 @@ export default class SocialArchiverPlugin extends Plugin {
     await this.saveData(this.settings);
     // Reinitialize services if settings changed
     await this.initializeServices();
+    // Trigger settings-changed event for views to refresh
+    this.events.trigger('settings-changed', this.settings);
   }
 
   /**
