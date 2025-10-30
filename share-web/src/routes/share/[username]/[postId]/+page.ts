@@ -1,20 +1,44 @@
 import type { PageLoad } from './$types';
-import type { Post } from '$lib/types';
+import { getPost, ApiError } from '$lib/api/client';
+import { error } from '@sveltejs/kit';
 
 export const load: PageLoad = async ({ params }) => {
 	const { username, postId } = params;
 
-	// TODO: Implement API call to fetch individual post
-	// const response = await fetch(`${API_URL}/api/share/${postId}`);
-	// if (!response.ok) {
-	//   throw error(404, 'Post not found');
-	// }
-	// const data = await response.json();
+	try {
+		const response = await getPost(postId);
 
-	// Placeholder data for now
-	return {
-		username,
-		postId,
-		post: null as Post | null
-	};
+		if (!response.success) {
+			throw error(404, response.error?.message || 'Post not found');
+		}
+
+		// Verify username matches (security check)
+		if (response.data.author.username !== username) {
+			throw error(404, 'Post not found');
+		}
+
+		return {
+			username,
+			postId,
+			post: response.data
+		};
+	} catch (err) {
+		if (err instanceof ApiError) {
+			// Handle specific API errors
+			if (err.statusCode === 404) {
+				throw error(404, 'Post not found or has expired');
+			}
+			if (err.statusCode === 410) {
+				throw error(410, 'This post has expired and is no longer available');
+			}
+			if (err.statusCode === 429) {
+				throw error(429, 'Too many requests. Please try again later.');
+			}
+			throw error(err.statusCode || 500, err.message);
+		}
+
+		// Handle unexpected errors
+		console.error('Failed to load post:', err);
+		throw error(500, 'Failed to load post. Please try again later.');
+	}
 };

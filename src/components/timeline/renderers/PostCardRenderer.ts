@@ -15,7 +15,6 @@ import { MediaGalleryRenderer } from './MediaGalleryRenderer';
 import { CommentRenderer } from './CommentRenderer';
 import { YouTubeEmbedRenderer } from './YouTubeEmbedRenderer';
 import { YouTubePlayerController } from '../controllers/YouTubePlayerController';
-import { ShareManager } from '../../../services/ShareManager';
 
 /**
  * PostCardRenderer - Renders individual post cards
@@ -679,12 +678,39 @@ export class PostCardRenderer {
       shareBtn.style.opacity = '0.5';
       shareBtn.style.cursor = 'wait';
 
-      // Create share via ShareManager
+      // Read original file content
+      const originalContent = await this.vault.read(tfile);
+
+      // Generate share ID first
+      const shareId = this.generateShareId();
       const workerUrl = 'https://social-archiver-api.junlim.org';
-      const shareManager = new ShareManager(workerUrl);
-      const shareInfo = await shareManager.createShareInfo(tfile, this.vault, {
-        tier: 'free' // or 'pro' based on license
-      });
+
+      // Prepare content for sharing (remove YAML and H1)
+      let shareContent = this.removeYamlFrontmatter(originalContent);
+      shareContent = this.removeFirstH1(shareContent);
+
+      // Upload local images to R2 and replace paths
+      if (post.media && post.media.length > 0) {
+        shareContent = await this.uploadLocalImagesAndReplaceUrls(shareContent, shareId, workerUrl);
+      }
+
+      // Extract username from plugin settings for user timeline indexing
+      const username = this.plugin.settings.userName || 'anonymous';
+
+      // Create share request in Worker-expected format
+      const shareRequest = {
+        content: shareContent,
+        metadata: {
+          title: tfile.basename,
+          platform: post.platform,
+          author: post.author.name,
+          originalUrl: post.url,
+          username: username  // Add username for user timeline indexing
+        },
+        options: {
+          expiry: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days for free tier
+        }
+      };
 
       // Call Worker API to create share
       const response = await fetch(`${workerUrl}/api/share`, {
@@ -692,27 +718,33 @@ export class PostCardRenderer {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(shareManager.createShareRequest(shareInfo)),
+        body: JSON.stringify(shareRequest),
       });
 
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[PostCardRenderer] Share API error:', errorData);
         throw new Error(`Share creation failed: ${response.statusText}`);
       }
 
       const result = await response.json();
-      const shareData = shareManager.parseShareResponse(result);
+      if (!result.success || !result.data) {
+        throw new Error('Invalid share response');
+      }
 
-      // Update YAML frontmatter
-      const content = await this.vault.read(tfile);
-      const updatedContent = this.updateYamlFrontmatter(content, {
+      const shareData = result.data;
+      const shareUrl = shareData.shareUrl;
+
+      // Update YAML frontmatter in ORIGINAL content (preserves all existing fields)
+      const updatedContent = this.updateYamlFrontmatter(originalContent, {
         share: true,
-        shareUrl: shareData.shareUrl,
+        shareUrl: shareUrl,
         shareExpiry: shareData.expiresAt ? new Date(shareData.expiresAt) : undefined,
       });
       await this.vault.modify(tfile, updatedContent);
 
       // Update post object
-      (post as any).shareUrl = shareData.shareUrl;
+      (post as any).shareUrl = shareUrl;
 
       // Update UI
       shareBtn.style.opacity = '1';
@@ -721,10 +753,10 @@ export class PostCardRenderer {
       shareBtn.setAttribute('title', 'Already published');
 
       // Copy to clipboard
-      await navigator.clipboard.writeText(shareData.shareUrl);
+      await navigator.clipboard.writeText(shareUrl);
       new Notice('Published! Share link copied to clipboard.');
 
-      console.log('[PostCardRenderer] Share created:', shareData);
+      console.log('[PostCardRenderer] Share created:', { shareUrl, expiresAt: shareData.expiresAt });
 
     } catch (err) {
       console.error('[PostCardRenderer] Failed to create share:', err);
@@ -1589,5 +1621,120 @@ export class PostCardRenderer {
         });
       }
     }
+  }
+
+  /**
+   * Generate random share ID (12 characters, alphanumeric)
+   */
+  private generateShareId(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 12; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  /**
+   * Upload local images to R2 and replace markdown paths with R2 URLs
+   */
+  private async uploadLocalImagesAndReplaceUrls(content: string, shareId: string, workerUrl: string): Promise<string> {
+    let updatedContent = content;
+
+    // Find all markdown image references
+    const imageRegex = /!\[([^\]]*)\]\((attachments\/[^)]+)\)/g;
+    const matches = Array.from(content.matchAll(imageRegex));
+
+    for (const match of matches) {
+      const [fullMatch, alt, localPath] = match;
+
+      if (!localPath) continue;
+
+      try {
+        // Get the file from vault
+        const imageFile = this.vault.getAbstractFileByPath(localPath);
+        if (!imageFile || !('extension' in imageFile)) {
+          console.warn('[PostCardRenderer] Image file not found:', localPath);
+          continue;
+        }
+
+        // Read image as binary
+        const imageBuffer = await this.vault.readBinary(imageFile as TFile);
+
+        // Convert to base64
+        const base64 = this.arrayBufferToBase64(imageBuffer);
+
+        // Extract filename
+        const filename = localPath.split('/').pop() || 'image.jpg';
+
+        // Determine content type from extension
+        const ext = filename.split('.').pop()?.toLowerCase();
+        const contentType = ext === 'png' ? 'image/png' :
+                           ext === 'gif' ? 'image/gif' :
+                           ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+        // Upload to Worker
+        const uploadResponse = await fetch(`${workerUrl}/api/upload-share-media`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            shareId,
+            filename,
+            contentType,
+            data: base64
+          })
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('[PostCardRenderer] Failed to upload image:', filename, errorData);
+          continue;
+        }
+
+        const uploadResult = await uploadResponse.json();
+        const r2Url = uploadResult.data.url;
+
+        // Replace local path with R2 URL in content
+        updatedContent = updatedContent.replace(fullMatch, `![${alt}](${r2Url})`);
+
+        console.log('[PostCardRenderer] Uploaded image to R2:', { filename, r2Url });
+
+      } catch (error) {
+        console.error('[PostCardRenderer] Error uploading image:', error);
+      }
+    }
+
+    return updatedContent;
+  }
+
+  /**
+   * Convert ArrayBuffer to base64 string
+   */
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i] as number);
+    }
+    return btoa(binary);
+  }
+
+  /**
+   * Remove YAML frontmatter from markdown content
+   */
+  private removeYamlFrontmatter(content: string): string {
+    // Remove YAML frontmatter (---\n...\n---)
+    return content.replace(/^---\n[\s\S]*?\n---\n/, '');
+  }
+
+  /**
+   * Remove first H1 heading from markdown content
+   */
+  private removeFirstH1(content: string): string {
+    // Remove first # Title line
+    return content.replace(/^#\s+.+\n/, '');
   }
 }

@@ -102,6 +102,7 @@ export class ShareManager implements IService {
   async createShareInfo(
     note: TFile,
     vault: any, // Obsidian Vault
+    metadataCache: any, // Obsidian MetadataCache
     options: ShareOptions = {}
   ): Promise<ShareInfo> {
     try {
@@ -109,7 +110,7 @@ export class ShareManager implements IService {
       const content = await vault.read(note);
 
       // Get note metadata
-      const metadata = vault.metadataCache.getFileCache(note);
+      const metadata = metadataCache.getFileCache(note);
 
       // Calculate expiration based on tier
       const tier = options.tier || 'free';

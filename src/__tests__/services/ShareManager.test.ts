@@ -72,16 +72,17 @@ describe('ShareManager', () => {
     } as TFile;
 
     const mockVault = {
-      read: vi.fn().mockResolvedValue('# Test Note\n\nContent here'),
-      metadataCache: {
-        getFileCache: vi.fn().mockReturnValue({
-          tags: [{ tag: '#test' }, { tag: '#example' }]
-        })
-      }
+      read: vi.fn().mockResolvedValue('# Test Note\n\nContent here')
+    };
+
+    const mockMetadataCache = {
+      getFileCache: vi.fn().mockReturnValue({
+        tags: [{ tag: '#test' }, { tag: '#example' }]
+      })
     };
 
     it('should create share info with default options', async () => {
-      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault);
+      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, mockMetadataCache);
 
       expect(shareInfo.id).toHaveLength(12);
       expect(shareInfo.noteId).toBe('test/note.md');
@@ -99,7 +100,7 @@ describe('ShareManager', () => {
 
     it('should create share info with free tier (30 days expiry)', async () => {
       const options: ShareOptions = { tier: 'free' };
-      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, options);
+      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, mockMetadataCache, options);
 
       expect(shareInfo.tier).toBe('free');
       expect(shareInfo.expiresAt).toBeInstanceOf(Date);
@@ -113,7 +114,7 @@ describe('ShareManager', () => {
 
     it('should create share info with pro tier (365 days expiry)', async () => {
       const options: ShareOptions = { tier: 'pro' };
-      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, options);
+      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, mockMetadataCache, options);
 
       expect(shareInfo.tier).toBe('pro');
       expect(shareInfo.expiresAt).toBeInstanceOf(Date);
@@ -127,7 +128,7 @@ describe('ShareManager', () => {
 
     it('should create share info with password', async () => {
       const options: ShareOptions = { password: 'secret123' };
-      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, options);
+      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, mockMetadataCache, options);
 
       expect(shareInfo.password).toBe('secret123');
     });
@@ -135,35 +136,31 @@ describe('ShareManager', () => {
     it('should create share info with custom expiry', async () => {
       const customExpiry = new Date('2025-12-31');
       const options: ShareOptions = { customExpiry };
-      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, options);
+      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, mockMetadataCache, options);
 
       expect(shareInfo.expiresAt).toEqual(customExpiry);
     });
 
     it('should handle note without tags', async () => {
-      const vaultWithoutTags = {
-        ...mockVault,
-        metadataCache: {
-          getFileCache: vi.fn().mockReturnValue(null)
-        }
+      const metadataCacheWithoutTags = {
+        getFileCache: vi.fn().mockReturnValue(null)
       };
 
-      const shareInfo = await shareManager.createShareInfo(mockNote, vaultWithoutTags);
+      const shareInfo = await shareManager.createShareInfo(mockNote, mockVault, metadataCacheWithoutTags);
       expect(shareInfo.metadata.tags).toEqual([]);
     });
 
     it('should throw ShareError when vault read fails', async () => {
       const failingVault = {
-        read: vi.fn().mockRejectedValue(new Error('Read failed')),
-        metadataCache: mockVault.metadataCache
+        read: vi.fn().mockRejectedValue(new Error('Read failed'))
       };
 
       await expect(
-        shareManager.createShareInfo(mockNote, failingVault)
+        shareManager.createShareInfo(mockNote, failingVault, mockMetadataCache)
       ).rejects.toThrow(ShareError);
 
       await expect(
-        shareManager.createShareInfo(mockNote, failingVault)
+        shareManager.createShareInfo(mockNote, failingVault, mockMetadataCache)
       ).rejects.toThrow('Failed to create share info');
     });
   });

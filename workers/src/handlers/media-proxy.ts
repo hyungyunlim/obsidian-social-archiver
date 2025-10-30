@@ -47,6 +47,7 @@ export async function handleMediaProxy(c: Context<{ Bindings: Bindings }>): Prom
       'threads.com',       // Threads (Meta)
       'googlevideo.com',   // YouTube video CDN (rr8---sn-*.googlevideo.com)
       'ytimg.com',         // YouTube thumbnails (i.ytimg.com)
+      'redd.it',           // Reddit media (i.redd.it, v.redd.it, preview.redd.it, external-preview.redd.it)
     ];
 
     const isAllowed = allowedDomains.some(domain => url.hostname.includes(domain));
@@ -76,6 +77,16 @@ export async function handleMediaProxy(c: Context<{ Bindings: Bindings }>): Prom
         hostname: url.hostname,
         hasExpire: url.searchParams.has('expire'),
         expireValue: url.searchParams.get('expire'),
+      });
+    } else if (url.hostname.includes('redd.it')) {
+      // Reddit media requires referer to prevent 403
+      headers['Referer'] = 'https://www.reddit.com/';
+      headers['Accept'] = 'image/webp,image/apng,image/*,*/*;q=0.8';
+      headers['Accept-Language'] = 'en-US,en;q=0.9';
+
+      logger.info('🎯 Reddit headers', {
+        hostname: url.hostname,
+        isVideo: url.hostname.includes('v.redd.it'),
       });
     } else {
       // Images for other platforms

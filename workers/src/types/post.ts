@@ -87,6 +87,10 @@ export interface PostData {
     text: string;
     html?: string;
     hashtags?: string[]; // TikTok/X hashtags
+    community?: {
+      name: string;
+      url: string;
+    }; // Reddit community/subreddit
   };
   media: Media[];
   metadata: PostMetadata;

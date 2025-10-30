@@ -1298,8 +1298,8 @@ export class BrightDataService {
       id: data.post_id || this.extractIdFromUrl(url),
       url: data.url || url,
       author: {
-        name: data.community_name || 'Unknown',
-        url: data.community_url || '#',
+        name: data.user_posted || 'Unknown',
+        url: data.user_posted ? `https://reddit.com/u/${data.user_posted.replace(/^u\//, '')}` : '#',
         username: data.user_posted || 'Unknown',
         avatar: undefined,
         verified: false,
@@ -1307,6 +1307,10 @@ export class BrightDataService {
       content: {
         text: `# ${data.title || ''}\n\n${data.description || ''}`,
         hashtags: data.tag ? [data.tag] : [],
+        community: data.community_name ? {
+          name: data.community_name,
+          url: data.community_url || `https://reddit.com/r/${data.community_name}`,
+        } : undefined,
       },
       media,
       metadata: {

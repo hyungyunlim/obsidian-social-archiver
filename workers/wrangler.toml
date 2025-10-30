@@ -32,11 +32,10 @@ binding = "SHARE_LINKS"
 id = "bbb1768a9f6c45fc91a98eda7a99f2ea"
 preview_id = "73ead9ebdd9f40acb0cd97ce59aab4a5"
 
-# R2 Bucket binding for pro tier permanent storage (commented out until bucket is created)
-# [[r2_buckets]]
-# binding = "R2_BUCKET"
-# bucket_name = "social-archiver-shares"
-# preview_bucket_name = "social-archiver-shares-preview"
+# R2 Bucket binding for share media permanent storage
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "social-archiver-shares"
 
 # Development settings
 [env.development]

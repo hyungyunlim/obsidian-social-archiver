@@ -557,6 +557,7 @@ function detectPlatformFromUrl(url: string): string {
   if (url.includes('x.com') || url.includes('twitter.com')) return 'x';
   if (url.includes('threads.net')) return 'threads';
   if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+  if (url.includes('reddit.com')) return 'reddit';
   return 'unknown';
 }
 
