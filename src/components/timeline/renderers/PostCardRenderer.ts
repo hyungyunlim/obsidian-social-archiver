@@ -620,12 +620,20 @@ export class PostCardRenderer {
       // Delete media files first (all relative paths, not http(s) URLs)
       const deletedMedia: string[] = [];
       const failedMedia: string[] = [];
+      let mediaFolderPath: string | null = null;
 
       for (const media of post.media) {
         if (media.url && !media.url.startsWith('http://') && !media.url.startsWith('https://')) {
           try {
             const mediaFile = this.vault.getAbstractFileByPath(media.url);
             if (mediaFile && 'extension' in mediaFile) {
+              // Extract parent folder path from first media file
+              if (!mediaFolderPath) {
+                const pathParts = media.url.split('/');
+                pathParts.pop(); // Remove filename
+                mediaFolderPath = pathParts.join('/');
+              }
+
               await this.vault.delete(mediaFile as TFile);
               deletedMedia.push(media.url);
               console.log('[PostCardRenderer] Deleted media:', media.url);
@@ -634,6 +642,22 @@ export class PostCardRenderer {
             console.warn('[PostCardRenderer] Failed to delete media:', media.url, err);
             failedMedia.push(media.url);
           }
+        }
+      }
+
+      // Delete media folder if it's empty
+      if (mediaFolderPath) {
+        try {
+          const mediaFolder = this.vault.getAbstractFileByPath(mediaFolderPath);
+          if (mediaFolder && !('extension' in mediaFolder)) {
+            const folderContents = await this.vault.adapter.list(mediaFolderPath);
+            if (folderContents.files.length === 0 && folderContents.folders.length === 0) {
+              await this.vault.adapter.rmdir(mediaFolderPath, false);
+              console.log('[PostCardRenderer] Deleted empty media folder:', mediaFolderPath);
+            }
+          }
+        } catch (err) {
+          console.warn('[PostCardRenderer] Failed to delete media folder:', mediaFolderPath, err);
         }
       }
 
