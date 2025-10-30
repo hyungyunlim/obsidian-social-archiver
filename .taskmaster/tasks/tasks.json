@@ -1211,7 +1211,7 @@
         "testStrategy": "Unit tests for type validation using Zod schemas. Test timeline data serialization/deserialization. Validate API request/response structure matches schemas. Test edge cases for required/optional fields.",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1257,7 +1257,7 @@
         "dependencies": [
           13
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1325,7 +1325,7 @@
           13,
           14
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1383,7 +1383,7 @@
           14,
           15
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1462,7 +1462,7 @@
           15,
           16
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1529,7 +1529,7 @@
         "dependencies": [
           16
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1585,7 +1585,7 @@
         "dependencies": [
           18
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1630,7 +1630,7 @@
         "dependencies": [
           19
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1675,7 +1675,7 @@
         "dependencies": [
           20
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1742,7 +1742,7 @@
         "dependencies": [
           17
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1798,7 +1798,7 @@
         "dependencies": [
           22
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1843,7 +1843,7 @@
         "dependencies": [
           23
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1902,7 +1902,7 @@
         "dependencies": [
           24
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1973,7 +1973,7 @@
         "dependencies": [
           25
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2051,7 +2051,7 @@
         "dependencies": [
           26
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2086,11 +2086,603 @@
             "testStrategy": "Test all customization examples with actual code implementation. Verify video tutorials are clear and follow best practices. Review developer documentation with technical team for accuracy and completeness."
           }
         ]
+      },
+      {
+        "id": 28,
+        "title": "Initialize SvelteKit Share Web Application",
+        "description": "Create a new SvelteKit project structure for the share web application with proper dependencies and configuration",
+        "details": "Set up a new SvelteKit project in the `share-web` directory with TypeScript, Tailwind CSS, and Cloudflare Pages adapter. Install dependencies: @sveltejs/kit@^2.0.0, @sveltejs/adapter-cloudflare@^4.0.0, marked@^11.0.0, tailwindcss@^3.4.0. Configure project structure with proper routing setup for /share/{username} and /share/{username}/{postId} patterns. Set up TypeScript configuration matching the existing project standards with strict mode enabled. Configure Tailwind CSS to exclude Obsidian's preflight styles to maintain consistency with the plugin design system.",
+        "testStrategy": "Verify project initializes correctly with `npm run dev`, ensure TypeScript compilation works without errors, test routing structure responds correctly, validate Tailwind CSS loads without conflicts",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create SvelteKit project directory and initialize with proper configuration",
+            "description": "Set up the initial SvelteKit project structure in the share-web directory with TypeScript template and basic configuration files",
+            "dependencies": [],
+            "details": "Run `npm create svelte@latest share-web` with TypeScript template, navigate to directory, and initialize git repository. Create initial project structure with src/lib, src/routes, and static directories. Configure package.json with proper project metadata and scripts for development, build, and preview modes.\n<info added on 2025-10-30T12:43:37.831Z>\nProject structure successfully created with TypeScript template. Installed complete SvelteKit development environment including @sveltejs/kit v2.0.0, Svelte 5, TypeScript, Vite, ESLint, and Prettier (489 packages total). Configuration files generated: package.json, svelte.config.js, vite.config.ts, tsconfig.json, .eslintrc.cjs, .prettierrc, .gitignore. Resolved tsconfig.json paths conflict with SvelteKit configuration. Enabled Svelte 5 runes mode in svelte.config.js. TypeScript compilation verified with svelte-check showing 0 errors and 0 warnings. Development environment is fully configured and ready for dependency installation and further development work.\n</info added on 2025-10-30T12:43:37.831Z>",
+            "status": "done",
+            "testStrategy": "Verify project directory creates successfully, ensure package.json contains correct SvelteKit dependencies, test that `npm install` completes without errors"
+          },
+          {
+            "id": 2,
+            "title": "Install and configure core dependencies and adapters",
+            "description": "Install required dependencies including SvelteKit, Cloudflare adapter, markdown parser, and Tailwind CSS with exact versions specified",
+            "dependencies": [
+              1
+            ],
+            "details": "Install @sveltejs/kit@^2.0.0, @sveltejs/adapter-cloudflare@^4.0.0, marked@^11.0.0, tailwindcss@^3.4.0, @tailwindcss/typography, autoprefixer, and postcss. Configure svelte.config.js to use Cloudflare Pages adapter with proper build settings and prerender options for static routes.\n<info added on 2025-10-30T12:44:33.846Z>\nSuccessfully completed dependency installation with verified versions: @sveltejs/adapter-cloudflare@4.9.0, @sveltejs/kit@2.0.0, marked@11.2.0, tailwindcss@3.4.18, @tailwindcss/typography@0.5.19. Added DOMPurify@3.x for markdown sanitization with TypeScript types. svelte.config.js configured with Cloudflare Pages adapter. Total 495 packages installed with no version conflicts.\n</info added on 2025-10-30T12:44:33.846Z>",
+            "status": "done",
+            "testStrategy": "Verify all dependencies install correctly with specified versions, ensure no version conflicts in package-lock.json, test that adapter configuration loads without errors"
+          },
+          {
+            "id": 3,
+            "title": "Configure TypeScript with strict mode matching project standards",
+            "description": "Set up TypeScript configuration to match the existing project's strict typing standards and modern ES target",
+            "dependencies": [
+              2
+            ],
+            "details": "Create tsconfig.json with strict mode enabled, target: 'ES2022', module: 'ESNext', noImplicitAny: true, strictNullChecks: true. Configure path aliases for $lib and $app imports. Set up proper type checking for Svelte components and ensure compatibility with SvelteKit's generated types. Include src/**/*.ts and src/**/*.svelte in compilation.\n<info added on 2025-10-30T12:44:43.916Z>\nCOMPLETED: TypeScript configuration has been successfully set up with all strict mode options enabled. Created tsconfig.json with comprehensive strict settings including strict: true, noImplicitAny: true, strictNullChecks: true, noUnusedLocals: true, noUnusedParameters: true, and noFallthroughCasesInSwitch: true. Configured modern ES targets (ES2022) and module system (ESNext with bundler resolution). Leveraged SvelteKit's automatic type generation by removing manual path configurations in favor of kit.alias. Validation confirmed zero TypeScript errors and warnings, ensuring the configuration meets project standards for type safety and modern JavaScript features.\n</info added on 2025-10-30T12:44:43.916Z>",
+            "status": "done",
+            "testStrategy": "Verify TypeScript compilation works without errors using `npm run check`, ensure strict mode catches type errors correctly, test that Svelte component types are properly inferred"
+          },
+          {
+            "id": 4,
+            "title": "Setup Tailwind CSS configuration without preflight mode",
+            "description": "Configure Tailwind CSS to work with the existing Obsidian design system by disabling preflight and using consistent styling patterns",
+            "dependencies": [
+              3
+            ],
+            "details": "Create tailwind.config.js with content paths for src/**/*.{html,js,svelte,ts}, disable preflight with corePlugins: { preflight: false }. Configure theme extension to use CSS variables compatible with Obsidian's theming system. Set up postcss.config.js for Tailwind processing. Create app.css with Tailwind imports and custom utility classes for mobile-first design.\n<info added on 2025-10-30T12:45:58.004Z>\nImplementation completed successfully. Configured tailwind.config.js with corePlugins.preflight: false to maintain compatibility with existing Obsidian styles. Set up Obsidian theme color variables including bg-primary (#202020), text-normal (#dcddde), and other theme colors as CSS custom properties. Added @tailwindcss/typography plugin for enhanced text formatting. Created postcss.config.js to process Tailwind directives. Implemented app.css with @tailwind base, components, and utilities imports plus custom mobile-first utility classes. Updated +layout.svelte to use Svelte 5 {@render children()} syntax replacing deprecated <slot>. Build verification confirmed successful CSS generation (2.77 kB output), no style conflicts detected, and production build completing without errors.\n</info added on 2025-10-30T12:45:58.004Z>",
+            "status": "done",
+            "testStrategy": "Verify Tailwind classes compile correctly, ensure no style conflicts with expected Obsidian styling, test responsive utilities work at different viewport sizes, validate CSS variables integration"
+          },
+          {
+            "id": 5,
+            "title": "Create routing structure for share URLs and page templates",
+            "description": "Implement the routing architecture for /share/{username} and /share/{username}/{postId} patterns with proper page layouts",
+            "dependencies": [
+              4
+            ],
+            "details": "Create src/routes/share/[username]/+page.svelte for user profile pages and src/routes/share/[username]/[postId]/+page.svelte for individual post pages. Set up layout.svelte with common navigation and styling. Configure +page.ts files for server-side data loading with proper TypeScript interfaces. Implement proper error handling with +error.svelte pages for 404 and other errors.\n<info added on 2025-10-30T12:47:34.832Z>\nCOMPLETED: Full routing structure implementation with user timeline pages (/share/[username]) and individual post pages (/share/[username]/[postId]). Created shared TypeScript interfaces (Post, UserPostsResponse, PostResponse) in $lib/types/index.ts. Implemented proper error handling with +error.svelte pages for 404s. All components use Svelte 5 syntax with strict TypeScript typing. TypeScript compilation successful with 0 errors/warnings and build verification completed.\n</info added on 2025-10-30T12:47:34.832Z>",
+            "status": "done",
+            "testStrategy": "Test that routing patterns match correctly with sample URLs, verify page components render without errors, ensure layout applies consistently across routes, validate error pages display properly for invalid routes"
+          }
+        ]
+      },
+      {
+        "id": 29,
+        "title": "Extend Workers API with User Timeline Endpoints",
+        "description": "Add new API endpoints to support user timeline functionality and expand existing share endpoints",
+        "details": "Implement GET /api/users/{username}/posts endpoint in workers/src/handlers/ to retrieve user's shared posts. Modify POST /api/share handler to include user indexing functionality - extract username from request metadata and maintain user_posts:{username} arrays in KV store. Create proper response schemas matching the existing API pattern with proper error handling and CORS configuration. Implement user post indexing with deduplication logic to prevent duplicate shareIds in user arrays. Add proper validation for username format (alphanumeric + hyphens only).",
+        "testStrategy": "Unit tests for new endpoint handlers, integration tests for KV operations, API testing with Postman/curl for endpoint responses, verify CORS headers work correctly",
+        "priority": "high",
+        "dependencies": [
+          28
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create GET /api/users/{username}/posts endpoint handler",
+            "description": "Implement new API endpoint handler for retrieving user's shared posts with proper routing and parameter validation",
+            "dependencies": [],
+            "details": "Create new handler file workers/src/handlers/user-posts.ts following existing patterns. Implement GET endpoint that extracts username from URL params, validates format (alphanumeric + hyphens), retrieves user_posts:{username} array from KV store, fetches corresponding share data, and returns paginated results. Include proper error handling for invalid usernames and missing data. Follow existing response schema patterns with consistent JSON structure.",
+            "status": "pending",
+            "testStrategy": "Unit tests for handler logic, parameter validation, and error cases. Integration tests with KV store operations."
+          },
+          {
+            "id": 2,
+            "title": "Extend POST /api/share handler with user indexing",
+            "description": "Modify existing share handler to extract username and maintain user_posts arrays in KV store",
+            "dependencies": [
+              1
+            ],
+            "details": "Update workers/src/handlers/share.ts to extract username from request metadata or headers. After successful share creation, update user_posts:{username} array in KV store with new shareId. Implement deduplication logic to prevent duplicate entries. Maintain backward compatibility with existing share functionality. Add proper error handling for KV operations without breaking share flow. Use atomic operations where possible to prevent race conditions.",
+            "status": "pending",
+            "testStrategy": "Unit tests for user indexing logic and deduplication. Integration tests verifying share flow continues working with new indexing."
+          },
+          {
+            "id": 3,
+            "title": "Implement KV user index operations utilities",
+            "description": "Create utility functions for managing user_posts arrays in KV store with proper data integrity",
+            "dependencies": [],
+            "details": "Create workers/src/utils/user-index.ts with functions: addPostToUserIndex(), removePostFromUserIndex(), getUserPosts(), validateUsername(). Implement proper key naming convention user_posts:{username}. Add deduplication logic and array management. Include TTL handling based on user tier. Add batch operations for managing multiple posts. Include proper error handling and logging for debugging KV operations.",
+            "status": "pending",
+            "testStrategy": "Unit tests for all utility functions. Test deduplication logic. Test error scenarios and edge cases with KV operations."
+          },
+          {
+            "id": 4,
+            "title": "Add comprehensive error handling and validation",
+            "description": "Implement proper error handling, validation schemas, and user-friendly error responses for timeline endpoints",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create validation schemas for username format (alphanumeric + hyphens, length limits). Implement error classes extending existing patterns for timeline-specific errors. Add proper HTTP status codes and error messages. Include rate limiting validation. Add request validation middleware. Ensure consistent error response format matching existing API patterns. Include proper logging for debugging and monitoring.",
+            "status": "pending",
+            "testStrategy": "Unit tests for validation functions. Test error response formats. Integration tests for rate limiting and edge cases."
+          },
+          {
+            "id": 5,
+            "title": "Configure CORS headers for new endpoints",
+            "description": "Implement proper CORS configuration for timeline endpoints following existing Workers CORS patterns",
+            "dependencies": [
+              1
+            ],
+            "details": "Update workers/src/index.ts to include CORS headers for new user timeline endpoints. Follow existing CORS configuration patterns used in share endpoints. Add proper preflight handling for OPTIONS requests. Configure allowed origins, methods, and headers. Ensure security while maintaining usability. Include CORS headers in error responses as well.",
+            "status": "pending",
+            "testStrategy": "Manual testing with browser developer tools to verify CORS headers. Test preflight requests and actual API calls from different origins."
+          },
+          {
+            "id": 6,
+            "title": "Write comprehensive test suite for timeline API",
+            "description": "Create complete test coverage for all new timeline endpoints and functionality",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "details": "Create workers/src/__tests__/handlers/user-posts.test.ts for endpoint testing. Add integration tests for KV operations. Create API testing scripts using curl/Postman for manual testing. Test error scenarios, validation, CORS headers, and performance. Include tests for user indexing operations and deduplication logic. Add end-to-end tests verifying complete user timeline flow from share creation to retrieval.",
+            "status": "pending",
+            "testStrategy": "Comprehensive test suite including unit tests, integration tests, and API tests. Aim for high test coverage on all new functionality."
+          }
+        ]
+      },
+      {
+        "id": 30,
+        "title": "Implement SvelteKit API Client and Type Definitions",
+        "description": "Create API client services and shared type definitions between plugin and web application",
+        "details": "Create src/lib/api/client.ts with functions for getUserPosts() and getPost() API calls using fetch API with proper error handling. Share type definitions from existing workers/src/types/post.ts and plugin types. Implement proper TypeScript interfaces for ShareResponse, PostData, and timeline API responses. Add environment variable configuration for API_URL with production endpoint https://social-archiver-api.junlim.org. Include retry logic and timeout handling for API requests following existing patterns from the plugin's ApiClient.ts.",
+        "testStrategy": "Unit tests for API client functions, mock API responses for testing, TypeScript compilation verification, error handling validation",
+        "priority": "medium",
+        "dependencies": [
+          28,
+          29
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create API Client Service with Core Functions",
+            "description": "Implement the main API client service with getUserPosts() and getPost() functions using fetch API",
+            "dependencies": [],
+            "details": "Create src/lib/api/client.ts with ApiClient class containing getUserPosts(username: string) and getPost(username: string, postId: string) methods. Implement proper fetch API usage with JSON parsing, HTTP status code handling, and network error catching. Follow existing patterns from plugin's ApiClient.ts for consistency. Include proper TypeScript return types for API responses.",
+            "status": "pending",
+            "testStrategy": "Unit tests for each API function with mocked fetch responses, error handling validation for network failures and HTTP errors"
+          },
+          {
+            "id": 2,
+            "title": "Setup Shared Type Definitions",
+            "description": "Create shared TypeScript interfaces and types for API communication between plugin and web application",
+            "dependencies": [
+              1
+            ],
+            "details": "Create src/lib/types/index.ts to export shared types from workers/src/types/post.ts and plugin types. Define TypeScript interfaces for ShareResponse, PostData, and timeline API responses. Ensure type compatibility between existing worker types and new SvelteKit application needs. Import and re-export relevant types from workers/src/types/api.ts for consistent typing across the application.",
+            "status": "pending",
+            "testStrategy": "TypeScript compilation verification to ensure type safety, interface compatibility testing with existing worker types"
+          },
+          {
+            "id": 3,
+            "title": "Configure Environment Variables and API URL",
+            "description": "Setup environment configuration for API_URL with production endpoint and development overrides",
+            "dependencies": [],
+            "details": "Create environment variable configuration in .env and .env.example files with API_URL=https://social-archiver-api.junlim.org for production. Setup SvelteKit environment variable handling using $env/static/public for client-side API URL access. Create src/lib/config/api.ts to centralize API configuration and provide fallback values. Ensure proper environment variable validation and error handling.",
+            "status": "pending",
+            "testStrategy": "Environment variable loading verification, configuration validation in different environments (dev/prod)"
+          },
+          {
+            "id": 4,
+            "title": "Implement Error Handling and Retry Logic",
+            "description": "Add comprehensive error handling, retry logic, and timeout mechanisms for API requests",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement retry logic with exponential backoff for failed API requests (max 3 retries). Add timeout handling with 10-second default timeout for API calls. Create custom error classes for different failure types (NetworkError, ApiError, TimeoutError). Implement proper error propagation and user-friendly error messages. Add request/response interceptors for consistent error handling across all API calls following existing plugin patterns.",
+            "status": "pending",
+            "testStrategy": "Error handling validation with simulated network failures, retry logic testing with mock failed requests, timeout behavior verification"
+          }
+        ]
+      },
+      {
+        "id": 31,
+        "title": "Create Reusable Svelte Components",
+        "description": "Build core Svelte 5 components using Runes API for timeline and post display",
+        "details": "Implement PostCard.svelte component with platform icon, author info, timestamp, content preview, and interactive elements matching the plugin's design. Create Timeline.svelte for post grid layout with responsive design. Build PlatformIcon.svelte with SVG icons for all supported platforms (Facebook, Instagram, X, LinkedIn, TikTok, Threads, Reddit). Implement SeeMoreButton.svelte for content expansion functionality. Use Svelte 5 Runes API ($state, $derived) instead of legacy reactive declarations. Apply consistent styling using Tailwind classes matching the plugin's color scheme (#202020 background, #dcddde text, #7c7c7c accents).",
+        "testStrategy": "Component unit tests with Vitest, visual regression testing, responsive design validation on mobile/desktop, accessibility testing with screen readers",
+        "priority": "medium",
+        "dependencies": [
+          30
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement PostCard.svelte Component",
+            "description": "Create the main PostCard component with platform-specific rendering, author info, timestamp, content preview, and interactive elements using Svelte 5 Runes API",
+            "dependencies": [],
+            "details": "Create src/components/PostCard.svelte using Svelte 5 Runes API ($state, $derived). Implement platform icon display, author name and profile link, formatted timestamp, content text with proper truncation, media preview thumbnails, interaction buttons (like, comment, share counts), and expand/collapse functionality. Apply consistent styling using Tailwind classes matching plugin design (#202020 background, #dcddde text, #7c7c7c accents). Ensure responsive design for mobile and desktop viewports.",
+            "status": "pending",
+            "testStrategy": "Unit tests with Vitest for component rendering and interaction. Test platform-specific rendering variations. Test responsive behavior across screen sizes. Test content truncation and expansion functionality."
+          },
+          {
+            "id": 2,
+            "title": "Create Timeline.svelte Container Component",
+            "description": "Build the Timeline container component for responsive post grid layout with filtering and sorting capabilities",
+            "dependencies": [
+              1
+            ],
+            "details": "Create src/components/Timeline.svelte using Svelte 5 Runes API. Implement responsive grid layout using CSS Grid or Flexbox with proper spacing and alignment. Add platform filtering controls, date range selection, and sorting options (newest, oldest, most popular). Implement virtual scrolling for performance with large datasets. Include loading states, empty states, and error handling. Ensure smooth animations for filtering and sorting transitions using Svelte transitions.",
+            "status": "pending",
+            "testStrategy": "Component unit tests for filtering and sorting logic. Test virtual scrolling performance with large datasets. Test responsive grid layout on various screen sizes. Test loading and error states."
+          },
+          {
+            "id": 3,
+            "title": "Build PlatformIcon.svelte Component with SVG Assets",
+            "description": "Create platform icon component with comprehensive SVG icon management for all supported social media platforms",
+            "dependencies": [],
+            "details": "Create src/components/PlatformIcon.svelte component with SVG icons for Facebook, Instagram, X (Twitter), LinkedIn, TikTok, Threads, and Reddit. Implement dynamic icon loading based on platform prop. Create SVG icon library in src/assets/icons/ with consistent sizing (24x24px default), proper accessibility attributes (aria-label, role), and theme support (light/dark variants). Add size variants (small: 16px, medium: 24px, large: 32px) and hover effects. Ensure icons match each platform's brand guidelines.",
+            "status": "pending",
+            "testStrategy": "Test icon rendering for all supported platforms. Test size variants and accessibility attributes. Test theme switching between light/dark modes. Visual regression testing for icon consistency."
+          },
+          {
+            "id": 4,
+            "title": "Implement SeeMoreButton.svelte Interactive Component",
+            "description": "Create reusable expand/collapse button component for content truncation with smooth animations",
+            "dependencies": [],
+            "details": "Create src/components/SeeMoreButton.svelte using Svelte 5 Runes API with $state for expansion tracking. Implement smooth expand/collapse animations using Svelte transitions (slide, fade). Add configurable truncation length, custom button text ('See more'/'See less'), and animation duration. Include keyboard accessibility (Enter/Space key support) and screen reader compatibility. Style button to match plugin design with hover and focus states. Support both text content and media gallery expansion.",
+            "status": "pending",
+            "testStrategy": "Test expand/collapse functionality with various content lengths. Test keyboard navigation and screen reader compatibility. Test animation performance and smoothness. Test component reusability across different contexts."
+          },
+          {
+            "id": 5,
+            "title": "Implement Responsive Design System",
+            "description": "Create comprehensive responsive design implementation across all components with consistent breakpoints and mobile-first approach",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Implement mobile-first responsive design using Tailwind CSS breakpoints (sm: 640px, md: 768px, lg: 1024px). Create consistent spacing scale, typography hierarchy, and touch target sizes (minimum 44px for mobile). Implement responsive grid layouts for Timeline component, adaptive text sizing, and optimized media display. Add touch gestures for mobile interactions (swipe, pinch-to-zoom). Ensure components work seamlessly across all device sizes and orientations. Test with real devices and browser dev tools.",
+            "status": "pending",
+            "testStrategy": "Test responsive behavior across all standard breakpoints. Test touch interactions on mobile devices. Test component layout in different orientations (portrait/landscape). Test accessibility on mobile screen readers."
+          },
+          {
+            "id": 6,
+            "title": "Migrate Components to Svelte 5 Runes API",
+            "description": "Complete migration of all components from legacy Svelte reactive declarations to Svelte 5 Runes API patterns",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "details": "Refactor all components to use Svelte 5 Runes API patterns: replace reactive statements with $derived, use $state for component state management, implement $effect for side effects, and $props for component properties. Remove legacy reactive declarations ($:), convert stores to runes where appropriate, and update event handling patterns. Ensure TypeScript compatibility and proper type inference. Update component documentation and add migration notes for future reference. Verify all components work correctly after migration.",
+            "status": "pending",
+            "testStrategy": "Comprehensive testing of all migrated components. Test state reactivity and derived values. Test component lifecycle and effects. Verify TypeScript type checking. Performance testing to ensure no regressions. Integration testing with existing plugin components."
+          }
+        ]
+      },
+      {
+        "id": 32,
+        "title": "Implement Timeline and Individual Post Pages",
+        "description": "Create SvelteKit route pages for user timeline and individual post viewing",
+        "details": "Implement src/routes/share/[username]/+page.svelte for user timeline display with server-side data loading via +page.ts. Create src/routes/share/[username]/[postId]/+page.svelte for individual post pages with full markdown rendering using marked.js. Implement proper error handling for 404 cases (non-existent users/posts). Add dynamic meta tag generation for SEO with Open Graph and Twitter Card support. Implement See more/less functionality for long content (>500 characters). Add proper image handling for R2-hosted media with lazy loading. Ensure mobile-first responsive design with touch interactions.",
+        "testStrategy": "E2E testing with Playwright for page navigation, SEO meta tag validation, mobile responsiveness testing, markdown rendering verification",
+        "priority": "medium",
+        "dependencies": [
+          31
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Timeline Page Component and Data Loading",
+            "description": "Create src/routes/share/[username]/+page.svelte for user timeline display with server-side data loading via +page.ts",
+            "dependencies": [],
+            "details": "Implement timeline page component with SvelteKit server-side rendering. Create +page.ts for data loading from Workers API. Handle pagination for timeline posts. Implement proper loading states and error boundaries. Ensure timeline displays posts in chronological order with proper metadata rendering.",
+            "status": "pending",
+            "testStrategy": "Unit tests for component rendering, integration tests for data loading, test pagination functionality"
+          },
+          {
+            "id": 2,
+            "title": "Implement Individual Post Page Component and Data Loading",
+            "description": "Create src/routes/share/[username]/[postId]/+page.svelte for individual post pages with server-side data loading",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement individual post page component with SvelteKit dynamic routing. Create +page.ts for fetching single post data from Workers API. Handle post metadata display, author information, and timestamp formatting. Implement proper loading states and error handling for missing posts.",
+            "status": "pending",
+            "testStrategy": "Unit tests for post component, integration tests for data fetching, test dynamic routing behavior"
+          },
+          {
+            "id": 3,
+            "title": "Implement Markdown Rendering with marked.js",
+            "description": "Integrate marked.js for full markdown rendering of post content with proper sanitization and styling",
+            "dependencies": [
+              2
+            ],
+            "details": "Install and configure marked.js library for markdown parsing. Implement custom renderer for post content with sanitization using DOMPurify. Add syntax highlighting for code blocks. Configure markdown options for proper link handling and image rendering. Ensure rendered content maintains responsive design.",
+            "status": "pending",
+            "testStrategy": "Test markdown parsing accuracy, verify sanitization prevents XSS, test various markdown syntax elements"
+          },
+          {
+            "id": 4,
+            "title": "Implement SEO Meta Tag Generation",
+            "description": "Add dynamic meta tag generation for SEO with Open Graph and Twitter Card support for both timeline and post pages",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement dynamic meta tag generation in +page.ts files using SvelteKit's app.html template. Generate Open Graph tags (og:title, og:description, og:image, og:url) and Twitter Card tags. Extract post excerpts for descriptions. Handle image URLs for R2-hosted media. Implement fallback meta tags for timeline pages.",
+            "status": "pending",
+            "testStrategy": "Validate meta tag generation with SEO tools, test Open Graph preview rendering, verify Twitter Card display"
+          },
+          {
+            "id": 5,
+            "title": "Implement Error Handling for 404 Cases",
+            "description": "Add proper error handling for non-existent users and posts with custom 404 pages and appropriate error states",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement custom error pages for 404 cases in both timeline and post routes. Handle API errors gracefully with user-friendly messages. Create error boundaries for component-level error handling. Implement proper HTTP status codes in server responses. Add logging for debugging missing content cases.",
+            "status": "pending",
+            "testStrategy": "Test 404 handling for invalid usernames and post IDs, verify proper error messages display, test error logging"
+          },
+          {
+            "id": 6,
+            "title": "Implement Image Handling and Lazy Loading",
+            "description": "Add proper image handling for R2-hosted media with lazy loading, responsive images, and fallback mechanisms",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement lazy loading for post images using Intersection Observer API. Handle R2 CDN URLs with proper error handling and fallbacks. Implement responsive image loading with different sizes for mobile/desktop. Add image optimization and compression. Handle loading states and broken image fallbacks with placeholder images.",
+            "status": "pending",
+            "testStrategy": "Test lazy loading behavior, verify image optimization effectiveness, test fallback mechanisms for broken images"
+          },
+          {
+            "id": 7,
+            "title": "Implement Mobile-Responsive Design and Touch Interactions",
+            "description": "Ensure mobile-first responsive design with touch interactions, see more/less functionality, and optimal mobile user experience",
+            "dependencies": [
+              1,
+              2,
+              6
+            ],
+            "details": "Implement mobile-first responsive design using Tailwind CSS. Add see more/less functionality for long content (>500 characters) with smooth animations. Implement touch-friendly interactions with 44px minimum touch targets. Add swipe gestures for navigation. Optimize typography and spacing for mobile viewing. Test across different mobile devices and orientations.",
+            "status": "pending",
+            "testStrategy": "Mobile responsiveness testing across devices, test touch interactions, verify see more/less functionality, validate 44px touch targets"
+          }
+        ]
+      },
+      {
+        "id": 33,
+        "title": "Update Plugin Share Functionality",
+        "description": "Modify existing plugin share functionality to support user timeline indexing",
+        "details": "Update src/components/timeline/renderers/PostCardRenderer.ts createShare() method to include username in API request metadata. Extract username from plugin settings (plugin.settings.userName) with fallback to 'anonymous'. Modify the share request payload to include username field for Workers API indexing. Update YAML frontmatter handling to include shareUrl and maintain share: true flag. Ensure backward compatibility with existing share links. Test integration with the new Workers API endpoints while maintaining existing share functionality.",
+        "testStrategy": "Integration tests between plugin and Workers API, verify YAML frontmatter updates correctly, test username extraction logic, backward compatibility validation",
+        "priority": "medium",
+        "dependencies": [
+          29
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify PostCardRenderer createShare method to include username",
+            "description": "Update the createShare() method in PostCardRenderer.ts to extract username from plugin settings and include it in the share request metadata",
+            "dependencies": [],
+            "details": "Modify src/components/timeline/renderers/PostCardRenderer.ts createShare() method to extract username from plugin.settings.userName with fallback to 'anonymous'. Update the method signature and implementation to include username in the API request metadata for Workers API indexing support.",
+            "status": "pending",
+            "testStrategy": "Unit tests for username extraction logic with various settings scenarios, test fallback to 'anonymous' when username is not set"
+          },
+          {
+            "id": 2,
+            "title": "Update API request payload structure for user timeline indexing",
+            "description": "Modify the share request payload to include username field and maintain compatibility with Workers API endpoints",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the API request payload structure in the createShare method to include the username field for Workers API indexing. Ensure the payload maintains backward compatibility while adding the new username metadata required for timeline functionality.",
+            "status": "pending",
+            "testStrategy": "Integration tests with Workers API endpoints, verify payload structure matches API expectations, test with different username values"
+          },
+          {
+            "id": 3,
+            "title": "Update YAML frontmatter handling for share metadata",
+            "description": "Enhance YAML frontmatter processing to include shareUrl and maintain share flag while preserving existing functionality",
+            "dependencies": [
+              2
+            ],
+            "details": "Update the YAML frontmatter handling logic to properly set shareUrl field and maintain the share: true flag when creating shares. Ensure the frontmatter updates are atomic and preserve all existing metadata while adding new share-related fields.",
+            "status": "pending",
+            "testStrategy": "Unit tests for YAML frontmatter updates, verify all existing fields are preserved, test shareUrl generation and formatting"
+          },
+          {
+            "id": 4,
+            "title": "Ensure backward compatibility with existing share links",
+            "description": "Validate and test that existing share functionality continues to work after timeline indexing updates",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement comprehensive backward compatibility testing to ensure existing share links remain functional after the username indexing updates. Verify that older shares without username metadata continue to work properly and that the API gracefully handles legacy share requests.",
+            "status": "pending",
+            "testStrategy": "Regression testing with existing share links, test legacy API compatibility, verify no breaking changes to existing share functionality"
+          }
+        ]
+      },
+      {
+        "id": 34,
+        "title": "Configure Cloudflare Pages Deployment",
+        "description": "Set up automated deployment pipeline for the SvelteKit application on Cloudflare Pages",
+        "details": "Create wrangler.toml configuration for Cloudflare Pages deployment with proper KV namespace bindings and R2 bucket access. Configure build settings in Cloudflare dashboard with build command 'npm run build' and output directory 'build'. Set up environment variables including API endpoints and KV namespace IDs. Configure custom domain routing if needed. Set up proper CSP headers and security configurations. Implement automatic deployment from main branch with preview deployments for pull requests. Ensure proper integration with existing Workers environment.",
+        "testStrategy": "Deployment verification on staging environment, custom domain functionality testing, KV and R2 access validation, CSP header verification",
+        "priority": "low",
+        "dependencies": [
+          32
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create wrangler.toml configuration for Cloudflare Pages",
+            "description": "Set up the wrangler.toml configuration file with proper KV namespace bindings and R2 bucket access for Cloudflare Pages deployment",
+            "dependencies": [],
+            "details": "Create wrangler.toml configuration file with name='social-archiver-web', compatibility_date='2024-01-01', and build settings. Configure KV namespace bindings for ARCHIVE_CACHE, LICENSE_KEYS, and SHARE_LINKS. Set up R2 bucket bindings for media storage. Configure environment-specific settings for production and preview deployments. Include proper node compatibility flags and specify SvelteKit adapter-cloudflare configuration.",
+            "status": "pending",
+            "testStrategy": "Verify wrangler.toml syntax validation passes, test KV namespace bindings are accessible, validate R2 bucket access permissions"
+          },
+          {
+            "id": 2,
+            "title": "Configure Cloudflare dashboard build settings",
+            "description": "Set up build configuration in Cloudflare Pages dashboard with proper build command and output directory settings",
+            "dependencies": [
+              1
+            ],
+            "details": "Access Cloudflare Pages dashboard and configure build settings for the SvelteKit application. Set build command to 'npm run build', output directory to 'build', and install command to 'npm ci'. Configure Node.js version to 18.x or later. Set up framework preset for SvelteKit if available. Configure build timeout and resource limits appropriately for the project size.",
+            "status": "pending",
+            "testStrategy": "Test build process completes successfully, verify output directory contains correct static files, validate build logs show no errors"
+          },
+          {
+            "id": 3,
+            "title": "Setup environment variables and API endpoints",
+            "description": "Configure all necessary environment variables including API endpoints, KV namespace IDs, and security keys for the deployment",
+            "dependencies": [
+              2
+            ],
+            "details": "Configure environment variables in Cloudflare Pages settings including BRIGHTDATA_API_KEY, PERPLEXITY_API_KEY, KV namespace IDs, R2 bucket names, and CORS allowed origins. Set up different variable sets for production and preview environments. Configure API endpoint URLs for Workers backend integration. Set up encryption keys for sensitive data handling and JWT token generation.",
+            "status": "pending",
+            "testStrategy": "Verify all environment variables are accessible during build, test API connectivity with configured endpoints, validate security keys are properly encrypted"
+          },
+          {
+            "id": 4,
+            "title": "Configure custom domain and CSP headers",
+            "description": "Set up custom domain routing and implement proper Content Security Policy headers with security configurations",
+            "dependencies": [
+              3
+            ],
+            "details": "Configure custom domain for the Cloudflare Pages deployment with proper DNS settings. Implement Content Security Policy headers that allow necessary resources while maintaining security. Configure security headers including X-Frame-Options, X-Content-Type-Options, and Referrer-Policy. Set up proper CORS configuration for cross-origin requests from Obsidian plugin. Configure redirects and rewrites if needed for SPA routing.",
+            "status": "pending",
+            "testStrategy": "Test custom domain resolves correctly, verify CSP headers don't block required resources, validate CORS headers allow Obsidian plugin access"
+          },
+          {
+            "id": 5,
+            "title": "Setup automated deployment pipeline and testing",
+            "description": "Configure automatic deployment from main branch with preview deployments for pull requests and validate integration with existing Workers",
+            "dependencies": [
+              4
+            ],
+            "details": "Configure GitHub integration for automatic deployments from main branch. Set up preview deployments for pull requests with unique URLs. Configure deployment hooks and notifications. Test integration with existing Cloudflare Workers backend to ensure proper communication between Pages frontend and Workers API. Verify proper environment variable inheritance and KV namespace access across the deployment pipeline.",
+            "status": "pending",
+            "testStrategy": "Test automatic deployment triggers on main branch push, verify preview deployments work for PRs, validate Workers-Pages integration functions correctly"
+          }
+        ]
+      },
+      {
+        "id": 35,
+        "title": "Performance Optimization and Testing",
+        "description": "Optimize application performance and implement comprehensive testing suite",
+        "details": "Implement image lazy loading and optimize bundle size to <100KB gzipped. Add Lighthouse performance optimization to achieve 90+ score. Implement proper caching strategies using Cloudflare Cache API. Set up comprehensive test suite including unit tests (Vitest), integration tests, and E2E tests (Playwright). Add performance monitoring and error tracking. Implement proper SEO optimization with sitemap generation and robots.txt. Verify WCAG 2.1 AA accessibility compliance with proper ARIA labels and keyboard navigation. Add proper error boundaries and loading states throughout the application.",
+        "testStrategy": "Lighthouse audit verification, bundle size analysis, accessibility audit with axe-core, cross-browser testing (Chrome 90+, Firefox 88+, Safari 14+), performance monitoring setup",
+        "priority": "low",
+        "dependencies": [
+          34
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Image Lazy Loading and Bundle Size Optimization",
+            "description": "Optimize application bundle size to under 100KB gzipped and implement lazy loading for images",
+            "dependencies": [],
+            "details": "Install and configure vite-plugin-bundle-analyzer to monitor bundle size. Implement dynamic imports for large components and libraries. Setup image lazy loading using Intersection Observer API or lazy loading library. Configure Vite build optimization with tree shaking, code splitting, and minification. Remove unused dependencies and implement barrel exports optimization. Target bundle size under 100KB gzipped with proper chunk splitting.",
+            "status": "pending",
+            "testStrategy": "Bundle size analysis with automated checks, visual regression testing for lazy loaded images, performance metrics verification"
+          },
+          {
+            "id": 2,
+            "title": "Lighthouse Performance Audit and Optimization",
+            "description": "Achieve Lighthouse performance score of 90+ through comprehensive optimization",
+            "dependencies": [
+              1
+            ],
+            "details": "Run baseline Lighthouse audit to identify performance bottlenecks. Optimize Core Web Vitals (LCP, FID, CLS) through resource optimization, critical CSS inlining, and render blocking elimination. Implement resource hints (preload, prefetch, preconnect). Optimize images with WebP format and responsive sizing. Configure service worker for caching strategies. Implement performance budget monitoring and CI integration.",
+            "status": "pending",
+            "testStrategy": "Automated Lighthouse CI testing with performance thresholds, Core Web Vitals monitoring, performance regression detection"
+          },
+          {
+            "id": 3,
+            "title": "Setup Comprehensive Test Suite with Vitest and Playwright",
+            "description": "Implement unit, integration, and E2E testing framework using Vitest and Playwright",
+            "dependencies": [],
+            "details": "Configure Vitest for unit testing with TypeScript support and Svelte testing library. Setup test utilities and mocks for Obsidian API. Create integration tests for service layer and API endpoints. Install and configure Playwright for E2E testing with browser automation. Setup test data generators and fixtures. Configure test coverage reporting with minimum 80% threshold. Add CI/CD pipeline integration for automated testing.",
+            "status": "pending",
+            "testStrategy": "Meta-testing: verify test coverage accuracy, validate test isolation, ensure CI pipeline reliability"
+          },
+          {
+            "id": 4,
+            "title": "Implement WCAG 2.1 AA Accessibility Compliance",
+            "description": "Ensure full accessibility compliance with proper ARIA labels and keyboard navigation",
+            "dependencies": [],
+            "details": "Conduct accessibility audit using axe-core and manual testing. Implement proper ARIA labels, roles, and properties for all interactive elements. Add keyboard navigation support with focus management and skip links. Ensure color contrast ratios meet WCAG AA standards. Implement screen reader optimization with semantic HTML and proper heading hierarchy. Add accessibility testing to CI pipeline with automated axe checks.",
+            "status": "pending",
+            "testStrategy": "Automated accessibility testing with axe-core, manual screen reader testing, keyboard navigation verification, color contrast validation"
+          },
+          {
+            "id": 5,
+            "title": "Implement SEO Optimization with Sitemap and Robots.txt",
+            "description": "Add comprehensive SEO optimization including dynamic sitemap generation and robots.txt configuration",
+            "dependencies": [],
+            "details": "Generate dynamic XML sitemap for public timeline pages with proper lastmod and priority values. Create robots.txt with appropriate crawling rules for public and private content. Implement meta tags optimization (title, description, Open Graph, Twitter Cards). Add structured data markup for social media posts. Configure canonical URLs and handle duplicate content. Implement SEO-friendly URL structure and navigation.",
+            "status": "pending",
+            "testStrategy": "SEO audit using Google Search Console and third-party tools, sitemap validation, structured data testing, mobile-friendliness verification"
+          },
+          {
+            "id": 6,
+            "title": "Implement Error Boundaries and Loading States",
+            "description": "Add comprehensive error handling with error boundaries and loading states throughout the application",
+            "dependencies": [],
+            "details": "Create Svelte error boundary components for graceful error handling and recovery. Implement global error handler with user-friendly error messages and logging. Add loading states for all async operations with skeleton components and progress indicators. Create retry mechanisms for failed operations. Implement offline detection and graceful degradation. Add error reporting integration for production monitoring.",
+            "status": "pending",
+            "testStrategy": "Error simulation testing, loading state verification, offline scenario testing, error recovery validation"
+          },
+          {
+            "id": 7,
+            "title": "Setup Cross-Browser Testing and Compatibility",
+            "description": "Ensure application works consistently across modern browsers with automated testing",
+            "dependencies": [
+              3
+            ],
+            "details": "Configure cross-browser testing matrix for Chrome 90+, Firefox 88+, Safari 14+, and Edge 90+. Setup BrowserStack or similar service for automated cross-browser E2E testing. Implement feature detection and polyfills for browser compatibility. Test responsive design across different devices and screen sizes. Add browser-specific CSS fixes and vendor prefixes. Configure CI pipeline for multi-browser testing automation.",
+            "status": "pending",
+            "testStrategy": "Automated cross-browser testing suite, visual regression testing across browsers, feature compatibility validation"
+          },
+          {
+            "id": 8,
+            "title": "Implement Performance Monitoring and Error Tracking",
+            "description": "Setup comprehensive monitoring for performance metrics and error tracking in production",
+            "dependencies": [
+              2,
+              6
+            ],
+            "details": "Integrate performance monitoring solution (Sentry, LogRocket, or similar) for real-time metrics tracking. Setup error tracking with source map support for production debugging. Implement custom performance metrics collection for Core Web Vitals and application-specific metrics. Configure alerting for performance degradation and error rate thresholds. Add user session recording for debugging complex issues. Create performance dashboard for monitoring trends.",
+            "status": "pending",
+            "testStrategy": "Monitoring system validation, alert threshold testing, performance baseline establishment, error tracking accuracy verification"
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-26T14:09:53.710Z",
-      "updated": "2025-10-30T00:36:10.391Z",
+      "updated": "2025-10-30T12:47:34.895Z",
       "description": "Tasks for master context"
     }
   }
