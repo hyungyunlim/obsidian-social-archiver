@@ -156,6 +156,41 @@ async function parseResponse<T>(response: Response): Promise<T> {
 }
 
 /**
+ * Transform API response to Post structure
+ */
+function transformPostData(apiData: any): Post {
+  // Handle both old and new API response formats
+  const post: Post = {
+    shareId: apiData.shareId || '',
+    shareUrl: apiData.shareUrl,
+    expiresAt: apiData.expiresAt,
+    platform: apiData.platform || apiData.metadata?.platform || 'x',
+    id: apiData.id || apiData.shareId || '',
+    url: apiData.url || apiData.metadata?.originalUrl || '',
+    author: {
+      name: apiData.author?.name || apiData.metadata?.author || 'Unknown',
+      url: apiData.author?.url || ''
+    },
+    content: {
+      text: typeof apiData.content === 'string' ? apiData.content : apiData.content?.text || apiData.previewText || '',
+      html: apiData.content?.html
+    },
+    media: apiData.media || [],
+    metadata: {
+      timestamp: apiData.metadata?.timestamp || apiData.createdAt || new Date().toISOString(),
+      likes: apiData.metadata?.likes,
+      comments: apiData.metadata?.comments,
+      shares: apiData.metadata?.shares
+    },
+    title: apiData.title || apiData.metadata?.title,
+    previewText: apiData.previewText,
+    createdAt: apiData.createdAt
+  };
+
+  return post;
+}
+
+/**
  * Get user's shared posts
  *
  * @param username - Username to fetch posts for
@@ -180,7 +215,23 @@ export async function getUserPosts(
     clientConfig
   );
 
-  return parseResponse<UserPostsResponse>(response);
+  const data = await parseResponse<any>(response);
+
+  // Transform posts if successful
+  if (data.success && data.data?.posts) {
+    const transformedPosts = data.data.posts.map(transformPostData);
+    return {
+      success: true,
+      data: {
+        username: data.data.username,
+        posts: transformedPosts,
+        total: data.data.pagination?.total,
+        nextCursor: data.data.pagination?.nextCursor
+      }
+    };
+  }
+
+  return data;
 }
 
 /**
@@ -208,7 +259,21 @@ export async function getPost(
     clientConfig
   );
 
-  return parseResponse<PostResponse>(response);
+  const data = await parseResponse<any>(response);
+
+  // Transform post if successful
+  if (data.success && data.data) {
+    const transformedPost = transformPostData({
+      ...data.data,
+      shareId: shareId // Ensure shareId is included
+    });
+    return {
+      success: true,
+      data: transformedPost
+    };
+  }
+
+  return data;
 }
 
 /**
