@@ -201,6 +201,8 @@ export class ArchiveModal extends Modal {
         this.detectedPlatform = 'threads';
       } else if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
         this.detectedPlatform = 'youtube';
+      } else if (hostname.includes('reddit.com') || hostname.includes('redd.it')) {
+        this.detectedPlatform = 'reddit';
       } else {
         this.isValidUrl = false;
         this.detectedPlatform = null;
