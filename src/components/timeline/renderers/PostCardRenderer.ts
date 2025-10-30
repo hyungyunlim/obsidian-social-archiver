@@ -1,4 +1,4 @@
-import { setIcon, Notice, type TFile, type Vault, type App } from 'obsidian';
+import { setIcon, Notice, Scope, type TFile, type Vault, type App } from 'obsidian';
 import type { PostData } from '../../../types/post';
 import type SocialArchiverPlugin from '../../../main';
 import {
@@ -930,6 +930,9 @@ export class PostCardRenderer {
       commentSection.empty();
       commentSection.style.cssText = 'position: relative;';
 
+      // Create a scope for keyboard shortcuts
+      const editScope = new Scope();
+
       // Textarea
       const textarea = commentSection.createEl('textarea');
       textarea.style.cssText = `
@@ -983,13 +986,22 @@ export class PostCardRenderer {
           post.comment = newComment || undefined;
           console.log('[PostCardRenderer] Updated comment inline:', post.id);
 
+          // Unregister scope
+          this.app.keymap.popScope(editScope);
+
           // Note: UI will auto-refresh via vault modify event listener
         } catch (err) {
           console.error('[PostCardRenderer] Failed to update comment:', err);
           new Notice('Failed to save note');
           // Restore original on error
+          this.app.keymap.popScope(editScope);
           restoreOriginalUI();
         }
+      };
+
+      const handleCancel = () => {
+        this.app.keymap.popScope(editScope);
+        restoreOriginalUI();
       };
 
       saveBtn.addEventListener('click', async (e) => {
@@ -1000,24 +1012,24 @@ export class PostCardRenderer {
       // Cancel handler
       cancelBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        restoreOriginalUI();
+        handleCancel();
       });
 
-      // Keyboard shortcuts
-      textarea.addEventListener('keydown', (e) => {
-        // ESC to cancel
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          e.stopPropagation();
-          restoreOriginalUI();
-        }
-        // Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux) to save
-        else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-          handleSave();
-        }
+      // Register keyboard shortcuts with Obsidian's keymap
+      editScope.register(['Mod'], 'Enter', (evt: KeyboardEvent) => {
+        evt.preventDefault();
+        handleSave();
+        return false;
       });
+
+      editScope.register([], 'Escape', (evt: KeyboardEvent) => {
+        evt.preventDefault();
+        handleCancel();
+        return false;
+      });
+
+      // Push scope to keymap stack
+      this.app.keymap.pushScope(editScope);
 
     } catch (err) {
       console.error('[PostCardRenderer] Failed to edit comment inline:', err);
