@@ -32,6 +32,7 @@ const PLATFORM_PATTERNS: Array<[Platform, RegExp]> = [
   ['x', /(?:x\.com|twitter\.com)/i],
   ['threads', /(?:threads\.net|threads\.com)/i],
   ['youtube', /(?:youtube\.com|youtu\.be)/i],
+  ['reddit', /(?:reddit\.com|redd\.it)/i],
 ];
 
 export class ArchiveService {
