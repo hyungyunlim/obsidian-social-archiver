@@ -1,36 +1,60 @@
 /**
  * Markdown utilities for rendering post content
+ * Uses dynamic imports for better code splitting
  */
 
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
+// Lazy-loaded instances
+let markedInstance: typeof import('marked').marked | null = null;
+let DOMPurifyInstance: typeof import('dompurify').default | null = null;
+let rendererConfigured = false;
 
 /**
- * Configure marked options
+ * Get marked instance with lazy loading
  */
-marked.setOptions({
-	breaks: true, // Convert line breaks to <br>
-	gfm: true, // GitHub Flavored Markdown
-});
+async function getMarked() {
+	if (!markedInstance) {
+		const { marked } = await import('marked');
+		markedInstance = marked;
+
+		// Configure marked options
+		markedInstance.setOptions({
+			breaks: true, // Convert line breaks to <br>
+			gfm: true, // GitHub Flavored Markdown
+		});
+
+		// Configure custom renderer only once
+		if (!rendererConfigured) {
+			const renderer = new markedInstance.Renderer();
+
+			// Custom renderer for links to open in new tab
+			renderer.link = (href: string | null, title: string | null, text: string) => {
+				const titleAttr = title ? `title="${title}"` : '';
+				return `<a href="${href}" target="_blank" rel="noopener noreferrer" ${titleAttr}>${text}</a>`;
+			};
+
+			// Custom renderer for images with lazy loading
+			renderer.image = (src: string | null, title: string | null, alt: string) => {
+				const titleAttr = title ? `title="${title}"` : '';
+				return `<img src="${src}" alt="${alt}" ${titleAttr} loading="lazy" />`;
+			};
+
+			markedInstance.use({ renderer });
+			rendererConfigured = true;
+		}
+	}
+	return markedInstance;
+}
 
 /**
- * Custom renderer for links to open in new tab
+ * Get DOMPurify instance with lazy loading
  */
-const renderer = new marked.Renderer();
-renderer.link = (href: string | null, title: string | null, text: string) => {
-	const titleAttr = title ? `title="${title}"` : '';
-	return `<a href="${href}" target="_blank" rel="noopener noreferrer" ${titleAttr}>${text}</a>`;
-};
-
-/**
- * Custom renderer for images with lazy loading
- */
-renderer.image = (src: string | null, title: string | null, alt: string) => {
-	const titleAttr = title ? `title="${title}"` : '';
-	return `<img src="${src}" alt="${alt}" ${titleAttr} loading="lazy" />`;
-};
-
-marked.use({ renderer });
+async function getDOMPurify() {
+	if (!DOMPurifyInstance) {
+		const DOMPurify = await import('dompurify');
+		DOMPurifyInstance = DOMPurify.default;
+	}
+	return DOMPurifyInstance;
+}
 
 /**
  * Render markdown to safe HTML
@@ -39,10 +63,10 @@ marked.use({ renderer });
  * @param options - Rendering options
  * @returns Sanitized HTML string
  */
-export function renderMarkdown(
+export async function renderMarkdown(
 	markdown: string,
 	options: { allowImages?: boolean; maxLength?: number } = {}
-): string {
+): Promise<string> {
 	const { allowImages = true, maxLength } = options;
 
 	// Truncate if needed
@@ -50,6 +74,12 @@ export function renderMarkdown(
 	if (maxLength && markdown.length > maxLength) {
 		content = markdown.substring(0, maxLength) + '...';
 	}
+
+	// Get lazy-loaded dependencies
+	const [marked, DOMPurify] = await Promise.all([
+		getMarked(),
+		getDOMPurify()
+	]);
 
 	// Parse markdown to HTML (marked.parse returns a string synchronously in v11+)
 	const html = marked.parse(content) as string;
@@ -126,4 +156,25 @@ export function extractTextFromMarkdown(markdown: string, maxLength?: number): s
  */
 export function generatePreview(markdown: string, length: number = 200): string {
 	return extractTextFromMarkdown(markdown, length);
+}
+
+/**
+ * Simple synchronous markdown rendering for non-critical use
+ * Falls back to plain text if libraries aren't loaded
+ */
+export function renderMarkdownSync(markdown: string): string {
+	// If libraries are already loaded, use them synchronously
+	if (markedInstance && DOMPurifyInstance) {
+		const html = markedInstance.parse(markdown) as string;
+		return DOMPurifyInstance.sanitize(html);
+	}
+
+	// Otherwise, return escaped plain text
+	return markdown
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;')
+		.replace(/\n/g, '<br>');
 }
