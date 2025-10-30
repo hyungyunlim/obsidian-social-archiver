@@ -582,7 +582,7 @@ export class BrightDataService {
             handle: comment.author_handle || comment.user_handle,
           },
           content: comment.text || comment.content || '',
-          timestamp: comment.created_time || comment.date || new Date().toISOString(),
+          timestamp: comment.created_time || comment.date || undefined,
           likes: comment.likes_count || comment.likes,
           replies: comment.replies && Array.isArray(comment.replies)
             ? comment.replies.map((reply: any) => ({
@@ -594,7 +594,7 @@ export class BrightDataService {
                   handle: reply.author_handle || reply.user_handle,
                 },
                 content: reply.text || reply.content || '',
-                timestamp: reply.created_time || reply.date || new Date().toISOString(),
+                timestamp: reply.created_time || reply.date || undefined,
                 likes: reply.likes_count || reply.likes,
               }))
             : undefined,
@@ -716,7 +716,7 @@ export class BrightDataService {
                 handle: commentUserId ? `@${commentUserId}` : undefined,
               },
               content: comment.comment || '',
-              timestamp: comment.comment_date || new Date().toISOString(),
+              timestamp: comment.comment_date || undefined,
               likes: comment.num_reactions || 0,
             };
           })
@@ -804,7 +804,8 @@ export class BrightDataService {
                   handle: reply.user_commenting,
                 },
                 content: reply.comments || '',
-                timestamp: new Date().toISOString(),
+                // Don't set timestamp if not available
+                timestamp: undefined,
                 likes: reply.likes || 0,
               }))
             : undefined;
@@ -818,7 +819,8 @@ export class BrightDataService {
               handle: comment.user_commenting,
             },
             content: comment.comments || '',
-            timestamp: new Date().toISOString(),
+            // Don't set timestamp if not available
+            timestamp: undefined,
             likes: comment.likes || 0,
             replies,
           };
@@ -1133,7 +1135,7 @@ export class BrightDataService {
             username: comment.commentor_profile_name,
           },
           content: comment.comment_content || '',
-          timestamp: new Date().toISOString(), // BrightData doesn't provide comment timestamp
+          timestamp: undefined, // BrightData doesn't provide comment timestamp
           likes: comment.number_of_likes,
         });
       });

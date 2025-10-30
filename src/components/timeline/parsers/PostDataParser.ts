@@ -259,7 +259,7 @@ export class PostDataParser {
                 username: replyUsername,
               },
               content: replyContent,
-              timestamp: replyTimestamp?.trim() || '',
+              timestamp: replyTimestamp?.trim() || undefined,
               likes: replyLikesStr ? parseInt(replyLikesStr) : undefined,
             });
           } else {
@@ -278,7 +278,7 @@ export class PostDataParser {
           username: username,
         },
         content,
-        timestamp: timestamp?.trim() || '',
+        timestamp: timestamp?.trim() || undefined,
         likes: likesStr ? parseInt(likesStr) : undefined,
         replies: replies.length > 0 ? replies : undefined,
       });

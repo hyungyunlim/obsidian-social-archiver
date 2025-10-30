@@ -72,7 +72,7 @@ export interface Comment {
   id: string;
   author: Author;
   content: string;
-  timestamp: string;
+  timestamp?: string; // Optional - some platforms don't provide comment timestamps
   likes?: number;
   replies?: Comment[];
 }
