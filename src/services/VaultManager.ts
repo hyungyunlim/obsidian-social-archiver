@@ -104,12 +104,14 @@ class PathGenerator {
   /**
    * Generate path organized by platform
    * Format: Social Archives/{platform}/{year}/{month}/filename.md
-   * Uses current time (archiving time) instead of posting time
+   * Uses publish date from post metadata
    */
   private generatePlatformPath(postData: PostData, filename: string): string {
-    const now = new Date(); // Use current time (archiving time)
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const publishDate = typeof postData.metadata.timestamp === 'string'
+      ? new Date(postData.metadata.timestamp)
+      : postData.metadata.timestamp;
+    const year = publishDate.getFullYear();
+    const month = String(publishDate.getMonth() + 1).padStart(2, '0');
     const platform = postData.platform.charAt(0).toUpperCase() + postData.platform.slice(1);
 
     return normalizePath(`${this.basePath}/${platform}/${year}/${month}/${filename}`);
@@ -118,13 +120,15 @@ class PathGenerator {
   /**
    * Generate path organized by date
    * Format: Social Archives/{year}/{month}/{day}/filename.md
-   * Uses current time (archiving time) instead of posting time
+   * Uses publish date from post metadata
    */
-  private generateDatePath(_postData: PostData, filename: string): string {
-    const now = new Date(); // Use current time (archiving time)
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
+  private generateDatePath(postData: PostData, filename: string): string {
+    const publishDate = typeof postData.metadata.timestamp === 'string'
+      ? new Date(postData.metadata.timestamp)
+      : postData.metadata.timestamp;
+    const year = publishDate.getFullYear();
+    const month = String(publishDate.getMonth() + 1).padStart(2, '0');
+    const day = String(publishDate.getDate()).padStart(2, '0');
 
     return normalizePath(`${this.basePath}/${year}/${month}/${day}/${filename}`);
   }

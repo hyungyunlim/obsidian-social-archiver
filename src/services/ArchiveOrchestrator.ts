@@ -361,7 +361,8 @@ export class ArchiveOrchestrator implements IService {
       this.emitProgress('processing', 70, 'Converting to markdown...');
       let markdown = await this.markdownConverter.convert(
         postData,
-        options.customTemplate
+        options.customTemplate,
+        mediaResults.length > 0 ? mediaResults : undefined
       );
 
       // Update frontmatter with processing time
@@ -370,13 +371,6 @@ export class ArchiveOrchestrator implements IService {
 
       // Regenerate fullDocument with updated frontmatter
       markdown = this.markdownConverter.updateFullDocument(markdown);
-
-      // Update media paths in markdown if downloaded
-      if (mediaResults.length > 0) {
-        // Replace media URLs with local paths in markdown
-        // This would require updating the markdown content
-        // For now, the MarkdownConverter handles this
-      }
 
       this.checkCancellation(options.abortSignal);
       this.emitStageComplete('processing');

@@ -1,13 +1,12 @@
 import { Plugin, Notice, addIcon, Platform } from 'obsidian';
 import { SocialArchiverSettingTab } from './settings/SettingTab';
-import { SocialArchiverSettings, DEFAULT_SETTINGS, API_ENDPOINT } from './types/settings';
+import { SocialArchiverSettings, DEFAULT_SETTINGS, API_ENDPOINT, MediaDownloadMode } from './types/settings';
 import { WorkersAPIClient } from './services/WorkersAPIClient';
 import { ArchiveOrchestrator } from './services/ArchiveOrchestrator';
 import { VaultManager } from './services/VaultManager';
 import { MarkdownConverter } from './services/MarkdownConverter';
 import { TimelineView, VIEW_TYPE_TIMELINE } from './views/TimelineView';
 import { ArchiveModal } from './modals/ArchiveModal';
-import type { Media } from './types/post';
 
 // Import styles for Vite to process
 import '../styles.css';
@@ -148,6 +147,7 @@ export default class SocialArchiverPlugin extends Plugin {
       includeTranscript?: boolean;
       includeFormattedTranscript?: boolean;
       comment?: string;
+      downloadMedia?: MediaDownloadMode;
     }
   ): Promise<void> {
     // Track processing time
@@ -166,21 +166,22 @@ export default class SocialArchiverPlugin extends Plugin {
 
     console.log('[Social Archiver] Settings:', {
       apiEndpoint: API_ENDPOINT,
-      enableAI: this.settings.enableAI,
-      deepResearch: this.settings.enableDeepResearch,
       archivePath: this.settings.archivePath,
     });
 
     try {
       console.log('[Social Archiver] Step 1: Submitting archive request...');
 
+      // Determine download mode (modal option overrides settings)
+      const downloadMode = options?.downloadMedia ?? this.settings.downloadMedia;
+
       // Submit archive request
       const response = await this.apiClient.submitArchive({
         url,
         options: {
-          enableAI: this.settings.enableAI,
-          deepResearch: this.settings.enableDeepResearch,
-          downloadMedia: true,
+          enableAI: false, // AI features disabled
+          deepResearch: false, // Deep research disabled
+          downloadMedia: downloadMode !== 'text-only', // Worker needs boolean (always fetch URLs)
           // YouTube-specific options
           includeTranscript: options?.includeTranscript,
           includeFormattedTranscript: options?.includeFormattedTranscript,
@@ -248,31 +249,30 @@ export default class SocialArchiverPlugin extends Plugin {
       await vaultManager.initialize();
       await markdownConverter.initialize();
 
+      // Track downloaded media for markdown conversion
+      const downloadedMedia: Array<{ originalUrl: string; localPath: string }> = [];
+
       // Step 4.5: Download media files to local vault via Workers proxy
-      if (result.postData.media && result.postData.media.length > 0) {
+      if (downloadMode !== 'text-only' && result.postData.media && result.postData.media.length > 0) {
         console.log('[Social Archiver] Step 4.5: Downloading media files via proxy...');
+        console.log(`[Social Archiver] Download mode: ${downloadMode}`);
         console.log(`[Social Archiver] Found ${result.postData.media.length} media items to download`);
 
-        // Save original media URLs before downloading
-        const originalMediaUrls: string[] = [];
-        for (const media of result.postData.media) {
-          let mediaUrl = '';
-          if (typeof media.url === 'string') {
-            mediaUrl = media.url;
-          } else if (typeof media.url === 'object' && media.url !== null) {
-            const urlObj = media.url as any;
-            mediaUrl = urlObj.video_url || urlObj.url || urlObj.image_url || urlObj.thumbnail_url || '';
-          }
-          if (mediaUrl) {
-            originalMediaUrls.push(mediaUrl);
-          }
-        }
-        result.postData.mediaSourceUrls = originalMediaUrls;
-
-        const downloadedMedia: Array<{ originalUrl: string; localPath: string }> = [];
+        // Generate media folder name: YYYY-MM-DD-platform-shortId (using publish date)
+        const publishDate = typeof result.postData.metadata.timestamp === 'string'
+          ? new Date(result.postData.metadata.timestamp)
+          : result.postData.metadata.timestamp;
+        const dateStr = `${publishDate.getFullYear()}-${String(publishDate.getMonth() + 1).padStart(2, '0')}-${String(publishDate.getDate()).padStart(2, '0')}`;
+        const mediaFolderName = `${dateStr}-${result.postData.platform}-${result.postData.id}`;
 
         for (let i = 0; i < result.postData.media.length; i++) {
           const media = result.postData.media[i];
+
+          // Filter by download mode
+          if (downloadMode === 'images-only' && media.type !== 'image') {
+            console.log(`[Social Archiver] Skipping ${media.type} (images-only mode)`);
+            continue;
+          }
           console.log(`[Social Archiver] Downloading media ${i + 1}/${result.postData.media.length}...`);
 
           // Extract URL string from media.url (handle both string and object formats)
@@ -298,10 +298,10 @@ export default class SocialArchiverPlugin extends Plugin {
               throw new Error('No valid URL found in media object');
             }
 
-            // Generate filename
+            // Generate filename: 1.jpg, 2.jpg, 3.mp4, etc.
             const extension = this.getFileExtension(mediaUrl) || 'jpg';
-            const filename = `media-${i + 1}.${extension}`;
-            const basePath = `${this.settings.mediaPath}/${result.postData.platform}/${result.postData.id}`;
+            const filename = `${i + 1}.${extension}`;
+            const basePath = `${this.settings.mediaPath}/${mediaFolderName}`;
             const fullPath = `${basePath}/${filename}`;
 
             // Check if file already exists
@@ -353,38 +353,23 @@ export default class SocialArchiverPlugin extends Plugin {
 
         console.log(`[Social Archiver] Successfully downloaded ${downloadedMedia.length}/${result.postData.media.length} media files`);
 
-        // Update PostData media URLs to local paths
-        result.postData.media = result.postData.media.map((media: Media) => {
-          // Extract URL string for comparison (same logic as above)
-          let mediaUrl: string = '';
-          if (typeof media.url === 'string') {
-            mediaUrl = media.url;
-          } else if (typeof media.url === 'object' && media.url !== null) {
-            const urlObj = media.url as any;
-            mediaUrl = urlObj.video_url || urlObj.url || urlObj.image_url || urlObj.thumbnail_url || '';
-          }
-
-          const downloaded = downloadedMedia.find(d => d.originalUrl === mediaUrl);
-          if (downloaded) {
-            return {
-              ...media,
-              url: downloaded.localPath, // Replace CDN URL with local path
-            };
-          }
-          return media; // Keep original URL if download failed
-        });
-
-        console.log('[Social Archiver] Media URLs updated to local paths');
-
         if (downloadedMedia.length < result.postData.media.length) {
           new Notice(`⚠️ Downloaded ${downloadedMedia.length}/${result.postData.media.length} media files`, 5000);
         }
-      } else {
-        console.log('[Social Archiver] No media to download');
       }
 
       console.log('[Social Archiver] Step 5: Converting to markdown...');
-      let markdown = await markdownConverter.convert(result.postData);
+
+      // Convert downloadedMedia to MediaResult format for MarkdownConverter
+      const mediaResults = downloadMode !== 'text-only' && downloadedMedia.length > 0 ? downloadedMedia.map(d => ({
+        originalUrl: d.originalUrl,
+        localPath: d.localPath,
+        type: 'image' as const, // Default type, actual type doesn't matter for URL replacement
+        size: 0,
+        file: null as any, // Not needed for URL replacement
+      })) : undefined;
+
+      let markdown = await markdownConverter.convert(result.postData, undefined, mediaResults);
 
       // Add processing time to frontmatter (convert to seconds, 1 decimal place)
       markdown.frontmatter.download_time = Math.round((Date.now() - startTime) / 100) / 10;

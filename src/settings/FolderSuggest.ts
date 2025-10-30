@@ -5,8 +5,11 @@ import { AbstractInputSuggest, App, TFolder } from 'obsidian';
  * Extends AbstractInputSuggest to show folder suggestions
  */
 export class FolderSuggest extends AbstractInputSuggest<TFolder> {
+  private input: HTMLInputElement;
+
   constructor(app: App, inputEl: HTMLInputElement) {
     super(app, inputEl);
+    this.input = inputEl;
   }
 
   getSuggestions(query: string): TFolder[] {
@@ -33,8 +36,8 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
   }
 
   selectSuggestion(folder: TFolder): void {
-    this.inputEl.value = folder.path;
-    this.inputEl.trigger('input');
+    this.input.value = folder.path;
+    this.input.trigger('input');
     this.close();
   }
 }

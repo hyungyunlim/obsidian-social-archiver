@@ -149,7 +149,7 @@ export class PostCardRenderer {
       const iframe = this.youtubeEmbedRenderer.renderYouTube(contentArea, post.videoId);
 
       // Create player controller for this YouTube video
-      const controller = new YouTubePlayerController(iframe, post.videoId);
+      const controller = new YouTubePlayerController(iframe);
       this.youtubeControllers.set(post.id, controller);
       console.log('[PostCardRenderer] YouTube controller created for post:', post.id);
     }

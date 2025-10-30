@@ -1,6 +1,9 @@
 // Production API endpoint (hardcoded, users cannot change)
 export const API_ENDPOINT = 'https://social-archiver-api.junlim.org';
 
+// Media download modes
+export type MediaDownloadMode = 'text-only' | 'images-only' | 'images-and-videos';
+
 export interface SocialArchiverSettings {
   // API Configuration (apiEndpoint removed - now hardcoded)
   apiKey: string;
@@ -15,20 +18,15 @@ export interface SocialArchiverSettings {
   fileNameFormat: string;
 
   // Feature Toggles
-  enableAI: boolean;
-  enableDeepResearch: boolean;
-  enableSharing: boolean;
   autoArchive: boolean;
-  downloadMedia: boolean;
+  downloadMedia: MediaDownloadMode;
 
   // Privacy Settings
-  removeTracking: boolean;
   anonymizeAuthors: boolean;
 
   // Advanced Settings
   requestTimeout: number;
   maxRetries: number;
-  debugMode: boolean;
 
   // Credit Tracking
   creditsRemaining: number;
@@ -53,20 +51,15 @@ export const DEFAULT_SETTINGS: SocialArchiverSettings = {
   fileNameFormat: '[YYYY-MM-DD] {platform}-{slug}-{shortId}',
 
   // Feature Toggles
-  enableAI: false,
-  enableDeepResearch: false,
-  enableSharing: false,
   autoArchive: false,
-  downloadMedia: true,
+  downloadMedia: 'images-and-videos',
 
   // Privacy Settings
-  removeTracking: true,
   anonymizeAuthors: false,
 
   // Advanced Settings
   requestTimeout: 30000,
   maxRetries: 3,
-  debugMode: false,
 
   // Credit Tracking
   creditsRemaining: 10,

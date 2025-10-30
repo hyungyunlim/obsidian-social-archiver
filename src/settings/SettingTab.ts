@@ -1,6 +1,7 @@
-import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
+import { App, PluginSettingTab, Setting } from 'obsidian';
 import type SocialArchiverPlugin from '../main';
 import { FolderSuggest } from './FolderSuggest';
+import type { MediaDownloadMode } from '../types/settings';
 
 export class SocialArchiverSettingTab extends PluginSettingTab {
   plugin: SocialArchiverPlugin;
@@ -17,20 +18,6 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
 
     containerEl.createEl('h2', { text: 'Social Archiver Settings' });
 
-    // API Section
-    containerEl.createEl('h3', { text: 'API Configuration' });
-
-    // Debug Mode
-    new Setting(containerEl)
-      .setName('Debug mode')
-      .setDesc('Enable detailed logging in console')
-      .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.debugMode)
-        .onChange(async (value) => {
-          this.plugin.settings.debugMode = value;
-          await this.plugin.saveSettings();
-        }));
-
     // User Settings Section
     containerEl.createEl('h3', { text: 'User Settings' });
 
@@ -45,11 +32,11 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
-    // Storage Section
-    containerEl.createEl('h3', { text: 'Storage Settings' });
+    // Archive Settings Section (formerly Storage Settings)
+    containerEl.createEl('h3', { text: 'Archive Settings' });
 
     new Setting(containerEl)
-      .setName('Archive path')
+      .setName('Archive Folder')
       .setDesc('Folder where archived posts will be saved')
       .addText(text => {
         text
@@ -66,7 +53,7 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName('Media path')
+      .setName('Media Folder')
       .setDesc('Folder where downloaded media files will be saved')
       .addText(text => {
         text
@@ -81,6 +68,19 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
         // Add folder suggestions
         new FolderSuggest(this.app, text.inputEl);
       });
+
+    new Setting(containerEl)
+      .setName('Download media')
+      .setDesc('Choose what media to download with posts. This setting serves as the default for the archive modal.')
+      .addDropdown(dropdown => dropdown
+        .addOption('text-only', 'Text only')
+        .addOption('images-only', 'Images only')
+        .addOption('images-and-videos', 'Images and videos')
+        .setValue(this.plugin.settings.downloadMedia)
+        .onChange(async (value: string) => {
+          this.plugin.settings.downloadMedia = value as MediaDownloadMode;
+          await this.plugin.saveSettings();
+        }));
 
     // License Section
     containerEl.createEl('h3', { text: 'License' });
@@ -103,72 +103,6 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
         <strong>Credits remaining:</strong> ${this.plugin.settings.creditsRemaining}/10<br>
         <strong>Resets on:</strong> ${new Date(this.plugin.settings.creditResetDate).toLocaleDateString()}<br>
         ${this.plugin.settings.licenseKey ? '<strong>Status:</strong> Pro ✨' : '<strong>Status:</strong> Free'}
-      </p>
-    `;
-
-    // Features Section
-    containerEl.createEl('h3', { text: 'Features' });
-
-    new Setting(containerEl)
-      .setName('Download media')
-      .setDesc('Automatically download images and videos')
-      .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.downloadMedia)
-        .onChange(async (value) => {
-          this.plugin.settings.downloadMedia = value;
-          await this.plugin.saveSettings();
-        }));
-
-    new Setting(containerEl)
-      .setName('AI enhancement')
-      .setDesc('Use AI to summarize and analyze content (requires Pro)')
-      .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.enableAI)
-        .setDisabled(!this.plugin.settings.licenseKey)
-        .onChange(async (value) => {
-          this.plugin.settings.enableAI = value;
-          await this.plugin.saveSettings();
-        }));
-
-    new Setting(containerEl)
-      .setName('Enable sharing')
-      .setDesc('Allow creating public share links for archived posts (requires Pro)')
-      .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.enableSharing)
-        .setDisabled(!this.plugin.settings.licenseKey)
-        .onChange(async (value) => {
-          this.plugin.settings.enableSharing = value;
-          await this.plugin.saveSettings();
-        }));
-
-    // Privacy Section
-    containerEl.createEl('h3', { text: 'Privacy' });
-
-    new Setting(containerEl)
-      .setName('Remove tracking parameters')
-      .setDesc('Strip tracking parameters from URLs before archiving')
-      .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.removeTracking)
-        .onChange(async (value) => {
-          this.plugin.settings.removeTracking = value;
-          await this.plugin.saveSettings();
-        }));
-
-    // Info Section
-    containerEl.createEl('h3', { text: 'Info' });
-
-    const infoDiv = containerEl.createDiv();
-    infoDiv.innerHTML = `
-      <p style="color: var(--text-muted); margin: 0.5em 0;">
-        <strong>Version:</strong> 1.0.0<br>
-        <strong>Local Dev Server:</strong> http://localhost:8787<br>
-        <strong>Production API:</strong> https://social-archiver-api.junlim.org<br>
-        <br>
-        <strong>Free tier:</strong> 10 archives/month<br>
-        <strong>Pro tier:</strong> 500 archives/month + AI features + Permanent shares<br>
-        <br>
-        <a href="https://social-archiver.com" target="_blank">Get Pro License</a> |
-        <a href="https://github.com/hyungyunlim/obsidian-social-archiver" target="_blank">Documentation</a>
       </p>
     `;
   }

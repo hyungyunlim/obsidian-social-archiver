@@ -56,11 +56,6 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** Facebook{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}{{#if metadata.shares}} | **Shares:** {{metadata.shares}}{{/if}}
 
 **Original URL:** {{url}}
-
-{{#if mediaSourceUrls}}
-**Original Media URLs:**
-{{mediaSourceUrls}}
-{{/if}}
 `,
 
   linkedin: `{{content.text}}
@@ -105,11 +100,6 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** LinkedIn{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Reactions:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
 
 **Original URL:** {{url}}
-
-{{#if mediaSourceUrls}}
-**Original Media URLs:**
-{{mediaSourceUrls}}
-{{/if}}
 `,
 
   instagram: `{{content.text}}
@@ -154,11 +144,6 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** Instagram{{#if author.verified}} ✓{{/if}} | **Author:** {{authorMention}} | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
 
 **Original URL:** {{url}}
-
-{{#if mediaSourceUrls}}
-**Original Media URLs:**
-{{mediaSourceUrls}}
-{{/if}}
 `,
 
   tiktok: `{{content.text}}
@@ -203,11 +188,6 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** TikTok{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.views}} | **Views:** {{metadata.views}}{{/if}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}
 
 **Original URL:** {{url}}
-
-{{#if mediaSourceUrls}}
-**Original Media URLs:**
-{{mediaSourceUrls}}
-{{/if}}
 `,
 
   x: `{{content.text}}
@@ -257,11 +237,6 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** X (Twitter){{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Replies:** {{metadata.comments}}{{/if}}{{#if metadata.shares}} | **Retweets:** {{metadata.shares}}{{/if}}
 
 **Original URL:** {{url}}
-
-{{#if mediaSourceUrls}}
-**Original Media URLs:**
-{{mediaSourceUrls}}
-{{/if}}
 `,
 
   threads: `{{content.text}}
@@ -306,11 +281,6 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** Threads{{#if author.verified}} ✓{{/if}} | **Author:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Replies:** {{metadata.comments}}{{/if}}
 
 **Original URL:** {{url}}
-
-{{#if mediaSourceUrls}}
-**Original Media URLs:**
-{{mediaSourceUrls}}
-{{/if}}
 `,
 
   youtube: `{{content.text}}
@@ -345,11 +315,6 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 **Platform:** YouTube{{#if author.verified}} ✓{{/if}} | **Channel:** [{{author.name}}]({{author.url}}) | **Published:** {{metadata.timestamp}}{{#if metadata.views}} | **Views:** {{metadata.views}}{{/if}}{{#if metadata.likes}} | **Likes:** {{metadata.likes}}{{/if}}{{#if metadata.comments}} | **Comments:** {{metadata.comments}}{{/if}}{{#if metadata.duration}} | **Duration:** {{metadata.duration}}{{/if}}
 
 **Original URL:** {{url}}
-
-{{#if mediaSourceUrls}}
-**Original Media URLs:**
-{{mediaSourceUrls}}
-{{/if}}
 `,
 };
 
@@ -423,8 +388,15 @@ export class MarkdownConverter implements IService {
 
   /**
    * Convert PostData to Markdown
+   * @param postData - Post data to convert
+   * @param customTemplate - Custom template (optional)
+   * @param mediaResults - Downloaded media results (optional, if downloadMedia is enabled)
    */
-  async convert(postData: PostData, customTemplate?: string): Promise<MarkdownResult> {
+  async convert(
+    postData: PostData,
+    customTemplate?: string,
+    mediaResults?: import('./MediaHandler').MediaResult[]
+  ): Promise<MarkdownResult> {
     // Generate frontmatter
     const frontmatter = this.frontmatterGenerator.generateFrontmatter(postData);
 
@@ -432,7 +404,7 @@ export class MarkdownConverter implements IService {
     const template = customTemplate || this.templates.get(postData.platform) || DEFAULT_TEMPLATES[postData.platform];
 
     // Prepare template data
-    const templateData = this.prepareTemplateData(postData);
+    const templateData = this.prepareTemplateData(postData, mediaResults);
 
     // Process template
     const content = TemplateEngine.process(template, templateData);
@@ -459,8 +431,13 @@ export class MarkdownConverter implements IService {
 
   /**
    * Prepare data for template engine
+   * @param postData - Post data
+   * @param mediaResults - Downloaded media results (optional)
    */
-  private prepareTemplateData(postData: PostData): Record<string, any> {
+  private prepareTemplateData(
+    postData: PostData,
+    mediaResults?: import('./MediaHandler').MediaResult[]
+  ): Record<string, any> {
     // Generate author mention for Instagram
     const authorMention = postData.platform === 'instagram' && postData.author.handle
       ? `[@${postData.author.handle}](https://instagram.com/${postData.author.handle})`
@@ -493,7 +470,7 @@ export class MarkdownConverter implements IService {
         views: postData.metadata.views ? this.dateNumberFormatter.formatNumber(postData.metadata.views) : undefined,
         duration: postData.metadata.duration ? this.dateNumberFormatter.formatDuration(postData.metadata.duration) : undefined,
       },
-      media: this.mediaFormatter.formatMedia(postData.media, postData.platform, postData.url),
+      media: this.mediaFormatter.formatMedia(postData.media, postData.platform, postData.url, mediaResults),
       comments: this.commentFormatter.formatComments(postData.comments, postData.platform),
       transcript: formattedTranscript,  // Formatted transcript for YouTube
       ai: postData.ai ? {

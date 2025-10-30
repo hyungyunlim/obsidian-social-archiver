@@ -23,7 +23,7 @@ export class DateNumberFormatter {
    * Format date using custom formatter or default
    * Handles both Date objects and ISO string timestamps
    */
-  formatDate(date: Date | string): string {
+  formatDate(date: Date | string | undefined): string {
     // Return empty string if no date provided
     if (!date) {
       return '';

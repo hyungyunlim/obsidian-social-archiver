@@ -1,6 +1,7 @@
 import { Modal, App, Notice, Setting } from 'obsidian';
 import type SocialArchiverPlugin from '../main';
 import type { Platform } from '../types/post';
+import type { MediaDownloadMode } from '../types/settings';
 
 /**
  * Archive Modal - Minimal Obsidian Native Style
@@ -14,8 +15,12 @@ export class ArchiveModal extends Modal {
   private urlInput!: HTMLInputElement;
   private archiveBtn!: HTMLButtonElement;
   private platformBadge!: HTMLElement;
+  private generalOptions!: HTMLElement;
   private youtubeOptions!: HTMLElement;
   private commentContainer!: HTMLElement;
+
+  // General options
+  private downloadMedia: MediaDownloadMode = 'images-and-videos'; // Will be set from settings
 
   // YouTube options
   private includeTranscript: boolean = true;
@@ -28,6 +33,8 @@ export class ArchiveModal extends Modal {
   constructor(app: App, plugin: SocialArchiverPlugin, initialUrl?: string) {
     super(app);
     this.plugin = plugin;
+    // Set default from settings
+    this.downloadMedia = plugin.settings.downloadMedia;
     if (initialUrl) {
       this.url = initialUrl;
     }
@@ -59,6 +66,24 @@ export class ArchiveModal extends Modal {
 
     // Platform Badge (shown when detected)
     this.platformBadge = contentEl.createDiv({ cls: 'archive-platform-badge' });
+
+    // General options (shown when URL is detected)
+    this.generalOptions = contentEl.createDiv({ cls: 'archive-general-options' });
+    this.generalOptions.style.display = 'none';
+
+    new Setting(this.generalOptions)
+      .setName('Download media')
+      .setDesc('Choose what media to download with this post')
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption('text-only', 'Text only')
+          .addOption('images-only', 'Images only')
+          .addOption('images-and-videos', 'Images and videos')
+          .setValue(this.downloadMedia)
+          .onChange((value: string) => {
+            this.downloadMedia = value as MediaDownloadMode;
+          })
+      );
 
     // YouTube-specific options (hidden by default)
     this.youtubeOptions = contentEl.createDiv({ cls: 'archive-youtube-options' });
@@ -202,6 +227,13 @@ export class ArchiveModal extends Modal {
       this.platformBadge.style.display = 'none';
     }
 
+    // Show/hide general options (show when URL is valid, except for YouTube and TikTok)
+    if (this.isValidUrl && this.detectedPlatform !== 'youtube' && this.detectedPlatform !== 'tiktok') {
+      this.generalOptions.style.display = 'block';
+    } else {
+      this.generalOptions.style.display = 'none';
+    }
+
     // Show/hide YouTube options
     if (this.detectedPlatform === 'youtube') {
       this.youtubeOptions.style.display = 'block';
@@ -249,6 +281,9 @@ export class ArchiveModal extends Modal {
     try {
       // Pass options including comment
       const options: any = {};
+
+      // General options
+      options.downloadMedia = this.downloadMedia;
 
       // YouTube-specific options
       if (this.detectedPlatform === 'youtube') {
