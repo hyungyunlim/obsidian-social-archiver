@@ -42,7 +42,7 @@ export class SortDropdown {
    */
   private renderSortByButton(container: HTMLElement, header: HTMLElement, sortState: SortState): void {
     const sortByBtn = container.createDiv();
-    sortByBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px 0 0 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
+    sortByBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 40px; border-radius: 8px 0 0 8px; background: transparent; cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
 
     const updateSortByButton = () => {
       const text = sortState.by === 'published' ? 'Published' : 'Archived';
@@ -66,7 +66,7 @@ export class SortDropdown {
 
     sortByBtn.addEventListener('mouseleave', () => {
       if (!this.isOpen) {
-        sortByBtn.style.background = 'var(--background-secondary)';
+        sortByBtn.style.background = 'transparent';
       }
     });
 
@@ -84,10 +84,10 @@ export class SortDropdown {
    */
   private renderOrderToggle(container: HTMLElement, sortState: SortState): void {
     const orderBtn = container.createDiv();
-    orderBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 0 8px 8px 0; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
+    orderBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 0 8px 8px 0; background: transparent; cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
 
     const orderIcon = orderBtn.createDiv();
-    orderIcon.style.cssText = 'width: 18px; height: 18px; color: var(--text-muted); transition: all 0.2s;';
+    orderIcon.style.cssText = 'width: 16px; height: 16px; color: var(--text-muted); transition: all 0.2s;';
 
     const updateOrderButton = () => {
       const iconName = sortState.order === 'newest' ? 'arrow-down' : 'arrow-up';
@@ -105,7 +105,7 @@ export class SortDropdown {
     });
 
     orderBtn.addEventListener('mouseleave', () => {
-      orderBtn.style.background = 'var(--background-secondary)';
+      orderBtn.style.background = 'transparent';
       orderIcon.style.color = 'var(--text-muted)';
     });
 

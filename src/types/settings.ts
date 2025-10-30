@@ -1,6 +1,8 @@
+// Production API endpoint (hardcoded, users cannot change)
+export const API_ENDPOINT = 'https://social-archiver-api.junlim.org';
+
 export interface SocialArchiverSettings {
-  // API Configuration
-  apiEndpoint: string;
+  // API Configuration (apiEndpoint removed - now hardcoded)
   apiKey: string;
   licenseKey: string;
 
@@ -39,8 +41,6 @@ export interface SocialArchiverSettings {
 
 export const DEFAULT_SETTINGS: SocialArchiverSettings = {
   // API Configuration
-  // Use local dev server if available, otherwise production
-  apiEndpoint: 'http://localhost:8787',
   apiKey: '',
   licenseKey: '',
 

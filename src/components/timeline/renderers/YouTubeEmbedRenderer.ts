@@ -14,9 +14,9 @@ export class YouTubeEmbedRenderer {
     // IMPORTANT: enablejsapi=1 is required for postMessage control
     const iframe = embedContainer.createEl('iframe', {
       attr: {
-        src: `https://www.youtube.com/embed/${videoId}?enablejsapi=1`,
+        src: `https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1`,
         frameborder: '0',
-        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
         allowfullscreen: 'true',
         referrerpolicy: 'strict-origin-when-cross-origin'
       }

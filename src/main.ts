@@ -1,6 +1,6 @@
-import { Plugin, Notice, addIcon } from 'obsidian';
+import { Plugin, Notice, addIcon, Platform } from 'obsidian';
 import { SocialArchiverSettingTab } from './settings/SettingTab';
-import { SocialArchiverSettings, DEFAULT_SETTINGS } from './types/settings';
+import { SocialArchiverSettings, DEFAULT_SETTINGS, API_ENDPOINT } from './types/settings';
 import { WorkersAPIClient } from './services/WorkersAPIClient';
 import { ArchiveOrchestrator } from './services/ArchiveOrchestrator';
 import { VaultManager } from './services/VaultManager';
@@ -18,16 +18,9 @@ export default class SocialArchiverPlugin extends Plugin {
   private orchestrator?: ArchiveOrchestrator;
 
   async onload(): Promise<void> {
-    // Disable verbose console logs in production for better performance
-    const originalConsoleLog = console.log;
-
-    if (process.env.NODE_ENV === 'production' || !('process' in globalThis && process.env.NODE_ENV === 'development')) {
-      console.log = () => {};
-      console.debug = () => {};
-      // Keep console.warn and console.error for important messages
-    }
-
-    originalConsoleLog('Social Archiver plugin loaded');
+    // TEMPORARILY ENABLE console logs for debugging
+    // TODO: Re-enable production optimization after debugging
+    console.log('Social Archiver plugin loaded');
 
     await this.loadSettings();
 
@@ -55,8 +48,11 @@ export default class SocialArchiverPlugin extends Plugin {
     });
 
     // Add ribbon icon for timeline
+    // On mobile: opens in main area (full screen)
+    // On desktop: opens in sidebar (side-by-side with notes)
     this.addRibbonIcon('calendar-clock', 'Open timeline view', () => {
-      this.activateTimelineView();
+      const location = Platform.isMobile ? 'main' : 'sidebar';
+      this.activateTimelineView(location);
     });
 
     // Add command for archive modal
@@ -68,12 +64,21 @@ export default class SocialArchiverPlugin extends Plugin {
       }
     });
 
-    // Add command for timeline view
+    // Add command for timeline view (sidebar)
     this.addCommand({
       id: 'open-timeline-view',
-      name: 'Open timeline view',
+      name: 'Open timeline view (sidebar)',
       callback: () => {
-        this.activateTimelineView();
+        this.activateTimelineView('sidebar');
+      }
+    });
+
+    // Add command for timeline view (main area)
+    this.addCommand({
+      id: 'open-timeline-view-main',
+      name: 'Open timeline view (main area)',
+      callback: () => {
+        this.activateTimelineView('main');
       }
     });
 
@@ -118,16 +123,10 @@ export default class SocialArchiverPlugin extends Plugin {
     // Clean up existing services
     await this.apiClient?.dispose();
 
-    // Only initialize if we have the required settings
-    if (!this.settings.apiEndpoint) {
-      console.log('[Social Archiver] API endpoint not configured');
-      return;
-    }
-
     try {
-      // Initialize API client
+      // Initialize API client with hardcoded production endpoint
       this.apiClient = new WorkersAPIClient({
-        endpoint: this.settings.apiEndpoint,
+        endpoint: API_ENDPOINT,
         licenseKey: this.settings.licenseKey,
       });
       await this.apiClient.initialize();
@@ -166,7 +165,7 @@ export default class SocialArchiverPlugin extends Plugin {
     }
 
     console.log('[Social Archiver] Settings:', {
-      apiEndpoint: this.settings.apiEndpoint,
+      apiEndpoint: API_ENDPOINT,
       enableAI: this.settings.enableAI,
       deepResearch: this.settings.enableDeepResearch,
       archivePath: this.settings.archivePath,
@@ -553,24 +552,44 @@ export default class SocialArchiverPlugin extends Plugin {
 
   /**
    * Activate the Timeline View
-   * Opens the view in the right sidebar if not already open
+   * Opens the view in the specified location (sidebar or main area)
    * Automatically refreshes the timeline when activated
+   *
+   * @param location - Where to open the timeline ('sidebar' or 'main')
    */
-  async activateTimelineView(): Promise<void> {
+  async activateTimelineView(location: 'sidebar' | 'main' = 'sidebar'): Promise<void> {
     const { workspace } = this.app;
+    let leaf;
 
-    // Check if view is already open
-    let leaf = workspace.getLeavesOfType(VIEW_TYPE_TIMELINE)[0];
+    // If opening in main area, always create a new leaf (allow multiple instances)
+    if (location === 'main') {
+      leaf = workspace.getLeaf('tab');
+      await leaf.setViewState({
+        type: VIEW_TYPE_TIMELINE,
+        active: true,
+      });
+    } else {
+      // Sidebar mode: check if view is already open in sidebar
+      const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_TIMELINE);
+      const sidebarLeaf = existingLeaves.find(l => {
+        // Check if leaf is in right sidebar
+        const parent = l.getRoot();
+        return parent === workspace.rightSplit;
+      });
 
-    if (!leaf) {
-      // Create new leaf in right sidebar
-      const rightLeaf = workspace.getRightLeaf(false);
-      if (rightLeaf) {
-        leaf = rightLeaf;
-        await leaf.setViewState({
-          type: VIEW_TYPE_TIMELINE,
-          active: true,
-        });
+      if (sidebarLeaf) {
+        // Reuse existing sidebar leaf
+        leaf = sidebarLeaf;
+      } else {
+        // Create new leaf in right sidebar
+        const rightLeaf = workspace.getRightLeaf(false);
+        if (rightLeaf) {
+          leaf = rightLeaf;
+          await leaf.setViewState({
+            type: VIEW_TYPE_TIMELINE,
+            active: true,
+          });
+        }
       }
     }
 

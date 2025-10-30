@@ -186,6 +186,8 @@ export class TimelineContainer {
   private render(): void {
     // Add Tailwind classes individually
     this.containerEl.className = 'w-full h-full overflow-y-auto p-4';
+    // White background for clean look in main area
+    this.containerEl.style.backgroundColor = 'var(--background-primary)';
     this.renderLoading();
   }
 
@@ -278,7 +280,7 @@ export class TimelineContainer {
    */
   private renderFilterButton(parent: HTMLElement, header: HTMLElement): void {
     const filterBtn = parent.createDiv();
-    filterBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
+    filterBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 40px; border-radius: 8px; background: transparent; cursor: pointer; transition: all 0.2s; flex-shrink: 0; font-size: 13px; color: var(--text-muted);';
     filterBtn.setAttribute('title', 'Filter posts');
 
     const filterIcon = filterBtn.createDiv();
@@ -297,7 +299,7 @@ export class TimelineContainer {
         filterBtn.style.color = 'var(--text-on-accent)';
         filterIcon.style.color = 'var(--text-on-accent)';
       } else {
-        filterBtn.style.background = 'var(--background-secondary)';
+        filterBtn.style.background = 'transparent';
         filterBtn.style.color = 'var(--text-muted)';
         filterIcon.style.color = 'var(--text-muted)';
       }
@@ -328,11 +330,11 @@ export class TimelineContainer {
    */
   private renderRefreshButton(parent: HTMLElement): void {
     const refreshBtn = parent.createDiv();
-    refreshBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 8px; background: var(--background-secondary); cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
+    refreshBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: transparent; cursor: pointer; transition: all 0.2s; flex-shrink: 0;';
     refreshBtn.setAttribute('title', 'Refresh timeline');
 
     const refreshIcon = refreshBtn.createDiv();
-    refreshIcon.style.cssText = 'width: 20px; height: 20px; color: var(--text-muted); transition: color 0.2s;';
+    refreshIcon.style.cssText = 'width: 16px; height: 16px; color: var(--text-muted); transition: color 0.2s;';
     setIcon(refreshIcon, 'refresh-cw');
 
     refreshBtn.addEventListener('mouseenter', () => {
@@ -341,7 +343,7 @@ export class TimelineContainer {
     });
 
     refreshBtn.addEventListener('mouseleave', () => {
-      refreshBtn.style.background = 'var(--background-secondary)';
+      refreshBtn.style.background = 'transparent';
       refreshIcon.style.color = 'var(--text-muted)';
     });
 

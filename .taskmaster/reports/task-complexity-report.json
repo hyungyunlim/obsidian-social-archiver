@@ -1,93 +1,133 @@
 {
 	"meta": {
-		"generatedAt": "2025-08-26T14:13:55.356Z",
-		"tasksAnalyzed": 10,
-		"totalTasks": 10,
-		"analysisCount": 10,
+		"generatedAt": "2025-10-29T15:05:00.901Z",
+		"tasksAnalyzed": 15,
+		"totalTasks": 27,
+		"analysisCount": 15,
 		"thresholdScore": 5,
 		"projectName": "Taskmaster",
 		"usedResearch": true
 	},
 	"complexityAnalysis": [
 		{
-			"taskId": 1,
-			"taskTitle": "Initialize Obsidian Plugin Project Structure",
-			"complexityScore": 7,
-			"recommendedSubtasks": 8,
-			"expansionPrompt": "Break down the Obsidian plugin initialization into subtasks covering: 1) Node.js project setup with package.json and dependencies installation, 2) Obsidian plugin manifest creation with proper metadata, 3) TypeScript configuration with strict mode and path mappings, 4) Vite bundler setup with Obsidian plugin support, 5) Svelte 5 integration with Runes API preprocessing, 6) Main plugin entry point with Plugin class extension, 7) Source folder structure creation following SRP principles, 8) Development scripts and hot-reload configuration. Each subtask should be independently completable.",
-			"reasoning": "This is a greenfield project requiring complete setup from scratch. No existing code, dependencies, or configuration exists. High complexity due to multiple toolchain integrations (TypeScript 5, Svelte 5 Runes, Vite, Obsidian API) and need for proper project foundation."
-		},
-		{
-			"taskId": 2,
-			"taskTitle": "Implement Tailwind CSS Configuration",
+			"taskId": 13,
+			"taskTitle": "Create Timeline Data Models and Types",
 			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down TypeScript interface and Zod schema creation into: 1) Core timeline data interfaces (TimelineData, TimelineShareRequest), 2) API request/response schemas with Zod validation, 3) Integration with existing ShareManager patterns and KV storage compatibility",
+			"reasoning": "Medium complexity - requires understanding existing ShareInfo patterns, creating comprehensive type definitions, and Zod schemas. Building on established patterns reduces complexity but needs careful integration with existing code."
+		},
+		{
+			"taskId": 14,
+			"taskTitle": "Create R2MediaUploader Service",
+			"complexityScore": 7,
 			"recommendedSubtasks": 5,
-			"expansionPrompt": "Divide Tailwind CSS setup into: 1) Install Tailwind CSS v3 with PostCSS and Autoprefixer dependencies, 2) Configure tailwind.config.js with preflight disabled and Obsidian CSS variable integration, 3) Setup PostCSS configuration for build pipeline integration, 4) Create mobile-first utility classes and responsive breakpoints, 5) Integrate Tailwind directives into styles.css with proper layering. Focus on Obsidian compatibility and mobile touch targets.",
-			"reasoning": "Standard configuration task with moderate complexity. Main challenge is ensuring Obsidian style compatibility by disabling preflight and integrating CSS variables. Lower complexity as it's mostly configuration rather than implementation."
+			"expansionPrompt": "Divide R2 upload service into: 1) Core R2MediaUploader class with IService interface, 2) Single file upload with stream/base64 conversion, 3) Batch upload orchestration, 4) Error handling and retry logic with exponential backoff, 5) Progress tracking and cleanup operations",
+			"reasoning": "High complexity - involves cloud storage integration, async batch operations, error handling, retry logic, and progress tracking. Requires understanding R2 API, file handling, and integration with existing services."
 		},
 		{
-			"taskId": 3,
-			"taskTitle": "Setup Cloudflare Workers Infrastructure",
-			"complexityScore": 8,
-			"recommendedSubtasks": 10,
-			"expansionPrompt": "Create comprehensive Workers infrastructure: 1) Initialize Wrangler CLI and Workers project structure, 2) Configure wrangler.toml with KV namespaces and environment settings, 3) Setup TypeScript for Workers with proper types, 4) Implement API router with Hono or itty-router, 5) Create KV Store bindings for cache, licenses, and shares, 6) Configure CORS headers for Obsidian origins, 7) Implement rate limiting and request validation, 8) Setup local development with Miniflare, 9) Create error handling and logging infrastructure, 10) Deploy to Cloudflare with domain configuration. Each subtask should produce testable infrastructure.",
-			"reasoning": "High complexity due to complete serverless backend creation from scratch. Requires understanding of Cloudflare Workers ecosystem, KV Store operations, security considerations (CORS, rate limiting), and integration with multiple external services."
-		},
-		{
-			"taskId": 4,
-			"taskTitle": "Build Core Service Architecture",
-			"complexityScore": 6,
-			"recommendedSubtasks": 7,
-			"expansionPrompt": "Implement SRP-compliant service architecture: 1) Create base service interfaces and dependency injection container, 2) Implement ArchiveService for API orchestration, 3) Build MarkdownConverter with template engine, 4) Create VaultManager for Obsidian file operations, 5) Implement MediaHandler for attachment processing, 6) Build ArchiveOrchestrator to coordinate all services, 7) Add comprehensive error handling with custom error classes. Each service should be independently testable with clear single responsibility.",
-			"reasoning": "Moderate-high complexity as it establishes the entire application architecture. While conceptually straightforward (SRP services), requires careful design for testability, proper TypeScript typing, and coordination between services."
-		},
-		{
-			"taskId": 5,
-			"taskTitle": "Implement Platform Detection and URL Validation",
+			"taskId": 15,
+			"taskTitle": "Extend KVStorageAdapter for Timeline Storage",
 			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Split KV storage extension into: 1) Timeline CRUD methods (save, get, update, delete), 2) TTL handling and tier-based expiration logic, 3) Username uniqueness validation and listing operations, 4) Migration logic for tier upgrades and batch operations",
+			"reasoning": "Medium-high complexity - extends existing adapter with timeline-specific methods, requires TTL calculations, username validation, and migration logic. Building on existing patterns helps but adds timeline-specific complexities."
+		},
+		{
+			"taskId": 16,
+			"taskTitle": "Create Timeline API Handler",
+			"complexityScore": 8,
 			"recommendedSubtasks": 6,
-			"expansionPrompt": "Build platform detection system: 1) Create PlatformDetector service with URL pattern regex for each platform, 2) Implement URL canonicalization to remove tracking parameters, 3) Add shortened URL expansion with redirect following, 4) Create platform-specific service interfaces, 5) Implement Zod validation schemas for each platform, 6) Add comprehensive unit tests for URL patterns. Focus on accuracy and edge case handling.",
-			"reasoning": "Medium complexity focused on pattern matching and validation. Main challenges are handling various URL formats, redirect chains, and ensuring 100% detection accuracy. Implementation is straightforward but requires extensive testing."
+			"expansionPrompt": "Break down API handler into: 1) Request validation and license checking, 2) Username availability and format validation, 3) R2 media upload orchestration, 4) KV storage operations, 5) Rate limiting implementation, 6) Error handling and response formatting",
+			"reasoning": "High complexity - orchestrates multiple services (validation, R2, KV), implements rate limiting, handles various error scenarios, and requires proper authentication. Central coordination point with many dependencies."
 		},
 		{
-			"taskId": 6,
-			"taskTitle": "Create BrightData Integration Service",
-			"complexityScore": 9,
-			"recommendedSubtasks": 11,
-			"expansionPrompt": "Implement robust BrightData client: 1) Create base HTTP client with request/response interceptors, 2) Implement circuit breaker pattern with state management, 3) Add exponential backoff with jitter for retries, 4) Create platform-specific scraping methods, 5) Implement request queue with concurrency control, 6) Add response validation with Zod schemas, 7) Create caching layer with KV Store integration, 8) Implement cost tracking and credit management, 9) Add comprehensive error mapping and handling, 10) Create request/response logging infrastructure, 11) Build unit and integration tests for reliability patterns. Each subtask should enhance reliability and resilience.",
-			"reasoning": "Very high complexity due to multiple reliability patterns (circuit breaker, exponential backoff, queuing), external API integration, cost management, and need for robust error handling. Critical component requiring extensive testing."
-		},
-		{
-			"taskId": 7,
-			"taskTitle": "Build Licensing and Credit System",
+			"taskId": 17,
+			"taskTitle": "Create Public Timeline Renderer",
 			"complexityScore": 7,
-			"recommendedSubtasks": 9,
-			"expansionPrompt": "Create licensing infrastructure: 1) Integrate Gumroad API for license verification, 2) Implement local license key encryption and storage, 3) Build CreditManager for usage tracking, 4) Create monthly credit reset mechanism, 5) Implement webhook handler for purchase events, 6) Build license status UI component, 7) Add promotional code validation system, 8) Implement grace period handling for expired licenses, 9) Create comprehensive testing for freemium enforcement. Focus on security and Obsidian plugin policy compliance.",
-			"reasoning": "High complexity due to external payment integration, security requirements (encryption, HMAC verification), credit management logic, and need to comply with Obsidian's plugin policies. Requires careful handling of sensitive data."
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Divide HTML rendering into: 1) Timeline data fetching and validation, 2) Server-side HTML template generation with Hono, 3) Responsive timeline layout (header, feed, filters), 4) Post card rendering for all platforms, 5) SEO optimization and caching headers",
+			"reasoning": "High complexity - server-side rendering with multiple layout components, responsive design, SEO optimization, and caching strategy. Requires HTML template generation and proper meta tag handling."
 		},
 		{
-			"taskId": 8,
-			"taskTitle": "Develop Archive Modal UI Components",
+			"taskId": 18,
+			"taskTitle": "Create ShareTimelineModal Component",
 			"complexityScore": 6,
-			"recommendedSubtasks": 8,
-			"expansionPrompt": "Build Svelte 5 UI components: 1) Create ArchiveModal base component with Obsidian Modal integration, 2) Implement URLInput with platform auto-detection and validation, 3) Build AdvancedOptions with expandable sections, 4) Create Disclaimer component with legal warning, 5) Implement ActionButtons with loading states, 6) Create useArchiveState composable with Svelte 5 Runes, 7) Add PostPreview component for content display, 8) Implement accessibility features and mobile optimization. Each component should be reusable and follow mobile-first design.",
-			"reasoning": "Moderate-high complexity due to Svelte 5 Runes API (newer technology), Obsidian UI integration, accessibility requirements, and mobile-first design constraints. Requires understanding of both Svelte 5 and Obsidian's UI system."
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Split modal component into: 1) Modal UI structure and form layout with Svelte 5 Runes, 2) Client-side validation and real-time feedback, 3) API integration and username availability checking, 4) Pro vs Free feature restrictions and upload progress",
+			"reasoning": "Medium-high complexity - Svelte 5 component with form validation, API integration, real-time feedback, and tier-based features. Requires understanding of Runes API and mobile-responsive design."
 		},
 		{
-			"taskId": 9,
-			"taskTitle": "Implement AI Enhancement Features",
+			"taskId": 19,
+			"taskTitle": "Extend ShareManager for Timeline Operations",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Extend ShareManager with: 1) Timeline validation and data preparation methods, 2) Media extraction and processing from vault posts, 3) API request building and error handling for timeline operations",
+			"reasoning": "Medium-high complexity - extends existing service with timeline-specific logic, media processing, and API integration. Building on established patterns but requires timeline-specific validation and processing."
+		},
+		{
+			"taskId": 20,
+			"taskTitle": "Update Settings Tab for Timeline Configuration",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Extend settings with: 1) Timeline sharing section and enable/disable toggle, 2) Active timeline management (list, delete, stats), 3) Username availability checker and ShareTimelineModal integration",
+			"reasoning": "Medium complexity - extends existing settings UI with timeline-specific options, management interface, and modal integration. Follows established patterns but requires new UI components."
+		},
+		{
+			"taskId": 21,
+			"taskTitle": "Add Timeline Command Integration",
+			"complexityScore": 2,
+			"recommendedSubtasks": 0,
+			"expansionPrompt": "",
+			"reasoning": "Low complexity - simple command registration following existing patterns in main.ts. Straightforward integration with existing modal and command palette system."
+		},
+		{
+			"taskId": 22,
+			"taskTitle": "Implement Timeline Security and Rate Limiting",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Implement security measures: 1) Rate limiting for publishes and username changes, 2) Content validation and input sanitization, 3) Username squatting prevention and reservation system, 4) CORS, CSP headers, and audit logging",
+			"reasoning": "Medium-high complexity - comprehensive security implementation including rate limiting, input validation, username protection, and security headers. Requires security best practices and proper implementation."
+		},
+		{
+			"taskId": 23,
+			"taskTitle": "Create Timeline Management API Endpoints",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create management endpoints: 1) DELETE timeline with authentication and cleanup, 2) GET stats endpoint with analytics data, 3) Timeline listing with proper authorization and error handling",
+			"reasoning": "Medium-high complexity - REST API endpoints with authentication, cleanup operations, and analytics. Requires proper auth implementation and integration with storage services."
+		},
+		{
+			"taskId": 24,
+			"taskTitle": "Implement Timeline Caching Strategy",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Implement caching layers: 1) Edge caching with Cloudflare Workers cache API, 2) KV HTML cache with TTL management, 3) Cache invalidation on timeline updates, 4) Cache optimization and monitoring",
+			"reasoning": "Medium-high complexity - multi-level caching strategy with edge, KV, and browser caching. Requires understanding of cache invalidation patterns and CDN integration."
+		},
+		{
+			"taskId": 25,
+			"taskTitle": "Create Timeline Analytics and Monitoring",
 			"complexityScore": 7,
-			"recommendedSubtasks": 9,
-			"expansionPrompt": "Integrate AI capabilities: 1) Create PerplexityClient with API authentication, 2) Implement content summarization service, 3) Build sentiment analysis functionality, 4) Create fact-checking system for claims verification, 5) Implement deep research features for pro users, 6) Add streaming response handling for better UX, 7) Create prompt templates optimized for each operation, 8) Implement AI result caching strategy, 9) Add credit consumption tracking for AI operations. Focus on response quality and efficient token usage.",
-			"reasoning": "High complexity due to AI API integration, multiple AI features (summarization, sentiment, fact-checking), streaming responses, context management, and credit tracking. Requires understanding of LLM prompting and token optimization."
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Build analytics system: 1) View tracking and engagement metrics collection, 2) Performance monitoring and error tracking, 3) Privacy-compliant data collection, 4) Analytics dashboard for timeline owners, 5) KV storage integration with TTL",
+			"reasoning": "High complexity - comprehensive analytics system with multiple metrics, privacy compliance, dashboard UI, and proper data storage. Requires careful design for privacy and performance."
 		},
 		{
-			"taskId": 10,
-			"taskTitle": "Build Share System and Public Pages",
-			"complexityScore": 6,
-			"recommendedSubtasks": 8,
-			"expansionPrompt": "Implement sharing infrastructure: 1) Create ShareManager service with unique ID generation, 2) Implement KV Store persistence with TTL for free tier, 3) Build password protection with bcrypt hashing, 4) Create public share page with server-side rendering, 5) Implement share toggle UI in Obsidian, 6) Add view tracking and analytics, 7) Create share management dashboard, 8) Implement security measures (XSS prevention, robots.txt). Focus on security and user experience.",
-			"reasoning": "Moderate-high complexity involving both frontend UI and backend infrastructure. Requires security considerations (password protection, XSS prevention), tiered functionality (free vs pro), and public page generation on Workers."
+			"taskId": 26,
+			"taskTitle": "Implement Timeline Testing Suite",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Create comprehensive testing: 1) Unit tests for services and components, 2) Integration tests for API endpoints, 3) End-to-end testing for complete flows, 4) Performance tests for large timelines, 5) Security testing for auth and vulnerabilities, 6) Mobile testing scenarios",
+			"reasoning": "High complexity - comprehensive test suite covering multiple testing types, performance testing, security testing, and mobile scenarios. Requires extensive test planning and implementation across the entire feature set."
+		},
+		{
+			"taskId": 27,
+			"taskTitle": "Create Timeline Documentation and User Guide",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create documentation: 1) User guide with how-to instructions and feature comparison, 2) Technical and API documentation, 3) Developer documentation and troubleshooting guides with screenshots",
+			"reasoning": "Medium complexity - comprehensive documentation creation requiring understanding of all features, user experience considerations, and technical details. Documentation quality critical for user adoption."
 		}
 	]
 }

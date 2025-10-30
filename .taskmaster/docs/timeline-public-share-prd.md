@@ -407,6 +407,90 @@ interface TimelineShareRequest {
 
 ---
 
+## Phase 1.5: Public Explore Feed (FUTURE CONSIDERATION)
+
+### Overview
+After validating Phase 1 with individual timeline sharing, consider adding a public discovery feed where users can opt-in to showcase their timelines to the broader community.
+
+### Concept: `/explore` - Public Timeline Discovery
+A central feed aggregating public timelines for discovery and community building, similar to:
+- Mastodon's Federated Timeline
+- Medium's Explore page
+- Reddit's r/all
+
+### Why Phase 1.5 (Not Phase 1)?
+- ✅ **Validation First**: Need to prove individual timeline value before community features
+- ✅ **Moderation Complexity**: Public feed requires content moderation infrastructure
+- ✅ **Focus**: Keep Phase 1 scope tight for faster delivery
+- ✅ **Risk Management**: Test waters with private sharing before public exposure
+
+### Technical Approach (When Ready)
+
+**KV Index Structure**:
+```typescript
+// Public visibility index
+"index:public:latest" → ["user1", "user2", ...] // Latest 100 users
+"index:public:popular" → ["user3", "user1", ...] // By view count
+"index:platform:instagram" → ["user1", ...] // Platform-specific
+
+// Individual timeline metadata (extend existing)
+"timeline:username" → {
+  ...existingFields,
+  publicVisibility: boolean,  // Opt-in flag
+  exploreStats: {
+    featured: boolean,
+    lastFeaturedAt: timestamp
+  }
+}
+```
+
+**New Endpoints**:
+- `GET /explore` - Public timeline feed
+- `GET /explore/latest` - Latest public timelines
+- `GET /explore/popular` - Most viewed timelines
+- `GET /explore/[platform]` - Platform-specific feeds
+
+**UI Changes**:
+- ShareTimelineModal: Add "Show in public feed" toggle (Pro only)
+- Explore page: Grid/list view of public timelines with preview cards
+
+### Success Triggers (When to Implement)
+Only proceed with Phase 1.5 if Phase 1 achieves:
+1. ✅ 100+ active timeline shares
+2. ✅ 20+ Pro users (moderation resources justifiable)
+3. ✅ User requests for discovery features
+4. ✅ Content moderation plan in place
+5. ✅ 2-week development window available
+
+### Architecture Considerations (Now)
+Design Phase 1 with extensibility in mind:
+- **KV Schema**: Include `publicVisibility: false` field (default private)
+- **Timeline API**: Support future `publicVisibility` parameter
+- **Indexing**: Store timestamps for future "latest" sorting
+- **Rate Limiting**: Build foundation that can scale to public feed
+
+### Estimated Effort
+- **Design & Planning**: 1 week
+- **Implementation**: 2 weeks
+- **Moderation Tools**: 1 week
+- **Total**: ~4 weeks (after Phase 1 success)
+
+### Risks & Mitigations
+- **Risk**: Spam and abuse in public feed
+  - **Mitigation**: Pro-only feature initially, require minimum timeline quality
+- **Risk**: Copyright/legal issues with public exposure
+  - **Mitigation**: Clear ToS, DMCA process, user reporting
+- **Risk**: Scaling issues with popular feed
+  - **Mitigation**: Start with simple latest feed, add pagination
+
+### Decision: Deferred to Post-Phase 1
+- Focus on individual timeline sharing (Phase 1)
+- Collect user feedback and usage patterns
+- Reassess after 60-90 days of Phase 1 operation
+- Document as future enhancement in roadmap
+
+---
+
 ## Phase 2: Astro Static Site Generation (OPTIONAL FUTURE)
 
 ### When to Consider Migration
@@ -668,13 +752,14 @@ Original copyright belongs to the content creator.
 - [ ] Embeddable widget (iframe)
 - [ ] Custom subdomain (pro.username.archiver.app)
 
-**Medium-term**:
+**Medium-term** (Phase 1.5):
+- [ ] **Public Explore Feed** (`/explore`) - See Phase 1.5 section
 - [ ] Timeline analytics dashboard
 - [ ] Content search within timeline
 - [ ] Multiple timelines per user (collections)
 - [ ] Collaborative timelines
 
-**Long-term**:
+**Long-term** (Phase 2+):
 - [ ] ActivityPub integration (Phase 2.5)
 - [ ] Custom domain support
 - [ ] API for third-party apps
@@ -682,6 +767,10 @@ Original copyright belongs to the content creator.
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.1
 **Last Updated**: 2025-01-29
+**Changelog**:
+- v1.1: Added Phase 1.5 (Public Explore Feed) as future consideration
+- v1.0: Initial PRD with Phase 1 (Workers SSR) and Phase 2 (Astro SSG)
+
 **Next Review**: After Phase 1 completion

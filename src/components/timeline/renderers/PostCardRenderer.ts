@@ -112,7 +112,7 @@ export class PostCardRenderer {
     cardContainer.style.cssText = 'padding-left: 16px; border-left: 2px solid var(--background-modifier-border); margin-left: 4px;';
 
     const card = cardContainer.createDiv({
-      cls: 'relative p-4 rounded-lg bg-[var(--background-secondary)] transition-all duration-200'
+      cls: 'relative p-4 rounded-lg bg-[var(--background-primary)] transition-all duration-200'
     });
 
     // Hover animation - subtle lift and shadow
@@ -125,7 +125,7 @@ export class PostCardRenderer {
     card.addEventListener('mouseleave', () => {
       card.style.transform = 'translateY(0)';
       card.style.boxShadow = 'none';
-      card.style.backgroundColor = 'var(--background-secondary)';
+      card.style.backgroundColor = 'var(--background-primary)';
     });
 
     // Avatar (platform icon) - Top right corner
@@ -145,8 +145,13 @@ export class PostCardRenderer {
 
     // YouTube embed (if YouTube platform)
     if (post.platform === 'youtube' && post.videoId) {
-      console.log('[PostCardRenderer] Rendering YouTube embed');
-      this.youtubeEmbedRenderer.renderYouTube(contentArea, post.videoId);
+      console.log('[PostCardRenderer] Rendering YouTube embed for video:', post.videoId);
+      const iframe = this.youtubeEmbedRenderer.renderYouTube(contentArea, post.videoId);
+
+      // Create player controller for this YouTube video
+      const controller = new YouTubePlayerController(iframe, post.videoId);
+      this.youtubeControllers.set(post.id, controller);
+      console.log('[PostCardRenderer] YouTube controller created for post:', post.id);
     }
     // TikTok embed (if TikTok platform)
     else if (post.platform === 'tiktok' && post.url) {

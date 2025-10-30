@@ -19,35 +19,6 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
     // API Section
     containerEl.createEl('h3', { text: 'API Configuration' });
 
-    // API Endpoint
-    new Setting(containerEl)
-      .setName('API Endpoint')
-      .setDesc('Cloudflare Workers API endpoint (use http://localhost:8787 for local development)')
-      .addText(text => text
-        .setPlaceholder('http://localhost:8787')
-        .setValue(this.plugin.settings.apiEndpoint)
-        .onChange(async (value) => {
-          this.plugin.settings.apiEndpoint = value;
-          await this.plugin.saveSettings();
-        }))
-      .addButton(button => button
-        .setButtonText('Test Connection')
-        .onClick(async () => {
-          try {
-            const response = await fetch(`${this.plugin.settings.apiEndpoint}/health`);
-            const data = await response.json();
-
-            if (data.success) {
-              new Notice(`✅ Connected! Server is ${data.data.status} (${data.data.environment})`);
-            } else {
-              new Notice('❌ Connection failed');
-            }
-          } catch (error) {
-            new Notice('❌ Cannot reach API server. Make sure it\'s running at ' + this.plugin.settings.apiEndpoint);
-            console.error('[Social Archiver] API test failed:', error);
-          }
-        }));
-
     // Debug Mode
     new Setting(containerEl)
       .setName('Debug mode')
