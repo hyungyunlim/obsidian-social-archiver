@@ -41,6 +41,9 @@ export function extractPlatform(url: string): Platform | null {
 		if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
 			return 'youtube';
 		}
+		if (hostname.includes('reddit.com') || hostname.includes('redd.it')) {
+			return 'reddit';
+		}
 
 		return null;
 	} catch {
