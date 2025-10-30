@@ -49,7 +49,7 @@ export const DEFAULT_SETTINGS: SocialArchiverSettings = {
 
   // Storage Settings
   archivePath: 'Social Archives',
-  mediaPath: 'assets/social',
+  mediaPath: 'attachments/social-archives',
   fileNameFormat: '[YYYY-MM-DD] {platform}-{slug}-{shortId}',
 
   // Feature Toggles

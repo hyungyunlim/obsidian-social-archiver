@@ -301,7 +301,7 @@ export default class SocialArchiverPlugin extends Plugin {
             // Generate filename
             const extension = this.getFileExtension(mediaUrl) || 'jpg';
             const filename = `media-${i + 1}.${extension}`;
-            const basePath = `attachments/social-archives/${result.postData.platform}/${result.postData.id}`;
+            const basePath = `${this.settings.mediaPath}/${result.postData.platform}/${result.postData.id}`;
             const fullPath = `${basePath}/${filename}`;
 
             // Check if file already exists

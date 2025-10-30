@@ -1,4 +1,4 @@
-import { setIcon, type TFile, type Vault, type App } from 'obsidian';
+import { setIcon, Notice, type TFile, type Vault, type App } from 'obsidian';
 import type { PostData } from '../../../types/post';
 import type SocialArchiverPlugin from '../../../main';
 import {
@@ -402,6 +402,9 @@ export class PostCardRenderer {
 
     // Open Note button (right-aligned)
     this.renderOpenNoteButton(interactions, post);
+
+    // Delete button (right-aligned)
+    this.renderDeleteButton(interactions, post, rootElement);
   }
 
   /**
@@ -512,6 +515,31 @@ export class PostCardRenderer {
   }
 
   /**
+   * Render delete button
+   */
+  private renderDeleteButton(parent: HTMLElement, post: PostData, rootElement: HTMLElement): void {
+    const deleteBtn = parent.createDiv();
+    deleteBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; transition: color 0.2s;';
+    deleteBtn.setAttribute('title', 'Delete this post');
+    deleteBtn.addEventListener('mouseenter', () => {
+      deleteBtn.style.color = 'var(--text-error)';
+    });
+    deleteBtn.addEventListener('mouseleave', () => {
+      deleteBtn.style.color = 'var(--text-muted)';
+    });
+
+    const deleteIcon = deleteBtn.createDiv();
+    deleteIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+    setIcon(deleteIcon, 'trash-2');
+
+    // Delete button click handler
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.deletePost(post, rootElement);
+    });
+  }
+
+  /**
    * Open the original note in Obsidian
    */
   private async openNote(post: PostData): Promise<void> {
@@ -538,6 +566,97 @@ export class PostCardRenderer {
       }
     } catch (err) {
       console.error('[PostCardRenderer] Failed to open note:', err);
+    }
+  }
+
+  /**
+   * Delete post and remove card from timeline
+   */
+  private async deletePost(post: PostData, rootElement: HTMLElement): Promise<void> {
+    try {
+      const filePath = (post as any).filePath;
+      if (!filePath) {
+        console.warn('[PostCardRenderer] No file path for post:', post.id);
+        new Notice('Cannot delete post: file path not found');
+        return;
+      }
+
+      const file = this.vault.getAbstractFileByPath(filePath);
+      if (!file || !('extension' in file)) {
+        console.warn('[PostCardRenderer] File not found:', filePath);
+        new Notice('Cannot delete post: file not found');
+        return;
+      }
+
+      // Count media files that will be deleted (all relative paths, not http(s) URLs)
+      const mediaCount = post.media.filter(m =>
+        m.url && !m.url.startsWith('http://') && !m.url.startsWith('https://')
+      ).length;
+      const mediaText = mediaCount > 0 ? `\n${mediaCount} media file(s) will also be deleted.\n` : '';
+
+      // Show confirmation dialog
+      const confirmed = confirm(
+        `Are you sure you want to delete this post?\n\n` +
+        `Author: ${post.author.name}\n` +
+        `Platform: ${post.platform}\n` +
+        mediaText +
+        `\nThis action cannot be undone.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      const tfile = file as TFile;
+
+      // Animate card removal (fade out and slide up)
+      rootElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+      rootElement.style.opacity = '0';
+      rootElement.style.transform = 'translateY(-10px)';
+
+      // Wait for animation to complete
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Delete media files first (all relative paths, not http(s) URLs)
+      const deletedMedia: string[] = [];
+      const failedMedia: string[] = [];
+
+      for (const media of post.media) {
+        if (media.url && !media.url.startsWith('http://') && !media.url.startsWith('https://')) {
+          try {
+            const mediaFile = this.vault.getAbstractFileByPath(media.url);
+            if (mediaFile && 'extension' in mediaFile) {
+              await this.vault.delete(mediaFile as TFile);
+              deletedMedia.push(media.url);
+              console.log('[PostCardRenderer] Deleted media:', media.url);
+            }
+          } catch (err) {
+            console.warn('[PostCardRenderer] Failed to delete media:', media.url, err);
+            failedMedia.push(media.url);
+          }
+        }
+      }
+
+      // Delete the markdown file
+      await this.vault.delete(tfile);
+
+      // Remove from DOM
+      rootElement.remove();
+
+      // Show success notice
+      const successMsg = deletedMedia.length > 0
+        ? `Post and ${deletedMedia.length} media file(s) deleted successfully`
+        : 'Post deleted successfully';
+      new Notice(successMsg);
+
+      if (failedMedia.length > 0) {
+        console.warn('[PostCardRenderer] Some media files could not be deleted:', failedMedia);
+      }
+
+      console.log('[PostCardRenderer] Deleted post:', post.id, filePath);
+    } catch (err) {
+      console.error('[PostCardRenderer] Failed to delete post:', err);
+      new Notice('Failed to delete post. Check console for details.');
     }
   }
 

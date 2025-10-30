@@ -182,7 +182,8 @@ export class PostDataParser {
     let match;
     while ((match = imageRegex.exec(markdown)) !== null) {
       const url = match[1];
-      if (url && url.startsWith('attachments/')) {
+      // Include all relative paths (not starting with http:// or https://)
+      if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
         mediaUrls.push(url);
       }
     }
