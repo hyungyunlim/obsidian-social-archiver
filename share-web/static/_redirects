@@ -1,0 +1,5 @@
+# Redirect root to welcome page (temporary, can be updated later)
+# / /share/welcome 302
+
+# SPA fallback - handle all routes client-side
+/*    /index.html   200

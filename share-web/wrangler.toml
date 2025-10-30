@@ -1,0 +1,26 @@
+# Cloudflare Pages Configuration for Social Archiver Share Web
+# Note: This file is primarily for local development with wrangler
+name = "social-archiver-share"
+compatibility_date = "2024-10-30"
+pages_build_output_dir = ".svelte-kit/cloudflare"
+
+# Environment variables (these will be set in Cloudflare dashboard)
+[vars]
+VITE_API_URL = "https://social-archiver-api.junlim.org"
+
+# Compatibility flags
+compatibility_flags = ["nodejs_compat"]
+
+# Note: Headers and redirects are handled via static/_headers and static/_redirects files
+
+# Preview deployments configuration
+[env.preview]
+vars = { VITE_API_URL = "https://social-archiver-api.junlim.org" }
+
+# Production environment
+[env.production]
+vars = { VITE_API_URL = "https://social-archiver-api.junlim.org" }
+
+# Custom domain configuration (to be configured in Cloudflare dashboard)
+# - share.social-archiver.com
+# - share.junlim.org (optional alternative)
