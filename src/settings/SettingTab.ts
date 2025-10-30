@@ -62,7 +62,7 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
       .setName('Media path')
       .setDesc('Where to save downloaded media files')
       .addText(text => text
-        .setPlaceholder('assets/social')
+        .setPlaceholder('attachments/social-archives')
         .setValue(this.plugin.settings.mediaPath)
         .onChange(async (value) => {
           this.plugin.settings.mediaPath = value;
