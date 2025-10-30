@@ -2202,8 +2202,8 @@
               2,
               3
             ],
-            "details": "Create validation schemas for username format (alphanumeric + hyphens, length limits). Implement error classes extending existing patterns for timeline-specific errors. Add proper HTTP status codes and error messages. Include rate limiting validation. Add request validation middleware. Ensure consistent error response format matching existing API patterns. Include proper logging for debugging and monitoring.",
-            "status": "pending",
+            "details": "Create validation schemas for username format (alphanumeric + hyphens, length limits). Implement error classes extending existing patterns for timeline-specific errors. Add proper HTTP status codes and error messages. Include rate limiting validation. Add request validation middleware. Ensure consistent error response format matching existing API patterns. Include proper logging for debugging and monitoring.\n<info added on 2025-10-30T13:10:00.407Z>\nImplementation completed successfully. All error handling and validation requirements verified and confirmed working:\n\n1. **Username Validation**: UsernameSchema (Zod) with alphanumeric + hyphens (1-50 chars), validateUsername() with normalization, integrated into all endpoints\n\n2. **Error Classes**: Complete BaseError hierarchy with 10 error types (ValidationError, NotFoundError, RateLimitError, etc.) with proper HTTP status codes and toJSON() serialization\n\n3. **Global Error Handling**: errorHandler middleware with consistent JSON responses, ZodError handling, Dead Letter Queue for critical errors\n\n4. **Request Validation**: Zod schemas for all endpoints (CreateShareRequestSchema, UsernameSchema, QueryParamsSchema)\n\n5. **Rate Limiting**: KV-based limiter (100 req/min), per-client tracking, X-RateLimit headers, applied to all /api routes\n\n6. **Comprehensive Logging**: Request ID middleware, timing, error logging with stack traces, Logger.fromContext() pattern\n\n7. **Middleware Integration**: Proper order (requestId → timing → logging → CORS → rateLimiter), global error handler, 404 handling\n\nTask fully implemented and verified. No additional work required.\n</info added on 2025-10-30T13:10:00.407Z>",
+            "status": "done",
             "testStrategy": "Unit tests for validation functions. Test error response formats. Integration tests for rate limiting and edge cases."
           },
           {
@@ -2213,8 +2213,8 @@
             "dependencies": [
               1
             ],
-            "details": "Update workers/src/index.ts to include CORS headers for new user timeline endpoints. Follow existing CORS configuration patterns used in share endpoints. Add proper preflight handling for OPTIONS requests. Configure allowed origins, methods, and headers. Ensure security while maintaining usability. Include CORS headers in error responses as well.",
-            "status": "pending",
+            "details": "Update workers/src/index.ts to include CORS headers for new user timeline endpoints. Follow existing CORS configuration patterns used in share endpoints. Add proper preflight handling for OPTIONS requests. Configure allowed origins, methods, and headers. Ensure security while maintaining usability. Include CORS headers in error responses as well.\n<info added on 2025-10-30T13:10:30.528Z>\nIMPLEMENTATION VERIFIED COMPLETE - All required CORS configuration has been properly implemented in workers/src/index.ts at lines 30-45. The global CORS middleware automatically covers all timeline endpoints with comprehensive configuration including Obsidian-specific origins (app://obsidian.md, obsidian://, capacitor://localhost), all necessary HTTP methods (GET, POST, PUT, DELETE, OPTIONS), required headers (Content-Type, Authorization, X-API-Key, X-License-Key), and exposed rate limit headers. The configuration includes proper preflight handling, 24-hour cache, and credential support. No additional CORS configuration is needed for the timeline endpoints as they are fully covered by the existing global middleware pattern.\n</info added on 2025-10-30T13:10:30.528Z>",
+            "status": "done",
             "testStrategy": "Manual testing with browser developer tools to verify CORS headers. Test preflight requests and actual API calls from different origins."
           },
           {
@@ -2682,7 +2682,7 @@
     ],
     "metadata": {
       "created": "2025-08-26T14:09:53.710Z",
-      "updated": "2025-10-30T13:07:21.788Z",
+      "updated": "2025-10-30T13:10:30.608Z",
       "description": "Tasks for master context"
     }
   }
