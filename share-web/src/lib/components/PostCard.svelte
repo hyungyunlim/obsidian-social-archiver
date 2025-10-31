@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Post, Comment } from '$lib/types';
+	import type { Post } from '$lib/types';
 	import PlatformIcon from './PlatformIcon.svelte';
 	import { marked } from 'marked';
 

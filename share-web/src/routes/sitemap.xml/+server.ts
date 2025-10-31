@@ -1,5 +1,3 @@
-import { env } from '$env/dynamic/private';
-
 const SITE_URL = 'https://social-archive.junlim.org';
 
 export async function GET() {
@@ -8,16 +6,13 @@ export async function GET() {
 		'Cache-Control': 'max-age=3600' // Cache for 1 hour
 	};
 
-	// In a real implementation, you would fetch user list from API
-	// For now, we'll create a basic sitemap with static pages
+	// Static pages for sitemap
 	const staticPages = [
-		{ url: '/', changefreq: 'weekly', priority: 1.0 },
-		{ url: '/share', changefreq: 'daily', priority: 0.8 }
+		{ url: '/', changefreq: 'weekly', priority: 1.0 }
 	];
 
-	// You could also fetch dynamic user pages here
-	// const apiUrl = env.VITE_API_URL || 'https://social-archiver-api.junlim.org';
-	// const users = await fetchPublicUsers(apiUrl);
+	// In a real implementation, you could fetch user list from API
+	// and add dynamic user pages here
 
 	const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
