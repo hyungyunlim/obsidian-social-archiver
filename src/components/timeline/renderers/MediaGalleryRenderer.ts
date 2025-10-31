@@ -68,6 +68,49 @@ export class MediaGalleryRenderer {
         video.style.cssText = 'max-width: 100%; max-height: 600px; width: auto; height: auto;';
         video.style.display = i === 0 ? 'block' : 'none';
 
+        // Handle video load error (e.g., attachment not found, sync issue)
+        video.addEventListener('error', () => {
+          console.warn(`[MediaGalleryRenderer] Failed to load video: ${resourcePath}`);
+
+          // Create placeholder for missing video
+          const placeholder = mediaContainer.createDiv();
+          placeholder.style.cssText = `
+            display: ${i === 0 ? 'flex' : 'none'};
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 200px;
+            background: var(--background-secondary);
+            border: 1px dashed var(--background-modifier-border);
+            border-radius: 8px;
+            padding: 24px;
+            gap: 12px;
+          `;
+
+          // Icon
+          const iconDiv = placeholder.createDiv();
+          iconDiv.style.cssText = 'width: 48px; height: 48px; opacity: 0.3;';
+          setIcon(iconDiv, 'video-off');
+
+          // Message
+          const message = placeholder.createDiv({
+            text: 'Video not available',
+            cls: 'text-sm'
+          });
+          message.style.cssText = 'color: var(--text-muted); font-size: 0.875rem;';
+
+          const hint = placeholder.createDiv({
+            text: 'The attachment may not be synced yet',
+            cls: 'text-xs'
+          });
+          hint.style.cssText = 'color: var(--text-faint); font-size: 0.75rem;';
+
+          // Replace video with placeholder
+          video.remove();
+          mediaElements[i] = placeholder;
+        });
+
         element = video;
       } else {
         // Render image - preserves original aspect ratio
@@ -80,6 +123,49 @@ export class MediaGalleryRenderer {
 
         img.style.cssText = 'max-width: 100%; max-height: 600px; width: auto; height: auto;';
         img.style.display = i === 0 ? 'block' : 'none';
+
+        // Handle image load error (e.g., attachment not found, sync issue)
+        img.addEventListener('error', () => {
+          console.warn(`[MediaGalleryRenderer] Failed to load image: ${resourcePath}`);
+
+          // Create placeholder for missing image
+          const placeholder = mediaContainer.createDiv();
+          placeholder.style.cssText = `
+            display: ${i === 0 ? 'flex' : 'none'};
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 200px;
+            background: var(--background-secondary);
+            border: 1px dashed var(--background-modifier-border);
+            border-radius: 8px;
+            padding: 24px;
+            gap: 12px;
+          `;
+
+          // Icon
+          const iconDiv = placeholder.createDiv();
+          iconDiv.style.cssText = 'width: 48px; height: 48px; opacity: 0.3;';
+          setIcon(iconDiv, 'image-off');
+
+          // Message
+          const message = placeholder.createDiv({
+            text: 'Image not available',
+            cls: 'text-sm'
+          });
+          message.style.cssText = 'color: var(--text-muted); font-size: 0.875rem;';
+
+          const hint = placeholder.createDiv({
+            text: 'The attachment may not be synced yet',
+            cls: 'text-xs'
+          });
+          hint.style.cssText = 'color: var(--text-faint); font-size: 0.75rem;';
+
+          // Replace img with placeholder
+          img.remove();
+          mediaElements[i] = placeholder;
+        });
 
         // If single image and single link, make image clickable
         if (extractedLink && media.length === 1) {
