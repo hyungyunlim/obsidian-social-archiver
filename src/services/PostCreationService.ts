@@ -73,7 +73,7 @@ export class PostCreationService {
       name: this.settings.userName || 'Unknown User',
       url: url, // Post URL as author URL
       avatar: this.settings.userAvatar || undefined,
-      username: this.settings.username || undefined,
+      username: this.settings?.username || undefined,
     };
 
     // Create PostData

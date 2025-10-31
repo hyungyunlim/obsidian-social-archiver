@@ -46,8 +46,15 @@ export {
 };
 
 /**
+ * External platforms that require URL validation
+ * 'post' is excluded as it's for user-created local posts
+ */
+type ExternalPlatform = Exclude<Platform, 'post'>;
+
+/**
  * Platform to schema mapping
  * Used by getPlatformSchema to retrieve the correct schema for a platform
+ * Note: 'post' platform does not have a URL schema as it's for local user-created posts
  */
 const PLATFORM_SCHEMA_MAP = {
 	facebook: FacebookURLSchema,
@@ -58,13 +65,14 @@ const PLATFORM_SCHEMA_MAP = {
 	threads: ThreadsURLSchema,
 	youtube: YouTubeURLSchema,
 	reddit: RedditURLSchema,
-} as const satisfies Record<Platform, z.ZodType>;
+} as const satisfies Record<ExternalPlatform, z.ZodType>;
 
 /**
  * Get platform-specific URL validation schema
  *
- * @param platform - The platform to get the schema for
+ * @param platform - The platform to get the schema for (excluding 'post')
  * @returns Zod schema for validating URLs from the specified platform
+ * @throws Error if platform is 'post' (user-created posts don't have URL schemas)
  *
  * @example
  * ```ts
@@ -75,7 +83,7 @@ const PLATFORM_SCHEMA_MAP = {
  * }
  * ```
  */
-export function getPlatformSchema(platform: Platform): z.ZodType {
+export function getPlatformSchema(platform: ExternalPlatform): z.ZodType {
 	return PLATFORM_SCHEMA_MAP[platform];
 }
 
@@ -137,8 +145,8 @@ export interface PlatformSchemaValidationResult {
 export function validateAndDetectPlatform(url: string): PlatformSchemaValidationResult {
 	const errors: string[] = [];
 
-	// Try each platform schema
-	const platforms: Platform[] = ['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube', 'reddit'];
+	// Try each external platform schema (excluding 'post')
+	const platforms: ExternalPlatform[] = ['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube', 'reddit'];
 
 	for (const platform of platforms) {
 		const schema = getPlatformSchema(platform);
@@ -173,7 +181,7 @@ export function validateAndDetectPlatform(url: string): PlatformSchemaValidation
  * Returns detailed validation result
  *
  * @param url - The URL to validate
- * @param platform - The platform to validate against
+ * @param platform - The external platform to validate against (excluding 'post')
  * @returns Validation result
  *
  * @example
@@ -186,7 +194,7 @@ export function validateAndDetectPlatform(url: string): PlatformSchemaValidation
  * }
  * ```
  */
-export function validatePlatformUrl(url: string, platform: Platform): z.SafeParseReturnType<string, string> {
+export function validatePlatformUrl(url: string, platform: ExternalPlatform): z.SafeParseReturnType<string, string> {
 	const schema = getPlatformSchema(platform);
 	return schema.safeParse(url);
 }
