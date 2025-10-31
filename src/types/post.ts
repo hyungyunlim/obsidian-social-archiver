@@ -152,6 +152,8 @@ export interface PostData {
   comments?: Comment[]; // Optional comments array
   transcript?: Transcript;  // YouTube transcript data
   videoId?: string;         // YouTube video ID
+  title?: string;           // YouTube video title
+  thumbnail?: string;       // YouTube video thumbnail URL
   filePath?: string;        // File path in vault (for Timeline View)
   comment?: string;         // User's personal note/comment
   like?: boolean;           // User's personal like (for sorting/filtering)

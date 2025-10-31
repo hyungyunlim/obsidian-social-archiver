@@ -832,10 +832,7 @@ export class PostCardRenderer {
       shareBtn.setAttribute('title', 'Shared - Click to copy link');
 
       // Update icon to link icon
-      const shareIcon = shareBtn.querySelector('div');
-      if (shareIcon) {
-        setIcon(shareIcon as HTMLElement, 'link');
-      }
+      setIcon(shareIcon, 'link');
 
       // Copy to clipboard
       await navigator.clipboard.writeText(shareUrl);
@@ -846,7 +843,7 @@ export class PostCardRenderer {
 
       // PHASE 2: Upload media in background and update share
       if (hasMedia) {
-        this.uploadMediaAndUpdateShare(post, shareId, username, workerUrl, shareUrl)
+        this.uploadMediaAndUpdateShare(post, shareId, username, workerUrl)
           .catch(err => {
             console.error('[PostCardRenderer] Background media upload failed:', err);
             new Notice('⚠️ Some images failed to upload');
@@ -871,8 +868,7 @@ export class PostCardRenderer {
     post: PostData,
     shareId: string,
     username: string,
-    workerUrl: string,
-    shareUrl: string
+    workerUrl: string
   ): Promise<void> {
     console.log('[PostCardRenderer] Starting background media upload for share:', shareId);
 
@@ -958,7 +954,7 @@ export class PostCardRenderer {
 
       // Hide progress notice and show completion message
       if (progressNotice) {
-        progressNotice.hide();
+        (progressNotice as Notice).hide();
       }
 
       console.log('[PostCardRenderer] Media uploaded and share updated:', shareId);
@@ -966,7 +962,7 @@ export class PostCardRenderer {
     } catch (err) {
       // Hide progress notice on error
       if (progressNotice) {
-        progressNotice.hide();
+        (progressNotice as Notice).hide();
       }
       // Re-throw to be handled by caller
       throw err;
@@ -1622,21 +1618,23 @@ export class PostCardRenderer {
     // Update existing keys
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      if (!line) continue; // Skip undefined lines
+
       const keyMatch = line.match(/^(\w+):/);
 
-      if (keyMatch) {
+      if (keyMatch && keyMatch[1]) {
         // This line defines a key
         const key = keyMatch[1];
         currentArrayKey = null; // Reset array tracking
 
-        if (key && updates.hasOwnProperty(key)) {
+        if (updates.hasOwnProperty(key)) {
           const value = updates[key];
           if (value === null || value === undefined) {
             // Skip this line to remove the field
             processedKeys.add(key);
 
             // Skip array items if this was an array key
-            while (i + 1 < lines.length && lines[i + 1].match(/^\s+-\s/)) {
+            while (i + 1 < lines.length && lines[i + 1]?.match(/^\s+-\s/)) {
               i++;
             }
             continue;
@@ -1651,7 +1649,7 @@ export class PostCardRenderer {
 
           // Skip old array items if this is now an array
           if (Array.isArray(value)) {
-            while (i + 1 < lines.length && lines[i + 1].match(/^\s+-\s/)) {
+            while (i + 1 < lines.length && lines[i + 1]?.match(/^\s+-\s/)) {
               i++;
             }
           }
@@ -1659,7 +1657,7 @@ export class PostCardRenderer {
           // Keep existing line
           updatedLines.push(line);
           // Track if this starts an array
-          if (i + 1 < lines.length && lines[i + 1].match(/^\s+-\s/)) {
+          if (i + 1 < lines.length && lines[i + 1]?.match(/^\s+-\s/)) {
             currentArrayKey = key;
           }
         }
@@ -2022,7 +2020,8 @@ export class PostCardRenderer {
   /**
    * Upload local images to R2 and replace markdown paths with R2 URLs
    */
-  private async uploadLocalImagesAndReplaceUrls(content: string, shareId: string, workerUrl: string): Promise<string> {
+  // @ts-expect-error - Utility function for future use
+  private async _uploadLocalImagesAndReplaceUrls(content: string, shareId: string, workerUrl: string): Promise<string> {
     let updatedContent = content;
 
     // Find all markdown image references
@@ -2120,6 +2119,8 @@ export class PostCardRenderer {
 
     for (let i = 0; i < media.length; i++) {
       const mediaItem = media[i];
+      if (!mediaItem) continue; // Skip undefined items
+
       // Skip if URL is already remote (http/https)
       if (mediaItem.url.startsWith('http://') || mediaItem.url.startsWith('https://')) {
         updatedMedia.push(mediaItem);
@@ -2207,7 +2208,8 @@ export class PostCardRenderer {
   /**
    * Remove YAML frontmatter from markdown content
    */
-  private removeYamlFrontmatter(content: string): string {
+  // @ts-expect-error - Utility function for future use
+  private _removeYamlFrontmatter(content: string): string {
     // Remove YAML frontmatter (---\n...\n---)
     return content.replace(/^---\n[\s\S]*?\n---\n/, '');
   }
@@ -2215,7 +2217,8 @@ export class PostCardRenderer {
   /**
    * Remove first H1 heading from markdown content
    */
-  private removeFirstH1(content: string): string {
+  // @ts-expect-error - Utility function for future use
+  private _removeFirstH1(content: string): string {
     // Remove first # Title line
     return content.replace(/^#\s+.+\n/, '');
   }

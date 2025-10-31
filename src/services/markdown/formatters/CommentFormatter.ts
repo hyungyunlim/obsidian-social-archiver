@@ -1,4 +1,4 @@
-import type { PostData, Platform } from '@/types/post';
+import type { PostData, Platform, Comment } from '@/types/post';
 import { DateNumberFormatter } from './DateNumberFormatter';
 import { TextFormatter } from './TextFormatter';
 
@@ -106,7 +106,7 @@ export class CommentFormatter {
           // Nested replies with indentation
           if (comment.replies && comment.replies.length > 0) {
             const formattedReplies = comment.replies
-              .map((reply) => {
+              .map((reply: Comment) => {
                 if (!reply || !reply.author || !reply.content) {
                   return '';
                 }
@@ -145,7 +145,7 @@ export class CommentFormatter {
                 const replyTimePart = replyTime ? ` · ${replyTime}` : '';
                 return `  ↳ **${replyAuthorDisplay}**${replyTimePart}${replyLikes}\n  ${replyContent}`;
               })
-              .filter(r => r.length > 0)
+              .filter((r: string) => r.length > 0)
               .join('\n\n');
 
             if (formattedReplies.length > 0) {

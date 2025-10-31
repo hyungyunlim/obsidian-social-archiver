@@ -63,8 +63,8 @@ export class PostCreationService {
     // Generate vault file path
     const year = timestamp.getFullYear();
     const month = String(timestamp.getMonth() + 1).padStart(2, '0');
-    const date = timestamp.toISOString().split('T')[0];
-    const timeStr = timestamp.toTimeString().split(' ')[0].replace(/:/g, '');
+    const date = timestamp.toISOString().split('T')[0] || '';
+    const timeStr = (timestamp.toTimeString().split(' ')[0] || '00:00:00').replace(/:/g, '');
     const fileName = `${date}-${timeStr}.md`;
     const url = `${this.settings.archivePath}/Posts/${year}/${month}/${fileName}`;
 
