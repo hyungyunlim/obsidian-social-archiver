@@ -156,6 +156,41 @@ async function parseResponse<T>(response: Response): Promise<T> {
 }
 
 /**
+ * Fix Reddit comment data (BrightData returns incorrect format)
+ * - author.url is empty -> generate from username
+ * - timestamp contains upvote info ("2 likes") -> parse to likes field
+ */
+function fixRedditComments(comments: any[], platform: string): any[] {
+  if (platform !== 'reddit' || !comments) return comments;
+
+  return comments.map(comment => {
+    const fixed = { ...comment };
+
+    // Fix author URL if empty
+    if (fixed.author && (!fixed.author.url || fixed.author.url === '')) {
+      const username = fixed.author.username || fixed.author.name;
+      fixed.author.url = `https://www.reddit.com/user/${username}`;
+    }
+
+    // Parse upvote info from timestamp field
+    if (fixed.timestamp && typeof fixed.timestamp === 'string' && fixed.timestamp.includes('like')) {
+      const match = fixed.timestamp.match(/(\d+)\s+like/);
+      if (match) {
+        fixed.likes = parseInt(match[1], 10);
+        fixed.timestamp = undefined; // Clear incorrect timestamp
+      }
+    }
+
+    // Recursively fix replies
+    if (fixed.replies && Array.isArray(fixed.replies)) {
+      fixed.replies = fixRedditComments(fixed.replies, platform);
+    }
+
+    return fixed;
+  });
+}
+
+/**
  * Transform API response to Post structure
  */
 function transformPostData(apiData: any): Post {
@@ -189,7 +224,7 @@ function transformPostData(apiData: any): Post {
       views: apiData.metadata?.views,
       bookmarks: apiData.metadata?.bookmarks
     },
-    comments: apiData.comments || [], // IMPORTANT: Include comments array
+    comments: fixRedditComments(apiData.comments || [], apiData.platform || 'x'), // Fix Reddit comment data
     comment: apiData.comment, // User's personal comment/note
     like: apiData.like, // User's personal like status
     archive: apiData.archive, // Archive status

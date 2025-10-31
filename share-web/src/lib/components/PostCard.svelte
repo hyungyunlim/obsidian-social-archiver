@@ -18,7 +18,9 @@
 			username,
 			comment: post.comment,
 			like: post.like,
-			archive: post.archive
+			archive: post.archive,
+			comments: post.comments,
+			firstCommentAuthorUrl: post.comments?.[0]?.author?.url
 		});
 	});
 

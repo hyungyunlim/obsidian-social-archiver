@@ -16,6 +16,35 @@ export class CommentFormatter {
   }
 
   /**
+   * Fix Reddit comment data (BrightData returns incorrect format)
+   */
+  private fixRedditComment(comment: any): any {
+    const fixed = { ...comment };
+
+    // Fix author URL if empty
+    if (fixed.author && (!fixed.author.url || fixed.author.url === '')) {
+      const username = fixed.author.username || fixed.author.name;
+      fixed.author.url = `https://www.reddit.com/user/${username}`;
+    }
+
+    // Parse upvote info from timestamp field
+    if (fixed.timestamp && typeof fixed.timestamp === 'string' && fixed.timestamp.includes('like')) {
+      const match = fixed.timestamp.match(/(\d+)\s+like/);
+      if (match) {
+        fixed.likes = parseInt(match[1], 10);
+        fixed.timestamp = undefined; // Clear incorrect timestamp
+      }
+    }
+
+    // Fix replies
+    if (fixed.replies && Array.isArray(fixed.replies)) {
+      fixed.replies = fixed.replies.map((reply: any) => this.fixRedditComment(reply));
+    }
+
+    return fixed;
+  }
+
+  /**
    * Format comments for markdown (nested style with indentation)
    */
   formatComments(comments: PostData['comments'], platform: Platform): string {
@@ -24,7 +53,12 @@ export class CommentFormatter {
     }
 
     try {
-      return comments
+      // Fix Reddit comment data before processing
+      const processedComments = platform === 'reddit'
+        ? comments.map(c => this.fixRedditComment(c))
+        : comments;
+
+      return processedComments
         .map((comment) => {
           // Defensive checks
           if (!comment || !comment.author || !comment.content) {
@@ -34,6 +68,7 @@ export class CommentFormatter {
           // Main comment - support both handle and username
           // LinkedIn: use name instead of handle (handles can be URL-encoded)
           // Instagram: use handle with link
+          // Reddit: use username with link
           // Others: use handle if available, otherwise name
           const authorHandle = comment.author.handle || comment.author.username;
 
@@ -46,6 +81,11 @@ export class CommentFormatter {
           } else if (platform === 'instagram' && authorHandle) {
             // Instagram: use handle with link
             authorDisplay = `[@${authorHandle}](https://instagram.com/${authorHandle})`;
+          } else if (platform === 'reddit' && authorHandle) {
+            // Reddit: use username with link
+            authorDisplay = comment.author.url
+              ? `[@${authorHandle}](${comment.author.url})`
+              : `@${authorHandle}`;
           } else {
             // Others: use handle or name
             authorDisplay = authorHandle ? `@${authorHandle}` : comment.author.name;
@@ -82,6 +122,11 @@ export class CommentFormatter {
                 } else if (platform === 'instagram' && replyHandle) {
                   // Instagram: use handle with link
                   replyAuthorDisplay = `[@${replyHandle}](https://instagram.com/${replyHandle})`;
+                } else if (platform === 'reddit' && replyHandle) {
+                  // Reddit: use username with link
+                  replyAuthorDisplay = reply.author.url
+                    ? `[@${replyHandle}](${reply.author.url})`
+                    : `@${replyHandle}`;
                 } else {
                   // Others: use handle or name
                   replyAuthorDisplay = replyHandle ? `@${replyHandle}` : reply.author.name;
