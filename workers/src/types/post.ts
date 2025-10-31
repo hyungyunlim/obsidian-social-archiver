@@ -96,6 +96,7 @@ export interface PostData {
   metadata: PostMetadata;
   comments?: Comment[]; // Optional comments array for future support
   mediaSourceUrls?: string[]; // Original media URLs (before proxy download, plugin-side only)
+  linkPreviews?: string[]; // Extracted URLs for link preview generation
   ai?: AIAnalysis;
   transcript?: {
     raw?: string; // Full transcript text

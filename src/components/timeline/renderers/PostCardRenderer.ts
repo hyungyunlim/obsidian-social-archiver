@@ -687,9 +687,21 @@ export class PostCardRenderer {
       const originalContent = await this.vault.read(tfile);
 
       // Extract link previews from post content
-      const linkPreviews = post.content?.text
+      console.log('[PostCardRenderer] Extracting link previews:', {
+        hasContent: !!post.content?.text,
+        contentLength: post.content?.text?.length,
+        hasExtractor: !!this.plugin.linkPreviewExtractor,
+        platform: post.platform
+      });
+
+      const linkPreviews = post.content?.text && this.plugin.linkPreviewExtractor
         ? this.plugin.linkPreviewExtractor.extractUrls(post.content.text, post.platform)
         : [];
+
+      console.log('[PostCardRenderer] Link previews extracted:', {
+        count: linkPreviews.length,
+        previews: linkPreviews
+      });
 
       // Generate share ID first
       const shareId = this.generateShareId();
@@ -735,6 +747,7 @@ export class PostCardRenderer {
             : post.metadata.timestamp.toISOString()
         },
         comments: post.comments || [],
+        linkPreviews: post.linkPreviews || [], // Include link previews for web display
         title: post.title,
         thumbnail: post.thumbnail,
         archivedDate: post.archivedDate, // Include archive timestamp
@@ -789,10 +802,15 @@ export class PostCardRenderer {
       // Add linkPreviews if any were found
       if (linkPreviews.length > 0) {
         yamlUpdates.linkPreviews = linkPreviews;
+        console.log('[PostCardRenderer] Adding linkPreviews to YAML:', linkPreviews);
+      } else {
+        console.log('[PostCardRenderer] No linkPreviews to add to YAML');
       }
 
+      console.log('[PostCardRenderer] YAML updates:', yamlUpdates);
       const updatedContent = this.updateYamlFrontmatter(originalContent, yamlUpdates);
       await this.vault.modify(tfile, updatedContent);
+      console.log('[PostCardRenderer] YAML updated successfully');
 
       // Update post object
       (post as any).shareUrl = shareUrl;
@@ -895,6 +913,7 @@ export class PostCardRenderer {
           : post.metadata.timestamp.toISOString()
       },
       comments: post.comments || [],
+      linkPreviews: post.linkPreviews || [], // Include link previews for web display
       title: post.title,
       thumbnail: post.thumbnail,
       archivedDate: post.archivedDate,

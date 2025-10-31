@@ -21,20 +21,22 @@
 ### 3. **에디터 기능**
 
 #### 3.1 텍스트 입력
-- **에디터 타입**: Custom ContentEditable Div
+- **에디터 타입**: Tiptap (ProseMirror 기반)
   - Timeline View는 기존 MarkdownView가 아니므로 `Editor` API 직접 사용 불가
-  - `contenteditable` div로 자체 에디터 구현
-  - Markdown syntax 지원 (실시간 미리보기는 Optional)
-  - 자동 링크 감지 (URL 패턴 매칭)
-  - Obsidian 내부 링크 (`[[Note]]`) 입력 지원 (SuggestModal로 자동완성)
-  - **Alternative**: Textarea + 마크다운 렌더링 프리뷰 (더 간단한 구현)
+  - Tiptap으로 WYSIWYG 에디터 구현 (Obsidian과 동일한 ProseMirror 기반)
+  - `tiptap-markdown` 확장으로 마크다운 I/O 처리
+  - **Extensions**: StarterKit, Markdown, Placeholder, Image, Link
+  - 자동 링크 감지 (Link 확장의 autolink 기능)
+  - Markdown serialization으로 Vault 저장 시 마크다운 포맷 유지
+  - **Reference**: korean-grammar-svelte의 TipTapMarkdownEditor 구현 참고
 - **Placeholder**: "What's on your mind?" (페이스북 스타일)
 - **최대 길이**: 10,000자 (Instagram 제한 참고)
 - **실시간 카운터**: 하단에 `{current}/{max}` 표시
 - **Markdown 지원**: 기본 syntax (`**bold**`, `_italic_`, `# heading`, `- list`, etc.)
+- **Dependencies**: `@tiptap/core`, `@tiptap/starter-kit`, `tiptap-markdown`
 - **API Reference**:
   - Obsidian Editor API는 `MarkdownView`에서만 접근 가능
-  - Timeline View 내부에서는 DOM 직접 조작 필요
+  - Timeline View 내부에서는 Tiptap + DOM 직접 조작 필요
 
 #### 3.2 링크 처리
 - URL 자동 감지 및 하이라이트
@@ -314,27 +316,46 @@ export class PostComposer {
 }
 
 // src/components/composer/MarkdownEditor.ts
+import { Editor } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
+import { Markdown } from 'tiptap-markdown';
+
 export class MarkdownEditor {
-  private editorEl: HTMLDivElement; // contenteditable div
-  private content: string = '';
+  private editor: Editor;
+  private editorEl: HTMLElement;
 
   constructor(parentEl: HTMLElement) {
     this.editorEl = parentEl.createDiv({ cls: 'post-editor' });
-    this.editorEl.contentEditable = 'true';
-    this.setupEventListeners();
+
+    this.editor = new Editor({
+      element: this.editorEl,
+      extensions: [
+        StarterKit,
+        Markdown,
+        Placeholder.configure({ placeholder: "What's on your mind?" }),
+        Image,
+        Link.configure({ openOnClick: false, autolink: true })
+      ],
+      editorProps: {
+        attributes: { class: 'tiptap-editor-content', spellcheck: 'false' }
+      }
+    });
   }
 
-  // 텍스트 입력 처리
-  // 링크 감지 (URL 패턴 매칭)
-  // Character counting
-  // Markdown syntax highlighting (optional)
-
+  // Markdown I/O (tiptap-markdown 사용)
   getContent(): string {
-    return this.editorEl.innerText || this.editorEl.textContent || '';
+    return this.editor.storage.markdown.getMarkdown();
   }
 
   setContent(content: string): void {
-    this.editorEl.innerText = content;
+    this.editor.commands.setContent(content);
+  }
+
+  destroy(): void {
+    this.editor.destroy();
   }
 }
 
@@ -571,7 +592,7 @@ const strings = {
 
 #### Phase 1: MVP (Week 1-2)
 - [ ] Basic composer UI (collapsed/expanded)
-- [ ] Markdown editor integration (Obsidian native)
+- [ ] Tiptap editor integration (with markdown extensions)
 - [ ] Text input + character counter
 - [ ] Image attachment (drag & drop, file picker)
 - [ ] Local vault storage
@@ -595,7 +616,14 @@ const strings = {
 - [ ] Accessibility audit
 - [ ] i18n (English, Korean)
 
-#### Phase 4: Advanced (Future)
+#### Phase 4: Web Version & Advanced Features (Future)
+- [ ] **Web Version Implementation**
+  - [ ] Add PostComposer to share-web (SvelteKit)
+  - [ ] Implement authentication (user login/signup)
+  - [ ] Media upload to Workers API (multipart/form-data)
+  - [ ] Update Platform type to include 'post'
+  - [ ] Web editor UI with Tiptap (reuse Obsidian implementation)
+  - [ ] Mobile-responsive composer for web
 - [ ] Video attachment
 - [ ] AI content suggestions
 - [ ] Scheduled posting
@@ -904,13 +932,165 @@ this.app.emulateMobile(!this.app.isMobile);
 
 ---
 
+## 🌐 Phase 4: Web Version Implementation Details
+
+### Overview
+Phase 4에서는 Obsidian 플러그인의 User Post Creation 기능을 웹 버전(share-web)으로 확장합니다. 기존 SvelteKit 앱에 PostComposer를 추가하여 브라우저에서도 포스트 작성이 가능하도록 합니다.
+
+### Architecture Changes
+
+#### 1. **Storage Layer 추상화**
+```typescript
+// Obsidian 플러그인과 웹 버전 공통 인터페이스
+interface IPostStorage {
+  savePost(post: PostData): Promise<{ id: string; path: string }>;
+  saveMedia(file: File): Promise<{ url: string; path: string }>;
+  getPost(id: string): Promise<PostData>;
+}
+
+// Obsidian 구현
+class ObsidianVaultStorage implements IPostStorage {
+  constructor(private vault: Vault) {}
+
+  async savePost(post: PostData) {
+    // vault.create(), vault.createBinary() 사용
+  }
+}
+
+// 웹 구현
+class CloudflareAPIStorage implements IPostStorage {
+  constructor(private apiEndpoint: string, private authToken: string) {}
+
+  async savePost(post: PostData) {
+    // POST /api/posts - Workers API 호출
+  }
+
+  async saveMedia(file: File) {
+    // POST /api/media - Multipart upload to R2/KV
+  }
+}
+```
+
+#### 2. **Workers API 엔드포인트 추가**
+```typescript
+// workers/src/routes/posts.ts
+POST /api/posts
+- Body: PostData (without media, just metadata)
+- Response: { postId, shareUrl }
+
+POST /api/media
+- Body: multipart/form-data (images/videos)
+- Response: { mediaUrls: string[] }
+
+// 기존 share API 재사용
+POST /api/share (이미 구현됨)
+```
+
+#### 3. **Authentication 시스템**
+```typescript
+// 웹 버전에서는 인증 필요
+interface AuthContext {
+  username: string;
+  isAuthenticated: boolean;
+  credits: number;
+}
+
+// Gumroad license key 기반 인증
+POST /api/auth/verify
+- Body: { licenseKey: string }
+- Response: { username, credits, expiresAt }
+```
+
+#### 4. **share-web에 컴포넌트 추가**
+```svelte
+<!-- share-web/src/routes/compose/+page.svelte -->
+<script lang="ts">
+  import PostComposer from '$lib/components/PostComposer.svelte';
+  import { CloudflareAPIStorage } from '$lib/storage/CloudflareAPIStorage';
+
+  const storage = new CloudflareAPIStorage(apiUrl, authToken);
+</script>
+
+<PostComposer {storage} />
+```
+
+#### 5. **Tiptap 에디터 재사용**
+- Obsidian 플러그인의 MarkdownEditor를 웹용으로 포팅
+- 동일한 extensions (StarterKit, Markdown, Image, Link)
+- 차이점: DOM API 사용 (Obsidian extensions 대신 표준 DOM)
+
+### Implementation Checklist
+
+#### Frontend (share-web)
+- [ ] `PostComposer.svelte` - 메인 컴포저 컴포넌트
+- [ ] `WebMarkdownEditor.svelte` - Tiptap 에디터 (웹 버전)
+- [ ] `MediaUploader.svelte` - 이미지/비디오 업로드 UI
+- [ ] `AuthProvider.svelte` - 인증 컨텍스트 관리
+- [ ] `/compose` 라우트 추가
+
+#### Backend (workers)
+- [ ] `POST /api/posts` - 포스트 생성 엔드포인트
+- [ ] `POST /api/media` - 미디어 업로드 (R2 Storage)
+- [ ] `POST /api/auth/verify` - 라이선스 검증
+- [ ] KV Store 스키마 업데이트 (user posts 저장)
+
+#### Shared
+- [ ] Platform 타입에 'post' 추가
+- [ ] IPostStorage 인터페이스 정의
+- [ ] 공통 타입 정의 (`workers/src/types/post.ts` 공유)
+
+### Differences from Obsidian Version
+
+| Feature | Obsidian Plugin | Web Version |
+|---------|-----------------|-------------|
+| Storage | Vault API (local files) | Workers API (cloud) |
+| Auth | None (local only) | License key required |
+| Media | Local file system | Upload to R2 |
+| Editor | Obsidian DOM extensions | Standard DOM API |
+| Offline | Full support | Requires network |
+| Share | Optional | Always enabled |
+
+### Security Considerations
+
+1. **Rate Limiting**: 웹에서는 더 엄격한 rate limit 필요
+   - IP 기반: 10 posts/hour
+   - User 기반: 50 posts/day
+
+2. **Content Moderation**:
+   - NSFW 필터 (client-side + server-side)
+   - Spam detection
+   - Profanity filter
+
+3. **File Upload Limits**:
+   - 이미지: 10MB per file, 10 files max
+   - 비디오: 100MB per file, 1 file max
+   - Total: 50MB per post
+
+4. **CORS**: Workers API에서 share-web 도메인만 허용
+
+### Cost Considerations
+
+웹 버전 추가 비용:
+- **R2 Storage**: 이미지/비디오 저장 ($0.015/GB/month)
+- **KV Writes**: 포스트 메타데이터 저장 (무료 티어 충분)
+- **Workers Requests**: 포스트 생성 API 호출 (무료 티어 100k/day)
+
+예상 비용: 월 $5-10 (초기 사용자 기준)
+
+---
+
 ## 📝 Notes
 
 - 이 스펙은 MVP 기준으로 작성되었으며, 사용자 피드백에 따라 조정 가능
 - **Obsidian API 제약사항 확인 완료**:
-  - Custom views에서 Editor API 직접 사용 불가 → contenteditable div 사용
+  - Custom views에서 Editor API 직접 사용 불가 → Tiptap 사용
   - Mobile에서 Node.js/Electron API 사용 금지 → Platform.isMobile 체크
   - Vault API로 파일/폴더 생성/수정 가능 → `vault.create()`, `vault.createBinary()` 사용
+- **Tiptap 선택 이유**:
+  - Obsidian과 동일한 ProseMirror 기반 (일관성)
+  - 웹 네이티브 (Phase 4 웹 버전 확장 가능)
+  - korean-grammar-svelte에서 검증된 구현 참고 가능
 - Share API는 기존 시스템 재사용으로 빠른 구현 가능
 - Timeline 렌더링은 기존 PostCard 컴포넌트 재사용 (`platform: 'post'` 추가)
 - 모든 파일 작업은 Vault API를 통해 수행하여 Obsidian 파일 감시자와 호환
+- **Phase 4 웹 버전**: Storage Layer 추상화로 Obsidian/Web 동일한 로직 재사용

@@ -29,7 +29,10 @@
 			archive: post.archive,
 			comments: post.comments,
 			firstCommentAuthorUrl: post.comments?.[0]?.author?.url,
-			linkPreviews: post.linkPreviews
+			linkPreviews: post.linkPreviews,
+			linkPreviewsType: typeof post.linkPreviews,
+			linkPreviewsLength: post.linkPreviews?.length,
+			linkPreviewsIsArray: Array.isArray(post.linkPreviews)
 		});
 	});
 
@@ -164,6 +167,14 @@
 
 	// Fetch link preview metadata when post has linkPreviews and no visible images
 	$effect(() => {
+		console.log('[PostCard] Link preview fetch check:', {
+			hasLinkPreviews: !!post.linkPreviews,
+			linkPreviewsLength: post.linkPreviews?.length,
+			visibleImagesLength: visibleImages.length,
+			loadingPreviews,
+			previewError
+		});
+
 		// Only fetch if:
 		// 1. Post has linkPreviews URLs
 		// 2. No visible images (to avoid cluttering the card)
@@ -175,10 +186,11 @@
 			!loadingPreviews &&
 			!previewError
 		) {
+			console.log('[PostCard] Starting link preview fetch for URLs:', post.linkPreviews);
 			loadingPreviews = true;
 			previewError = false;
 
-			const urls = post.linkPreviews.map(lp => lp.url);
+			const urls = post.linkPreviews;
 
 			// Set timeout for metadata fetching (10 seconds)
 			const timeoutId = setTimeout(() => {
@@ -192,6 +204,7 @@
 			fetchLinkPreviewsMetadata(urls)
 				.then(metadata => {
 					clearTimeout(timeoutId);
+					console.log('[PostCard] Link preview metadata fetched:', metadata);
 					linkPreviewsMetadata = metadata;
 					loadingPreviews = false;
 

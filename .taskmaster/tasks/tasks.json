@@ -3527,11 +3527,727 @@
             "testStrategy": "TTL conflict resolution tests, content variation handling tests, platform priority validation, consistency verification tests, edge case scenario testing"
           }
         ]
+      },
+      {
+        "id": 63,
+        "title": "Extend PostData interface to support user-created posts",
+        "description": "Add 'post' as a new platform type and extend the PostData interface to handle user-created content with proper typing",
+        "details": "Update src/types/post.ts and workers/src/types/post.ts to add 'post' to the Platform union type. Extend PostData interface to handle user-created posts with author data from Obsidian user settings. Update PostDataParser to handle platform: 'post' posts with proper validation and type safety.",
+        "testStrategy": "Unit tests for PostData validation with platform: 'post'. Test serialization/deserialization of user post data. Verify type safety across TypeScript compilation.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add 'post' platform type to union types in both frontend and workers",
+            "description": "Update Platform union type in both src/types/post.ts and workers/src/types/post.ts to include 'post' as a valid platform option",
+            "dependencies": [],
+            "details": "Modify the Platform union type in src/types/post.ts and workers/src/types/post.ts to add 'post' alongside existing platforms ('facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads'). Ensure TypeScript compilation passes without errors and all existing type references remain valid.",
+            "status": "pending",
+            "testStrategy": "Verify TypeScript compilation succeeds with new platform type, test that existing platform type checks still work correctly"
+          },
+          {
+            "id": 2,
+            "title": "Extend PostData interface with user-created post fields and author data integration",
+            "description": "Enhance PostData interface to handle user-created posts with proper author data from Obsidian user settings and additional required fields",
+            "dependencies": [
+              1
+            ],
+            "details": "Extend the PostData interface to support platform: 'post' with specific fields for user-created content. Add author data integration that pulls from Obsidian user settings. Include fields for user-generated content metadata, creation timestamp, and proper typing for content that doesn't come from external social platforms.",
+            "status": "pending",
+            "testStrategy": "Unit tests for PostData validation with platform: 'post', verify author data properly integrates with Obsidian settings, test serialization/deserialization"
+          },
+          {
+            "id": 3,
+            "title": "Update PostDataParser with validation and type safety for platform: 'post'",
+            "description": "Modify PostDataParser to handle platform: 'post' posts with proper validation logic and type safety checks",
+            "dependencies": [
+              2
+            ],
+            "details": "Update PostDataParser in src/components/timeline/parsers/PostDataParser.ts to include validation logic for platform: 'post'. Implement type guards and validation functions to ensure user-created posts meet the required schema. Add error handling for invalid post data and ensure type safety across the parsing pipeline.",
+            "status": "pending",
+            "testStrategy": "Unit tests for PostDataParser with platform: 'post' validation, test error handling for invalid post data, verify type safety across TypeScript compilation"
+          }
+        ]
+      },
+      {
+        "id": 64,
+        "title": "Install and configure Tiptap editor dependencies",
+        "description": "Install Tiptap v3.4.3 core packages and extensions needed for Markdown editing with image support",
+        "details": "Install @tiptap/core@^3.4.3, @tiptap/starter-kit@^3.4.3, @tiptap/extension-placeholder@^3.4.3, @tiptap/extension-image@^3.4.3, @tiptap/extension-link@^3.4.3, and tiptap-markdown@^0.9.0. Configure package.json and ensure compatibility with existing build system.",
+        "testStrategy": "Verify packages install correctly. Test basic Tiptap editor instantiation. Ensure no conflicts with existing dependencies.",
+        "priority": "high",
+        "dependencies": [
+          63
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Tiptap packages and verify build compatibility",
+            "description": "Install all required Tiptap v3.4.3 packages and verify they work with the existing Vite build system",
+            "dependencies": [],
+            "details": "Run npm install @tiptap/core@^3.4.3 @tiptap/starter-kit@^3.4.3 @tiptap/extension-placeholder@^3.4.3 @tiptap/extension-image@^3.4.3 @tiptap/extension-link@^3.4.3 tiptap-markdown@^0.9.0. Check for any dependency conflicts with existing packages. Verify the packages install correctly and don't break the existing Vite build configuration. Run npm run build to ensure compatibility.",
+            "status": "pending",
+            "testStrategy": "Verify successful package installation without conflicts, confirm npm run build completes successfully, check that no TypeScript compilation errors are introduced"
+          },
+          {
+            "id": 2,
+            "title": "Configure package.json and test basic Tiptap editor instantiation",
+            "description": "Update package.json configuration and create a basic test to verify Tiptap editor can be instantiated properly",
+            "dependencies": [
+              1
+            ],
+            "details": "Update package.json to include the new Tiptap dependencies in the correct sections. Create a simple test file or component to instantiate a basic Tiptap editor with StarterKit to verify the packages work correctly. Ensure TypeScript types are properly recognized and no runtime errors occur during editor initialization.",
+            "status": "pending",
+            "testStrategy": "Test basic Tiptap editor instantiation without errors, verify TypeScript types are recognized, confirm editor renders in a test environment"
+          }
+        ]
+      },
+      {
+        "id": 65,
+        "title": "Create PostComposer main container component",
+        "description": "Build the main PostComposer Svelte component with collapsed/expanded states and Facebook-style UX",
+        "details": "Create src/components/timeline/PostComposer.svelte with Svelte 5 runes. Implement collapsed state (60px height, 'What's on your mind?' placeholder) and expanded state (full editor). Use $state for isExpanded, smooth CSS transitions, and proper touch targets (44px minimum) for mobile.",
+        "testStrategy": "Unit tests for state transitions. Visual regression tests for collapsed/expanded states. Mobile touch target validation on iOS/Android.",
+        "priority": "high",
+        "dependencies": [
+          64
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create basic PostComposer.svelte structure with Svelte 5 runes",
+            "description": "Set up the foundational PostComposer component file with Svelte 5 runes state management and basic component structure",
+            "dependencies": [],
+            "details": "Create src/components/timeline/PostComposer.svelte file with Svelte 5 runes imports. Initialize $state for isExpanded boolean and basic component markup structure. Set up TypeScript interfaces for component props and internal state. Import required Tailwind CSS classes and establish component naming conventions.",
+            "status": "pending",
+            "testStrategy": "Unit test component initialization and state variable creation. Verify Svelte 5 runes are properly imported and functional."
+          },
+          {
+            "id": 2,
+            "title": "Implement collapsed state UI with placeholder",
+            "description": "Build the collapsed state interface with 60px height constraint and 'What's on your mind?' placeholder text",
+            "dependencies": [
+              1
+            ],
+            "details": "Create collapsed state UI with fixed 60px height container, rounded border styling, and centered placeholder text 'What's on your mind?'. Implement click handler to transition to expanded state. Use Tailwind CSS for styling with proper padding, background colors, and hover states. Ensure accessibility with proper ARIA labels.",
+            "status": "pending",
+            "testStrategy": "Test collapsed state renders at exact 60px height. Verify placeholder text displays correctly. Test click interaction triggers state change."
+          },
+          {
+            "id": 3,
+            "title": "Implement expanded state with smooth transitions",
+            "description": "Create the expanded state interface with smooth CSS transitions between collapsed and expanded modes",
+            "dependencies": [
+              2
+            ],
+            "details": "Build expanded state UI with full editor interface including text area, action buttons, and media upload options. Implement smooth CSS transitions using transition-all duration-300 ease-in-out for height changes. Add conditional rendering based on isExpanded state. Include escape key handler to collapse component.",
+            "status": "pending",
+            "testStrategy": "Test smooth transition animations between states. Verify expanded state shows all editor components. Test keyboard navigation and escape key functionality."
+          },
+          {
+            "id": 4,
+            "title": "Add mobile responsiveness and touch target validation",
+            "description": "Ensure component works properly on mobile devices with proper touch targets and responsive design",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement responsive design using Tailwind CSS breakpoints (sm:, md:, lg:). Ensure all interactive elements meet 44px minimum touch target requirements. Add touch-friendly padding and spacing. Test component behavior on various screen sizes and orientations. Optimize for mobile Safari and Chrome mobile browsers.",
+            "status": "pending",
+            "testStrategy": "Validate touch targets are minimum 44px on mobile devices. Test component responsiveness across iPhone SE, standard mobile, tablet, and desktop viewports. Verify touch interactions work properly on iOS and Android."
+          }
+        ]
+      },
+      {
+        "id": 66,
+        "title": "Implement Tiptap MarkdownEditor component",
+        "description": "Create a reusable MarkdownEditor component using Tiptap with StarterKit, Markdown, Placeholder, Image, and Link extensions",
+        "details": "Create src/components/editor/MarkdownEditor.svelte following korean-grammar-svelte patterns. Configure StarterKit, Markdown serialization via tiptap-markdown, auto-link detection, 10,000 character limit, and proper spellcheck=false. Implement clipboard serialization to Markdown format.",
+        "testStrategy": "Test Markdown serialization/deserialization. Verify auto-link detection. Test character limit enforcement. Validate clipboard behavior.",
+        "priority": "high",
+        "dependencies": [
+          65
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create MarkdownEditor.svelte with basic Tiptap setup",
+            "description": "Create the base MarkdownEditor component file with Tiptap editor initialization and basic structure",
+            "dependencies": [],
+            "details": "Create src/components/editor/MarkdownEditor.svelte following korean-grammar-svelte patterns. Initialize Tiptap Editor instance with basic configuration, set up component props for content and onChange handlers, implement proper Svelte 5 runes for state management, and establish the component's basic HTML structure with proper editor container.",
+            "status": "pending",
+            "testStrategy": "Test component initialization, verify Tiptap editor renders correctly, validate props are handled properly"
+          },
+          {
+            "id": 2,
+            "title": "Configure StarterKit and Markdown extensions",
+            "description": "Set up Tiptap StarterKit extension and configure tiptap-markdown for Markdown serialization",
+            "dependencies": [
+              1
+            ],
+            "details": "Install and configure @tiptap/starter-kit and @tiptap/extension-markdown extensions. Set up tiptap-markdown for proper Markdown serialization and deserialization. Configure extension options for proper HTML to Markdown conversion, ensure proper heading, list, and formatting support, and implement bidirectional content transformation.",
+            "status": "pending",
+            "testStrategy": "Test Markdown serialization/deserialization accuracy, verify all StarterKit features work correctly, validate round-trip conversion"
+          },
+          {
+            "id": 3,
+            "title": "Implement auto-link detection and character limit",
+            "description": "Add automatic link detection and enforce 10,000 character limit with visual feedback",
+            "dependencies": [
+              2
+            ],
+            "details": "Configure @tiptap/extension-link for auto-link detection with proper URL validation. Implement character counting with CharacterCount extension, set up 10,000 character limit enforcement, add visual feedback for approaching limit, and prevent input when limit is reached. Include proper error handling for invalid URLs.",
+            "status": "pending",
+            "testStrategy": "Test auto-link detection for various URL formats, verify character limit enforcement, validate visual feedback for character count"
+          },
+          {
+            "id": 4,
+            "title": "Add clipboard serialization to Markdown",
+            "description": "Implement proper clipboard handling to serialize content as Markdown format",
+            "dependencies": [
+              3
+            ],
+            "details": "Override default clipboard behavior to serialize editor content as Markdown when copying. Implement custom paste handling to preserve Markdown formatting, handle rich text paste conversion to Markdown, and ensure proper clipboard integration with the Markdown extension. Add support for copying selected portions as Markdown.",
+            "status": "pending",
+            "testStrategy": "Test clipboard copy serialization to Markdown format, verify paste handling preserves formatting, validate partial selection copying"
+          },
+          {
+            "id": 5,
+            "title": "Integrate spellcheck and validation features",
+            "description": "Add spellcheck=false configuration and implement content validation features",
+            "dependencies": [
+              4
+            ],
+            "details": "Configure editor with spellcheck=false to prevent browser spell checking interference. Add content validation for Markdown syntax, implement error highlighting for malformed content, add placeholder text support with @tiptap/extension-placeholder, and integrate proper focus management and accessibility features.",
+            "status": "pending",
+            "testStrategy": "Verify spellcheck is disabled, test placeholder functionality, validate content validation rules, confirm accessibility features"
+          }
+        ]
+      },
+      {
+        "id": 67,
+        "title": "Build MediaAttacher component with drag-drop support",
+        "description": "Create image attachment component supporting drag-drop, file picker, and paste operations with up to 10 images",
+        "details": "Create src/components/editor/MediaAttacher.svelte with HTML5 drag-drop API, file input picker, and paste event handling. Support common image formats (PNG, JPG, WebP). Implement 10-image limit with visual feedback. Add proper error handling for unsupported files and size limits.",
+        "testStrategy": "Test drag-drop functionality across browsers. Verify file picker works on mobile. Test paste from clipboard. Validate error handling for invalid files.",
+        "priority": "high",
+        "dependencies": [
+          66
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create MediaAttacher.svelte component structure",
+            "description": "Set up the basic MediaAttacher.svelte component file with proper Svelte 5 structure, props, and reactive state management using runes API",
+            "dependencies": [],
+            "details": "Create src/components/editor/MediaAttacher.svelte with Svelte 5 runes ($state, $derived). Define component props for maxImages (default 10), acceptedTypes, onAttach callback. Initialize reactive state for attachedImages array, isDragOver, isUploading, and error messages. Set up component structure with proper TypeScript types and export interface.",
+            "status": "pending",
+            "testStrategy": "Test component initialization, prop validation, and reactive state updates"
+          },
+          {
+            "id": 2,
+            "title": "Implement HTML5 drag-drop API integration",
+            "description": "Add comprehensive drag and drop functionality using HTML5 drag-drop API with proper event handling and visual feedback",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement dragover, dragenter, dragleave, and drop event handlers. Prevent default browser behavior for file drops. Add visual feedback with border highlighting and overlay during drag operations. Handle multiple file drops and filter for accepted image types. Update isDragOver state for visual feedback and validate dropped files before processing.",
+            "status": "pending",
+            "testStrategy": "Test drag-drop across different browsers, verify visual feedback, validate file type filtering"
+          },
+          {
+            "id": 3,
+            "title": "Add file input picker with mobile support",
+            "description": "Create file input picker that works reliably on both desktop and mobile devices with proper accessibility",
+            "dependencies": [
+              1
+            ],
+            "details": "Add hidden file input element with proper accept attribute for image types. Create styled button that triggers file picker on click. Ensure mobile compatibility with proper input attributes (capture, multiple). Handle file selection events and validate selected files. Implement proper keyboard accessibility and screen reader support.",
+            "status": "pending",
+            "testStrategy": "Test file picker on iOS/Android devices, verify accessibility compliance, validate file selection"
+          },
+          {
+            "id": 4,
+            "title": "Implement paste event handling from clipboard",
+            "description": "Add clipboard paste functionality to handle images pasted from clipboard or copied from other applications",
+            "dependencies": [
+              1
+            ],
+            "details": "Add paste event listener to component or document. Handle clipboardData.items and filter for image types. Convert clipboard image data to File objects. Support pasting from screenshots, copied images, and browser clipboard. Handle browser-specific clipboard API differences and provide fallback for unsupported browsers.",
+            "status": "pending",
+            "testStrategy": "Test paste from clipboard, screenshots, and copied images across browsers"
+          },
+          {
+            "id": 5,
+            "title": "Add file validation and error handling",
+            "description": "Implement comprehensive file validation with proper error messages and user feedback for invalid files",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Validate file types against accepted formats (PNG, JPG, WebP). Check file size limits (e.g., 10MB per file). Validate total number of files doesn't exceed limit. Display clear error messages for invalid files, oversized files, and unsupported formats. Handle network errors during upload and provide retry functionality.",
+            "status": "pending",
+            "testStrategy": "Test file type validation, size limit enforcement, error message display, retry functionality"
+          },
+          {
+            "id": 6,
+            "title": "Implement 10-image limit with visual feedback",
+            "description": "Add visual indicators and controls for the 10-image limit with progress feedback and overflow handling",
+            "dependencies": [
+              5
+            ],
+            "details": "Display current image count vs maximum (e.g., '3/10 images'). Show progress bar or visual indicator. Disable further uploads when limit reached. Provide remove functionality for individual images. Add visual feedback when approaching limit (e.g., warning at 8/10). Handle overflow gracefully by showing selection dialog for which images to keep.",
+            "status": "pending",
+            "testStrategy": "Test limit enforcement, visual feedback updates, remove functionality, overflow handling"
+          }
+        ]
+      },
+      {
+        "id": 68,
+        "title": "Create MediaGrid preview component",
+        "description": "Build image preview grid with reorder, delete, and alt text functionality",
+        "details": "Create src/components/editor/MediaGrid.svelte with responsive grid layout (2 columns mobile, 3-4 desktop). Implement drag-to-reorder using HTML5 drag API, delete buttons with confirmation, and alt text editing modal. Use CSS Grid with proper gap spacing and hover states.",
+        "testStrategy": "Test drag-to-reorder on touch devices. Verify delete functionality with undo capability. Test alt text editing modal. Validate responsive layout.",
+        "priority": "medium",
+        "dependencies": [
+          67
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create MediaGrid.svelte with responsive CSS Grid layout",
+            "description": "Build the base MediaGrid component with responsive CSS Grid layout that adapts from 2 columns on mobile to 3-4 columns on desktop",
+            "dependencies": [],
+            "details": "Create src/components/editor/MediaGrid.svelte using Svelte 5 Runes API. Implement responsive CSS Grid with 2 columns on mobile (grid-template-columns: repeat(2, 1fr)) and 3-4 columns on desktop (md:grid-template-columns: repeat(3, 1fr) lg:grid-template-columns: repeat(4, 1fr)). Add proper gap spacing (gap-2 md:gap-3) and hover states for grid items. Include props for media array and handle empty state display.",
+            "status": "pending",
+            "testStrategy": "Test responsive breakpoints on different screen sizes. Verify grid layout renders correctly with various numbers of images. Test empty state display."
+          },
+          {
+            "id": 2,
+            "title": "Implement drag-to-reorder functionality with HTML5 drag API",
+            "description": "Add drag and drop reordering capability using HTML5 drag API with touch device support",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement HTML5 drag API with dragstart, dragover, drop event handlers. Add draggable=true to grid items and visual feedback during drag (opacity, transform). Use dragImage for custom drag preview. Handle touch devices with touch events as fallback. Update media array order in parent component via callback prop. Add visual indicators for drop zones and smooth transitions for reordering.",
+            "status": "pending",
+            "testStrategy": "Test drag-to-reorder on desktop with mouse. Verify touch drag functionality on mobile devices. Test reorder state updates and visual feedback during drag operations."
+          },
+          {
+            "id": 3,
+            "title": "Add delete buttons with confirmation and undo capability",
+            "description": "Implement delete functionality with confirmation dialog and undo capability for better UX",
+            "dependencies": [
+              1
+            ],
+            "details": "Add delete button overlay on hover/touch for each grid item. Implement confirmation modal or toast with 'Delete' and 'Cancel' options. Add undo functionality with temporary removal and 5-second undo window. Use Obsidian Notice API for undo toast. Handle state management for deleted items and provide callback to parent component for permanent deletion. Include keyboard navigation for delete actions.",
+            "status": "pending",
+            "testStrategy": "Test delete button accessibility and touch targets. Verify confirmation dialog prevents accidental deletion. Test undo functionality within time window and permanent deletion after timeout."
+          },
+          {
+            "id": 4,
+            "title": "Create alt text editing modal component",
+            "description": "Build modal component for editing image alt text with accessibility features and validation",
+            "dependencies": [
+              1
+            ],
+            "details": "Create AltTextModal.svelte component with form input for alt text editing. Implement modal overlay with click-outside-to-close and ESC key handling. Add character limit (125 chars recommended for accessibility), save/cancel buttons, and validation. Use Obsidian Modal API for consistent styling. Include accessibility features like focus management and screen reader support. Provide callback to update alt text in parent component.",
+            "status": "pending",
+            "testStrategy": "Test modal keyboard navigation and focus management. Verify alt text validation and character limits. Test accessibility with screen readers and keyboard-only navigation."
+          }
+        ]
+      },
+      {
+        "id": 69,
+        "title": "Implement PostCreationService business logic",
+        "description": "Create service class to handle post data generation, validation, and business rules following SRP",
+        "details": "Create src/services/PostCreationService.ts with methods: generatePostData(), validateContent(), calculateCredits(). Handle platform: 'post' data structure, user author info from Obsidian settings, timestamp generation, and credit calculation (1 for basic post, 3 with AI features).",
+        "testStrategy": "Unit tests for PostData generation. Test validation rules (character limits, image count). Verify credit calculation logic. Test error handling for invalid input.",
+        "priority": "high",
+        "dependencies": [
+          63
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create PostCreationService.ts with generatePostData method",
+            "description": "Create the main service class file with basic structure and implement the core generatePostData method to handle post data generation",
+            "dependencies": [],
+            "details": "Create src/services/PostCreationService.ts following SRP principles. Implement generatePostData() method that creates PostData objects with platform: 'post', handles timestamp generation, and integrates with Obsidian settings API to retrieve user author information. Include proper TypeScript interfaces and error handling.",
+            "status": "pending",
+            "testStrategy": "Unit tests for PostData generation with various input scenarios. Test timestamp generation accuracy. Verify integration with Obsidian settings API."
+          },
+          {
+            "id": 2,
+            "title": "Implement content validation rules and character limits",
+            "description": "Add validateContent method with comprehensive validation rules for user-generated post content including character limits and content safety",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement validateContent() method in PostCreationService that enforces character limits (e.g., 2000 characters for text), validates media count restrictions, checks for empty content, and implements basic content safety rules. Return detailed validation results with specific error messages for user feedback.",
+            "status": "pending",
+            "testStrategy": "Test validation rules with edge cases like empty content, maximum character limits, invalid media counts. Verify error message clarity and validation result structure."
+          },
+          {
+            "id": 3,
+            "title": "Add credit calculation logic for different post types",
+            "description": "Implement calculateCredits method to determine credit consumption based on post features and AI enhancement options",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement calculateCredits() method that calculates credit consumption: 1 credit for basic posts, 3 credits when AI features are enabled. Consider post complexity factors like media count, text length, and enhancement options. Include clear credit breakdown for user transparency.",
+            "status": "pending",
+            "testStrategy": "Test credit calculation for basic posts (1 credit), AI-enhanced posts (3 credits). Verify calculation accuracy with different post configurations and feature combinations."
+          },
+          {
+            "id": 4,
+            "title": "Integrate with Obsidian settings for user author info",
+            "description": "Complete integration with Obsidian settings API to retrieve and use user author information for post generation",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Enhance the service to properly integrate with Obsidian settings API for retrieving user author information (name, avatar, profile URL). Implement fallback handling when settings are missing, provide configuration interface for users to set author details, and ensure author info is properly included in generated PostData objects.",
+            "status": "pending",
+            "testStrategy": "Test author info retrieval from Obsidian settings. Verify fallback behavior with missing settings. Test configuration interface functionality and author data inclusion in PostData."
+          }
+        ]
+      },
+      {
+        "id": 70,
+        "title": "Create VaultStorageService for file operations",
+        "description": "Build service to handle Vault file creation with proper folder structure and metadata",
+        "details": "Create src/services/VaultStorageService.ts with methods: savePost(), saveMedia(), generateFilePath(). Implement 'Social Archives/Posts/{YYYY}/{MM}/{YYYY-MM-DD-HHMMSS}.md' structure and 'attachments/social-archives/post/{YYYY-MM-DD}/' for images. Handle YAML frontmatter generation and Vault API operations.",
+        "testStrategy": "Test file path generation. Verify folder creation. Test YAML frontmatter serialization. Validate Vault API error handling for quota/permissions.",
+        "priority": "high",
+        "dependencies": [
+          69
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create VaultStorageService.ts with file path generation logic",
+            "description": "Create the main VaultStorageService class with methods for generating proper file paths for posts and media files according to the specified folder structure.",
+            "dependencies": [],
+            "details": "Create src/services/VaultStorageService.ts with generateFilePath() method that implements 'Social Archives/Posts/{YYYY}/{MM}/{YYYY-MM-DD-HHMMSS}.md' structure for posts and 'attachments/social-archives/post/{YYYY-MM-DD}/' for images. Include proper date formatting using moment.js or native Date methods, and ensure path sanitization for cross-platform compatibility.",
+            "status": "pending",
+            "testStrategy": "Unit tests for path generation with various date inputs, verify folder structure creation logic, test path sanitization for special characters"
+          },
+          {
+            "id": 2,
+            "title": "Implement savePost method with folder structure creation",
+            "description": "Add savePost method to VaultStorageService that creates the necessary folder hierarchy and saves markdown files with proper error handling.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement savePost(postData: PostData) method that uses Vault.createFolder() to ensure directory structure exists, then Vault.create() to save the markdown file. Handle existing folder scenarios gracefully, implement proper error handling for permission issues, and ensure atomic operations to prevent partial file creation.",
+            "status": "pending",
+            "testStrategy": "Test folder creation when directories don't exist, verify file saving with various post data, test error handling for permission failures and disk space issues"
+          },
+          {
+            "id": 3,
+            "title": "Add saveMedia method for image storage",
+            "description": "Implement saveMedia method to handle downloading and storing images/videos in the attachments folder with proper naming and organization.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create saveMedia(mediaUrl: string, postId: string, mediaType: string) method that downloads media files using fetch/axios, saves them to 'attachments/social-archives/post/{YYYY-MM-DD}/' with sanitized filenames, and returns the local file path. Implement file type validation, size limits, and progress tracking for large files.",
+            "status": "pending",
+            "testStrategy": "Test media download and storage, verify file naming conventions, test handling of large files and unsupported formats, validate size limit enforcement"
+          },
+          {
+            "id": 4,
+            "title": "Implement YAML frontmatter generation and Vault API error handling",
+            "description": "Add YAML frontmatter generation functionality and comprehensive error handling for all Vault API operations with proper user feedback.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create generateYamlFrontmatter(postData: PostData) method that generates proper YAML with platform, archived date, share settings, and metadata. Implement comprehensive error handling for VaultError, TFile creation failures, quota exceeded scenarios, and permission issues. Add user-friendly error messages and retry mechanisms where appropriate.",
+            "status": "pending",
+            "testStrategy": "Test YAML frontmatter generation with various post data, verify error handling for different Vault API failure scenarios, test retry mechanisms and user feedback"
+          }
+        ]
+      },
+      {
+        "id": 71,
+        "title": "Build MediaHandler for image optimization",
+        "description": "Create service to handle image resizing, format conversion, and optimization before storage",
+        "details": "Create src/services/MediaHandler.ts with Canvas API for client-side optimization. Implement max 2048x2048 resizing, WebP conversion for better compression, and maintain aspect ratios. Add progress tracking for multiple image processing and error handling for corrupt images.",
+        "testStrategy": "Test image resizing maintains quality. Verify WebP conversion works across browsers. Test batch processing performance. Validate memory usage with large images.",
+        "priority": "medium",
+        "dependencies": [
+          68
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create MediaHandler.ts with Canvas API setup",
+            "description": "Initialize MediaHandler service with Canvas API infrastructure and core image processing capabilities",
+            "dependencies": [],
+            "details": "Create src/services/MediaHandler.ts with Canvas API setup for client-side image processing. Initialize HTMLCanvasElement and CanvasRenderingContext2D interfaces. Set up proper TypeScript types for image processing operations. Implement basic image loading functionality with File/Blob input support and error handling for unsupported formats.",
+            "status": "pending",
+            "testStrategy": "Test Canvas API initialization across browsers. Verify image loading from various file types (JPEG, PNG, GIF). Test error handling for invalid image files."
+          },
+          {
+            "id": 2,
+            "title": "Implement image resizing with aspect ratio preservation",
+            "description": "Add intelligent image resizing functionality that maintains original aspect ratios while enforcing maximum dimensions",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement resizeImage() method with max 2048x2048 constraint while preserving aspect ratios. Calculate optimal dimensions based on source image size and target constraints. Use Canvas drawImage() with proper scaling algorithms. Implement quality preservation techniques for downscaling operations.",
+            "status": "pending",
+            "testStrategy": "Test aspect ratio preservation with various image dimensions. Verify maximum size constraints are enforced. Test quality retention during resize operations."
+          },
+          {
+            "id": 3,
+            "title": "Add WebP conversion functionality",
+            "description": "Implement WebP format conversion for better compression while maintaining image quality",
+            "dependencies": [
+              2
+            ],
+            "details": "Add convertToWebP() method using Canvas toBlob() API with WebP MIME type. Implement quality settings (0.8 default) for optimal compression. Add fallback to original format if WebP is not supported. Include format detection and validation for output images.",
+            "status": "pending",
+            "testStrategy": "Test WebP conversion across different browsers. Verify compression ratios and quality retention. Test fallback behavior for unsupported browsers."
+          },
+          {
+            "id": 4,
+            "title": "Implement batch processing with progress tracking",
+            "description": "Create batch image processing system with real-time progress updates and concurrent processing management",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement processBatch() method for multiple image processing with progress callbacks. Use Promise.allSettled() for concurrent processing with configurable concurrency limits. Add progress tracking with percentage completion and ETA calculations. Implement retry logic for failed processing operations.",
+            "status": "pending",
+            "testStrategy": "Test batch processing with multiple images. Verify progress tracking accuracy. Test concurrency limits and memory usage. Validate retry mechanisms for failed operations."
+          },
+          {
+            "id": 5,
+            "title": "Add memory management and error handling for corrupt images",
+            "description": "Implement comprehensive memory management and robust error handling for corrupt or problematic image files",
+            "dependencies": [
+              4
+            ],
+            "details": "Add memory cleanup for Canvas elements and ImageData objects. Implement corrupt image detection using try-catch around Canvas operations. Add memory usage monitoring with automatic cleanup when limits are reached. Create detailed error types for different failure scenarios (corrupt file, memory limit, unsupported format).",
+            "status": "pending",
+            "testStrategy": "Test memory cleanup after processing operations. Verify corrupt image detection and handling. Test memory limit enforcement. Validate error messaging for different failure types."
+          }
+        ]
+      },
+      {
+        "id": 72,
+        "title": "Implement ShareOptions component",
+        "description": "Create UI component for share settings including public toggle, password protection, and expiry options",
+        "details": "Create src/components/editor/ShareOptions.svelte with toggle for public sharing, password input field, custom expiry date picker (respecting free/pro limits), and clear visual indicators. Integrate with existing credits system and Gumroad license verification.",
+        "testStrategy": "Test share toggle state management. Verify password validation. Test expiry date restrictions for free vs pro users. Validate license verification integration.",
+        "priority": "medium",
+        "dependencies": [
+          69
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ShareOptions.svelte with public sharing toggle",
+            "description": "Create the base ShareOptions component with public sharing toggle functionality",
+            "dependencies": [],
+            "details": "Create src/components/editor/ShareOptions.svelte file with Svelte 5 runes. Implement public sharing toggle using $state reactive variable. Add proper TypeScript interfaces for component props. Include basic styling with Tailwind CSS classes that respect Obsidian's CSS variables. Ensure mobile-first design with 44px minimum touch targets.",
+            "status": "pending",
+            "testStrategy": "Test toggle state management, verify reactive updates, validate mobile touch targets meet 44px minimum"
+          },
+          {
+            "id": 2,
+            "title": "Add password input field with validation",
+            "description": "Implement password protection functionality with input validation",
+            "dependencies": [
+              1
+            ],
+            "details": "Add password input field to ShareOptions component with show/hide toggle. Implement password validation rules (minimum 8 characters, complexity requirements). Add real-time validation feedback with error messages. Use Svelte 5 $derived for validation state management. Style with Obsidian-compatible form controls.",
+            "status": "pending",
+            "testStrategy": "Test password validation rules, verify show/hide toggle functionality, validate error message display"
+          },
+          {
+            "id": 3,
+            "title": "Implement expiry date picker with free/pro restrictions",
+            "description": "Create custom date picker that enforces free/pro user limitations",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement custom date picker component respecting free user 30-day limit and pro user unlimited expiry. Add clear visual indicators for plan restrictions. Use date-fns for date manipulation. Implement validation to prevent invalid date selection based on user tier. Add helpful tooltips explaining limitations.",
+            "status": "pending",
+            "testStrategy": "Test expiry date restrictions for free vs pro users, verify date validation logic, validate restriction tooltips"
+          },
+          {
+            "id": 4,
+            "title": "Integrate with credits system and license verification",
+            "description": "Connect ShareOptions component with existing credits and licensing systems",
+            "dependencies": [
+              3
+            ],
+            "details": "Integrate ShareOptions with existing credits system to track share creation costs. Connect to Gumroad license verification service to determine user tier (free/pro). Implement real-time license status checking. Add error handling for license verification failures. Ensure component updates when license status changes.",
+            "status": "pending",
+            "testStrategy": "Test credits deduction on share creation, verify license verification integration, validate error handling for license failures"
+          }
+        ]
+      },
+      {
+        "id": 73,
+        "title": "Build ShareAPIClient for Workers integration",
+        "description": "Create client service to communicate with existing Workers share API for public post sharing",
+        "details": "Create src/services/ShareAPIClient.ts extending existing share functionality. Use POST /api/share endpoint with PostData payload. Handle authentication, rate limiting, error responses, and retry logic with exponential backoff. Support password protection and custom expiry dates.",
+        "testStrategy": "Test API communication with mock server. Verify rate limiting handling. Test retry logic with network failures. Validate authentication flow.",
+        "priority": "high",
+        "dependencies": [
+          72
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ShareAPIClient.ts extending existing share functionality",
+            "description": "Create the main ShareAPIClient service class in src/services/ with methods for communicating with Workers share API endpoints",
+            "dependencies": [],
+            "details": "Create src/services/ShareAPIClient.ts with class ShareAPIClient extending existing share functionality. Implement constructor with base URL configuration, POST /api/share method accepting PostData payload, and proper TypeScript interfaces for request/response schemas. Include proper error handling and response type definitions.",
+            "status": "pending",
+            "testStrategy": "Unit tests for class instantiation and method signatures. Mock HTTP requests to verify payload structure matches API expectations."
+          },
+          {
+            "id": 2,
+            "title": "Implement authentication and rate limiting handling",
+            "description": "Add authentication logic and rate limiting detection with proper error handling for API communication",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement authentication headers in API requests using license keys or session tokens. Add rate limiting detection by checking HTTP 429 responses and implementing appropriate wait strategies. Include proper error classification for authentication failures vs rate limiting vs network errors.",
+            "status": "pending",
+            "testStrategy": "Test authentication with valid/invalid credentials. Mock rate limiting responses to verify proper handling. Test error classification logic."
+          },
+          {
+            "id": 3,
+            "title": "Add retry logic with exponential backoff",
+            "description": "Implement robust retry mechanism with exponential backoff for handling network failures and temporary errors",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement retry logic with exponential backoff starting at 1s, doubling up to 32s maximum. Include jitter to prevent thundering herd. Retry on network errors, 5xx responses, and rate limiting (429). Implement maximum retry attempts (3-5) and proper timeout handling.",
+            "status": "pending",
+            "testStrategy": "Test retry logic with simulated network failures. Verify exponential backoff timing. Test maximum retry limits and timeout behavior."
+          },
+          {
+            "id": 4,
+            "title": "Support password protection and custom expiry dates",
+            "description": "Add support for password-protected shares and custom expiration date configuration in API requests",
+            "dependencies": [
+              3
+            ],
+            "details": "Extend ShareAPIClient to support optional password and expiry date parameters in share requests. Implement password hashing/validation on client side if required. Add expiry date validation and proper date formatting for API compatibility. Include options for permanent shares for pro users.",
+            "status": "pending",
+            "testStrategy": "Test password protection with various password strengths. Verify expiry date formatting and validation. Test pro user permanent share options."
+          }
+        ]
+      },
+      {
+        "id": 74,
+        "title": "Integrate PostComposer into Timeline View",
+        "description": "Add PostComposer to the top of Timeline View with proper state management and user permissions",
+        "details": "Modify src/components/timeline/Timeline.svelte to include PostComposer at the top. Implement state management for composer visibility, handle user authentication status, and integrate with existing timeline refresh logic. Ensure proper spacing and mobile responsiveness.",
+        "testStrategy": "Test composer integration in timeline. Verify state persistence across navigation. Test mobile layout integration. Validate permission handling for unauthenticated users.",
+        "priority": "high",
+        "dependencies": [
+          65,
+          73
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify Timeline.svelte to include PostComposer component",
+            "description": "Update the Timeline.svelte component to include the PostComposer at the top of the timeline view with proper component structure and imports",
+            "dependencies": [],
+            "details": "Import PostComposer component in Timeline.svelte and place it at the top of the timeline layout. Ensure proper component hierarchy and maintain existing timeline structure. Add necessary wrapper elements for layout control and ensure PostComposer receives required props from timeline context.",
+            "status": "pending",
+            "testStrategy": "Test PostComposer renders correctly at top of timeline, verify component imports work, validate layout structure maintains timeline functionality"
+          },
+          {
+            "id": 2,
+            "title": "Implement state management and user authentication checks",
+            "description": "Add state management for PostComposer visibility and integrate user authentication status checks to control composer access",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement Svelte 5 runes-based state management for composer visibility using $state(). Add user authentication checks to determine if PostComposer should be displayed. Handle composer state persistence across navigation and integrate with existing authentication system. Implement proper error handling for unauthenticated users.",
+            "status": "pending",
+            "testStrategy": "Test state persistence across navigation, verify authentication checks work correctly, validate proper handling of unauthenticated users, test composer visibility toggling"
+          },
+          {
+            "id": 3,
+            "title": "Ensure mobile responsiveness and timeline refresh integration",
+            "description": "Implement mobile-responsive design for PostComposer in timeline and integrate with existing timeline refresh logic",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Apply mobile-first responsive design principles to PostComposer integration using Tailwind CSS. Ensure proper spacing and layout on mobile devices with minimum 44px touch targets. Integrate PostComposer with existing timeline refresh logic to update timeline after post creation. Handle proper scroll positioning and maintain timeline performance.",
+            "status": "pending",
+            "testStrategy": "Test mobile layout responsiveness across device sizes, verify timeline refresh works after post creation, validate proper spacing and touch targets, test scroll behavior integration"
+          }
+        ]
+      },
+      {
+        "id": 75,
+        "title": "Update PostCardRenderer to support user posts",
+        "description": "Extend existing PostCardRenderer to handle platform: 'post' with appropriate styling and interactions",
+        "details": "Modify src/components/timeline/renderers/PostCardRenderer.ts to handle platform: 'post' posts. Add specific styling for user-created posts (different header, author display). Implement edit/delete actions for user's own posts and proper share URL display with copy-to-clipboard functionality.",
+        "testStrategy": "Test rendering of user posts vs archived posts. Verify edit/delete permissions. Test share URL copying. Validate visual distinction between post types.",
+        "priority": "medium",
+        "dependencies": [
+          74
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 76,
+        "title": "Implement draft auto-save functionality",
+        "description": "Add automatic draft saving to localStorage with recovery capability and conflict resolution",
+        "details": "Create src/services/DraftService.ts with auto-save every 60 seconds to localStorage. Implement draft recovery on composer open, conflict resolution when multiple drafts exist, and cleanup of old drafts. Use debounced saving and handle storage quota limitations.",
+        "testStrategy": "Test auto-save timing. Verify draft recovery after browser crash. Test conflict resolution with multiple devices. Validate storage quota handling.",
+        "priority": "medium",
+        "dependencies": [
+          66
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 77,
+        "title": "Add comprehensive error handling and user feedback",
+        "description": "Implement robust error handling across all components with user-friendly messages and retry mechanisms",
+        "details": "Add error boundaries to all components, implement user-friendly error messages using Obsidian Notice API, add retry mechanisms for network failures, and create error tracking for debugging. Handle specific errors: Vault quota, network timeout, invalid image format, share API failures.",
+        "testStrategy": "Test error scenarios: network disconnection, storage full, invalid files. Verify user message clarity. Test retry mechanisms. Validate error logging for debugging.",
+        "priority": "medium",
+        "dependencies": [
+          73,
+          76
+        ],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T07:32:52.830Z",
+      "updated": "2025-10-31T08:25:38.238Z",
       "description": "Tasks for master context"
     }
   }

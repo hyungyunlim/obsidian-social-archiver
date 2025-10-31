@@ -162,7 +162,7 @@ export default class SocialArchiverPlugin extends Plugin {
       this.linkPreviewExtractor = new LinkPreviewExtractor({
         maxLinks: 2, // Extract up to 2 URLs per post
         excludeImages: true,
-        excludePlatformUrls: true
+        excludePlatformUrls: false // Include platform URLs for link previews
       });
       await this.linkPreviewExtractor.initialize();
 

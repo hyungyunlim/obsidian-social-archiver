@@ -77,6 +77,7 @@ export class PostDataParser {
         like: frontmatter.like, // User's personal like
         archive: frontmatter.archive, // Archive status
         shareUrl: (frontmatter as any).shareUrl, // Public share URL
+        linkPreviews: (frontmatter as any).linkPreviews, // Link preview URLs
         publishedDate: publishedDate,
         archivedDate: archivedDate,
         author: {
@@ -309,7 +310,20 @@ export class PostDataParser {
     for (const line of lines) {
       // Array item: "  - value"
       if (line.startsWith('  - ')) {
-        const value = line.substring(4).trim();
+        let value = line.substring(4).trim();
+
+        // Remove quotes if present (same logic as key-value pairs)
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
+          try {
+            // Try to parse as JSON to handle escaped characters
+            value = JSON.parse(value);
+          } catch {
+            // If JSON parsing fails, just remove the quotes
+            value = value.slice(1, -1);
+          }
+        }
+
         currentArray.push(value);
         continue;
       }

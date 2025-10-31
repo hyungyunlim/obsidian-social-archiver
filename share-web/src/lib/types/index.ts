@@ -90,7 +90,7 @@ export interface Post {
 	media: Media[];
 	metadata: PostMetadata;
 	comments?: Comment[]; // Post comments
-	linkPreviews?: Array<{ url: string }>; // Extracted URLs for link preview generation
+	linkPreviews?: string[]; // Extracted URLs for link preview generation
 	linkPreviewsMetadata?: LinkPreview[]; // Fetched metadata for link previews
 
 	// User's personal data

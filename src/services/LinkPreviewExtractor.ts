@@ -2,13 +2,6 @@ import type { IService } from './base/IService';
 import type { Platform } from '@/types/post';
 
 /**
- * Link preview object
- */
-export interface LinkPreview {
-  url: string;
-}
-
-/**
  * URL extraction options
  */
 export interface ExtractionOptions {
@@ -21,7 +14,7 @@ export interface ExtractionOptions {
  * URL extraction result with metadata
  */
 export interface ExtractionResult {
-  links: LinkPreview[];
+  links: string[];
   totalFound: number;
   excluded: number;
 }
@@ -86,7 +79,7 @@ export class LinkPreviewExtractor implements IService {
   constructor(options: ExtractionOptions = {}) {
     this.maxLinks = options.maxLinks ?? 2;
     this.excludeImages = options.excludeImages ?? true;
-    this.excludePlatformUrls = options.excludePlatformUrls ?? true;
+    this.excludePlatformUrls = options.excludePlatformUrls ?? false;
   }
 
   async initialize(): Promise<void> {
@@ -103,9 +96,9 @@ export class LinkPreviewExtractor implements IService {
 
   /**
    * Extract URLs from content text
-   * Returns array of link preview objects (up to maxLinks)
+   * Returns array of URL strings (up to maxLinks)
    */
-  extractUrls(content: string, platform?: Platform): LinkPreview[] {
+  extractUrls(content: string, platform?: Platform): string[] {
     const result = this.extractUrlsWithDetails(content, platform);
     return result.links;
   }
@@ -126,6 +119,11 @@ export class LinkPreviewExtractor implements IService {
     const matches = Array.from(content.matchAll(this.urlPattern));
     const totalFound = matches.length;
 
+    console.log('[LinkPreviewExtractor] Regex matched URLs:', {
+      totalFound,
+      urls: matches.map(m => m[0])
+    });
+
     if (matches.length === 0) {
       return {
         links: [],
@@ -136,8 +134,9 @@ export class LinkPreviewExtractor implements IService {
 
     // Filter and collect unique URLs
     const uniqueUrls = new Set<string>();
-    const links: LinkPreview[] = [];
+    const links: string[] = [];
     let excluded = 0;
+    const excludedDetails: Array<{url: string, reason: string}> = [];
 
     for (const match of matches) {
       const url = match[0];
@@ -145,25 +144,40 @@ export class LinkPreviewExtractor implements IService {
       // Check if we've reached max links
       if (links.length >= this.maxLinks) {
         excluded += matches.length - (links.length + excluded);
+        excludedDetails.push({ url, reason: 'maxLinks reached' });
         break;
       }
 
       // Skip duplicates
       if (uniqueUrls.has(url)) {
         excluded++;
+        excludedDetails.push({ url, reason: 'duplicate' });
         continue;
       }
 
       // Apply filters
       if (this.shouldExcludeUrl(url)) {
         excluded++;
+        const isPlatform = this.isPlatformUrl(new URL(url));
+        const isMedia = this.isMediaUrl(new URL(url));
+        excludedDetails.push({
+          url,
+          reason: isPlatform ? 'platform URL' : isMedia ? 'media URL' : 'invalid URL'
+        });
         continue;
       }
 
       // Add to result
       uniqueUrls.add(url);
-      links.push({ url });
+      links.push(url);
     }
+
+    console.log('[LinkPreviewExtractor] Filtering results:', {
+      totalFound,
+      extracted: links.length,
+      excluded,
+      excludedDetails
+    });
 
     return {
       links,
