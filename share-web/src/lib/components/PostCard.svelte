@@ -42,9 +42,24 @@
 		gfm: true
 	});
 
-	// Remove image markdown from text (images will be shown separately below)
-	function removeImageMarkdown(text: string): string {
-		return text.replace(/!\[.*?\]\(.*?\)/g, '').trim();
+	// Extract image URLs from markdown syntax: ![alt](url)
+	function extractMarkdownImageUrls(text: string): string[] {
+		const urls: string[] = [];
+		const markdownImagePattern = /!\[.*?\]\((.*?)\)/g;
+		let match;
+
+		while ((match = markdownImagePattern.exec(text)) !== null) {
+			if (match[1]) {
+				urls.push(match[1]);
+			}
+		}
+
+		return urls;
+	}
+
+	// Replace markdown images with plain links: ![alt](url) -> [url](url)
+	function replaceMarkdownImagesWithLinks(text: string): string {
+		return text.replace(/!\[.*?\]\((.*?)\)/g, '[$1]($1)');
 	}
 
 	// Process hashtags in text - convert to clickable links
@@ -75,8 +90,8 @@
 		});
 	}
 
-	// Get clean content without image markdown
-	const cleanContent = $derived(removeImageMarkdown(post.content.text || ''));
+	// Replace image markdown with links (keep URLs visible in text)
+	const cleanContent = $derived(replaceMarkdownImagesWithLinks(post.content.text || ''));
 
 	// Process hashtags in content
 	const contentWithHashtags = $derived(processHashtags(cleanContent, post.platform));
@@ -109,9 +124,34 @@
 		marked.parse(expanded ? contentWithHashtags : truncatedContent) as string
 	);
 
-	// Get image media only
-	const images = $derived(post.media.filter(m => m.type === 'image'));
+	// Extract images from markdown in content
+	const extractedImageUrls = $derived(extractMarkdownImageUrls(post.content.text || ''));
+
+	// Merge post.media images with extracted markdown images
+	const images = $derived.by(() => {
+		const mediaImages = post.media.filter(m => m.type === 'image');
+
+		// Add extracted markdown images as media objects
+		const markdownImages = extractedImageUrls.map(url => ({
+			type: 'image' as const,
+			url: url,
+			altText: 'Image from post content'
+		}));
+
+		return [...mediaImages, ...markdownImages];
+	});
+
 	const hasMultipleImages = $derived(images.length > 1);
+
+	// Track failed image loads
+	let failedImages = $state<Set<string>>(new Set());
+
+	function handleImageError(url: string) {
+		failedImages = new Set([...failedImages, url]);
+	}
+
+	// Filter out failed images
+	const visibleImages = $derived(images.filter(img => !failedImages.has(img.url)));
 
 	// Comments logic
 	const maxVisibleComments = 2;
@@ -124,12 +164,19 @@
 
 	// Carousel navigation
 	function nextImage() {
-		currentImageIndex = (currentImageIndex + 1) % images.length;
+		currentImageIndex = (currentImageIndex + 1) % visibleImages.length;
 	}
 
 	function prevImage() {
-		currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+		currentImageIndex = (currentImageIndex - 1 + visibleImages.length) % visibleImages.length;
 	}
+
+	// Reset current index if it exceeds visible images length
+	$effect(() => {
+		if (currentImageIndex >= visibleImages.length && visibleImages.length > 0) {
+			currentImageIndex = 0;
+		}
+	});
 
 	// Format relative time
 	function getRelativeTime(timestamp: string): string {
@@ -242,6 +289,7 @@
 				rel="noopener noreferrer"
 				class="author-link"
 				aria-label={`View ${post.author.name}'s profile`}
+				onclick={(e) => e.stopPropagation()}
 			>
 				<strong class="author-name">{post.author.name}</strong>
 			</a>
@@ -267,19 +315,22 @@
 		</div>
 
 		<!-- Image Carousel (if images exist) -->
-		{#if images.length > 0}
+		{#if visibleImages.length > 0}
 			<div class="media-carousel">
 				<!-- Main image display -->
 				<div class="media-container">
 					<img
-						src={images[currentImageIndex].url}
-						alt={images[currentImageIndex].altText || `Image ${currentImageIndex + 1}`}
+						src={visibleImages[currentImageIndex].url}
+						alt={visibleImages[currentImageIndex].altText || `Image ${currentImageIndex + 1}`}
 						class="main-image"
 						loading="lazy"
+						onerror={(e) => {
+							handleImageError(visibleImages[currentImageIndex].url);
+						}}
 					/>
 
 					<!-- Navigation arrows (only if multiple images) -->
-					{#if hasMultipleImages}
+					{#if visibleImages.length > 1}
 						<button
 							class="carousel-btn carousel-btn-prev"
 							type="button"
@@ -303,15 +354,15 @@
 
 						<!-- Image counter -->
 						<div class="image-counter">
-							{currentImageIndex + 1} / {images.length}
+							{currentImageIndex + 1} / {visibleImages.length}
 						</div>
 					{/if}
 				</div>
 
 				<!-- Thumbnails (only if multiple images) -->
-				{#if hasMultipleImages}
+				{#if visibleImages.length > 1}
 					<div class="thumbnails-container">
-						{#each images as image, i}
+						{#each visibleImages as image, i}
 							<button
 								class="thumbnail"
 								class:active={i === currentImageIndex}
@@ -323,6 +374,9 @@
 									src={image.thumbnail || image.url}
 									alt={image.altText || `Thumbnail ${i + 1}`}
 									loading="lazy"
+									onerror={(e) => {
+										handleImageError(image.url);
+									}}
 								/>
 							</button>
 						{/each}
@@ -414,6 +468,7 @@
 									target="_blank"
 									rel="noopener noreferrer"
 									class="comment-author"
+									onclick={(e) => e.stopPropagation()}
 								>
 									{comment.author.name}
 								</a>
@@ -439,6 +494,7 @@
 													target="_blank"
 													rel="noopener noreferrer"
 													class="comment-author"
+													onclick={(e) => e.stopPropagation()}
 												>
 													{reply.author.name}
 												</a>
