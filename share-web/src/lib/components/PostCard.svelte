@@ -471,7 +471,7 @@
 		<!-- Nested header outside the card -->
 		<div class="nested-header">
 			<span class="nested-text">
-				<strong>{username}</strong> {post.comment ? 'commented on' : 'saved'} this post
+				<strong>{username}</strong> {post.comment ? 'commented on' : 'saved'} <a href="/{username}/{post.shareId}" class="post-link">this post</a>
 				{#if archiveTime}
 					<span class="nested-time"> · {archiveTime}</span>
 				{/if}
@@ -533,6 +533,19 @@
 	.nested-time {
 		color: var(--text-faint);
 		font-size: var(--font-size-sm);
+	}
+
+	.post-link {
+		font-weight: 600;
+		color: var(--text-normal);
+		text-decoration: none;
+		cursor: pointer;
+		transition: color 0.2s;
+	}
+
+	.post-link:hover {
+		color: var(--interactive-accent);
+		text-decoration: underline;
 	}
 
 	/* User's personal comment */

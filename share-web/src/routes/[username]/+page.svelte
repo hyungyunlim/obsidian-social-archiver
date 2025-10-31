@@ -57,7 +57,7 @@
 			gridLayout="single"
 			showShareButtons={false}
 			username={data.username}
-			enableNavigation={true}
+			enableNavigation={false}
 		/>
 	</main>
 </div>
