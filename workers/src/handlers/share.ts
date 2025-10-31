@@ -21,10 +21,17 @@ shareRouter.post('/', async (c) => {
     const providedShareId = (request.options as any)?.shareId;
     const shareId = providedShareId || generateShareId();
 
+    // Check if share actually exists in KV (to determine if this is truly an update)
+    const existingShare = providedShareId
+      ? await c.env.SHARE_LINKS.get(`share:${providedShareId}`)
+      : null;
+    const isUpdate = !!existingShare;
+
     logger.info('Share creation/update request', {
       providedShareId,
       generatedShareId: shareId,
-      isUpdate: !!providedShareId,
+      existsInKV: !!existingShare,
+      isUpdate,
       username: request.options?.username
     });
 
@@ -64,8 +71,7 @@ shareRouter.post('/', async (c) => {
     );
 
     // Add to user index only for NEW shares (not updates)
-    // If shareId was provided in options, this is an update (Phase 2), skip index
-    const isUpdate = !!providedShareId;
+    // isUpdate is determined above by checking KV existence
     const username = request.options?.username;
     if (username && !isUpdate) {
       try {

@@ -42,7 +42,8 @@ export const CreateShareRequestSchema = z.object({
   options: z.object({
     expiry: z.number().optional(), // Unix timestamp
     password: z.string().optional(),
-    username: z.string().optional() // Username for timeline indexing
+    username: z.string().optional(), // Username for timeline indexing
+    shareId: z.string().optional() // Client-provided shareId for Phase 2 updates
   }).optional()
 });
 
