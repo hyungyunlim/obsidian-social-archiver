@@ -84,7 +84,7 @@ export class LinkPreviewExtractor implements IService {
   private readonly urlPattern = /https?:\/\/(?!.*\.(jpg|jpeg|png|gif|webp|mp4|mov))[^\s<]+/gi;
 
   constructor(options: ExtractionOptions = {}) {
-    this.maxLinks = options.maxLinks ?? 3;
+    this.maxLinks = options.maxLinks ?? 2;
     this.excludeImages = options.excludeImages ?? true;
     this.excludePlatformUrls = options.excludePlatformUrls ?? true;
   }

@@ -2092,7 +2092,7 @@
         "dependencies": [
           39
         ],
-        "status": "deferred",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -2100,7 +2100,7 @@
             "description": "Add linkPreviews field to PostData interface and update YAML frontmatter schema with backward compatibility",
             "dependencies": [],
             "details": "Modify the PostData interface in types/interfaces to include linkPreviews field as array of URL objects. Update the YAML frontmatter schema definition to support linkPreviews: [{url: 'https://example.com'}, {url: 'https://another.com'}] format. Ensure the schema change maintains backward compatibility with existing archived posts that don't have linkPreviews field. Review FrontmatterGenerator.ts patterns for consistency.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for PostData interface validation, schema compatibility tests with existing posts, type checking for linkPreviews array structure"
           },
           {
@@ -2111,7 +2111,7 @@
               1
             ],
             "details": "Modify FrontmatterGenerator.ts to handle linkPreviews field serialization when generating YAML frontmatter. Implement proper array serialization for URL objects in YAML format. Update deserialization logic to parse linkPreviews from existing posts. Add null/undefined checks for backward compatibility with posts that don't have linkPreviews. Follow existing patterns in FrontmatterGenerator for consistent code structure.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test YAML generation with linkPreviews field, verify round-trip serialization/deserialization, validate backward compatibility with posts missing linkPreviews field"
           }
         ]
@@ -3531,7 +3531,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T06:47:46.304Z",
+      "updated": "2025-10-31T07:08:05.022Z",
       "description": "Tasks for master context"
     }
   }

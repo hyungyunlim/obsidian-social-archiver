@@ -5,6 +5,7 @@ import { WorkersAPIClient } from './services/WorkersAPIClient';
 import { ArchiveOrchestrator } from './services/ArchiveOrchestrator';
 import { VaultManager } from './services/VaultManager';
 import { MarkdownConverter } from './services/MarkdownConverter';
+import { LinkPreviewExtractor } from './services/LinkPreviewExtractor';
 import { TimelineView, VIEW_TYPE_TIMELINE } from './views/TimelineView';
 import { ArchiveModal } from './modals/ArchiveModal';
 
@@ -15,6 +16,7 @@ export default class SocialArchiverPlugin extends Plugin {
   settings: SocialArchiverSettings = DEFAULT_SETTINGS;
   private apiClient?: WorkersAPIClient;
   private orchestrator?: ArchiveOrchestrator;
+  public linkPreviewExtractor!: LinkPreviewExtractor; // Link preview URL extractor
   public events: Events = new Events();
 
   async onload(): Promise<void> {
@@ -155,6 +157,14 @@ export default class SocialArchiverPlugin extends Plugin {
         licenseKey: this.settings.licenseKey,
       });
       await this.apiClient.initialize();
+
+      // Initialize LinkPreviewExtractor (always available, no API dependency)
+      this.linkPreviewExtractor = new LinkPreviewExtractor({
+        maxLinks: 2, // Extract up to 2 URLs per post
+        excludeImages: true,
+        excludePlatformUrls: true
+      });
+      await this.linkPreviewExtractor.initialize();
 
       console.log('[Social Archiver] Services initialized successfully');
 

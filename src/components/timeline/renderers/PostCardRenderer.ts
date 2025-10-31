@@ -686,6 +686,11 @@ export class PostCardRenderer {
       // Read original file content
       const originalContent = await this.vault.read(tfile);
 
+      // Extract link previews from post content
+      const linkPreviews = post.content?.text
+        ? this.plugin.linkPreviewExtractor.extractUrls(post.content.text, post.platform)
+        : [];
+
       // Generate share ID first
       const shareId = this.generateShareId();
       const workerUrl = this.plugin.settings.workerUrl || 'https://social-archiver-api.junlim.org';
@@ -743,9 +748,12 @@ export class PostCardRenderer {
         postData,
         options: {
           expiry: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days for free tier
-          username: username  // Username for URL generation
+          username: username,  // Username for URL generation
+          shareId: shareId  // Include shareId so Worker uses our ID
         }
       };
+
+      console.log('[PostCardRenderer] Phase 1 POST - shareRequest:', JSON.stringify({ shareId, username, hasShareId: !!shareRequest.options.shareId }));
 
       // Call Worker API to create share
       const response = await fetch(`${workerUrl}/api/share`, {
@@ -772,11 +780,18 @@ export class PostCardRenderer {
       const shareUrl = shareData.shareUrl;
 
       // Update YAML frontmatter in ORIGINAL content (preserves all existing fields)
-      const updatedContent = this.updateYamlFrontmatter(originalContent, {
+      const yamlUpdates: Record<string, any> = {
         share: true,
         shareUrl: shareUrl,
         shareExpiry: shareData.expiresAt ? new Date(shareData.expiresAt) : undefined,
-      });
+      };
+
+      // Add linkPreviews if any were found
+      if (linkPreviews.length > 0) {
+        yamlUpdates.linkPreviews = linkPreviews;
+      }
+
+      const updatedContent = this.updateYamlFrontmatter(originalContent, yamlUpdates);
       await this.vault.modify(tfile, updatedContent);
 
       // Update post object
@@ -897,6 +912,8 @@ export class PostCardRenderer {
         shareId: shareId // Include shareId to overwrite existing share
       }
     };
+
+    console.log('[PostCardRenderer] Phase 2 POST - updateRequest:', JSON.stringify({ shareId, username, hasShareId: !!updateRequest.options.shareId, mediaCount: postDataWithMedia.media.length }));
 
     const response = await fetch(`${workerUrl}/api/share`, {
       method: 'POST',
@@ -1529,14 +1546,35 @@ export class PostCardRenderer {
         // Use JSON.stringify for strings to handle newlines and quotes properly
         return JSON.stringify(value);
       }
+      if (typeof value === 'object' && value.url) {
+        // Format object with url property (for linkPreviews items)
+        return `url: ${value.url}`;
+      }
       return String(value);
+    };
+
+    // Helper function to format YAML key-value pair (handles arrays)
+    const formatYamlEntry = (key: string, value: any): string | null => {
+      if (value === null || value === undefined) {
+        return null;
+      }
+
+      // Handle arrays
+      if (Array.isArray(value)) {
+        if (value.length === 0) return null;
+        const arrayItems = value.map(v => `  - ${formatYamlValue(v)}`).join('\n');
+        return `${key}:\n${arrayItems}`;
+      }
+
+      // Handle simple values
+      return `${key}: ${formatYamlValue(value)}`;
     };
 
     if (!match || !match[1]) {
       // No frontmatter found, add it
       const yamlLines = Object.entries(updates)
-        .filter(([, value]) => value !== null && value !== undefined)
-        .map(([key, value]) => `${key}: ${formatYamlValue(value)}`)
+        .map(([key, value]) => formatYamlEntry(key, value))
+        .filter(Boolean)
         .join('\n');
       return `---\n${yamlLines}\n---\n\n${content}`;
     }
@@ -1549,32 +1587,70 @@ export class PostCardRenderer {
     const updatedLines: string[] = [];
     const processedKeys = new Set<string>();
 
+    // Track if we're inside an array (lines starting with "  -")
+    let currentArrayKey: string | null = null;
+
     // Update existing keys
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const keyMatch = line.match(/^(\w+):/);
+
       if (keyMatch) {
+        // This line defines a key
         const key = keyMatch[1];
+        currentArrayKey = null; // Reset array tracking
+
         if (key && updates.hasOwnProperty(key)) {
           const value = updates[key];
           if (value === null || value === undefined) {
             // Skip this line to remove the field
             processedKeys.add(key);
+
+            // Skip array items if this was an array key
+            while (i + 1 < lines.length && lines[i + 1].match(/^\s+-\s/)) {
+              i++;
+            }
             continue;
           }
-          updatedLines.push(`${key}: ${formatYamlValue(value)}`);
+
+          // Add formatted entry (handles arrays automatically)
+          const formatted = formatYamlEntry(key, value);
+          if (formatted) {
+            updatedLines.push(formatted);
+          }
           processedKeys.add(key);
+
+          // Skip old array items if this is now an array
+          if (Array.isArray(value)) {
+            while (i + 1 < lines.length && lines[i + 1].match(/^\s+-\s/)) {
+              i++;
+            }
+          }
         } else {
+          // Keep existing line
           updatedLines.push(line);
+          // Track if this starts an array
+          if (i + 1 < lines.length && lines[i + 1].match(/^\s+-\s/)) {
+            currentArrayKey = key;
+          }
         }
-      } else {
+      } else if (line.match(/^\s+-\s/) && currentArrayKey && !updates.hasOwnProperty(currentArrayKey)) {
+        // This is an array item line, keep it if we're not updating this key
         updatedLines.push(line);
+      } else if (!line.match(/^\s+-\s/)) {
+        // Other lines (empty, comments, etc.)
+        updatedLines.push(line);
+        currentArrayKey = null;
       }
     }
 
     // Add new keys
     for (const [key, value] of Object.entries(updates)) {
       if (!processedKeys.has(key) && value !== null && value !== undefined) {
-        updatedLines.push(`${key}: ${formatYamlValue(value)}`);
+        const formatted = formatYamlEntry(key, value);
+        if (formatted) {
+          updatedLines.push(formatted);
+        }
       }
     }
 
