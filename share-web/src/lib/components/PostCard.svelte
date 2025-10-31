@@ -732,7 +732,7 @@
 	/* Card Container - Only bottom border between posts */
 	.post-card {
 		position: relative;
-		background-color: var(--background-primary);
+		background-color: transparent; /* Same as page background */
 		border-bottom: 1px solid var(--background-modifier-border);
 	}
 

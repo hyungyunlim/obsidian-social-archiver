@@ -345,4 +345,50 @@
 			animation: none;
 		}
 	}
+
+	/* Dark Mode Support */
+	@media (prefers-color-scheme: dark) {
+		.link-preview-card {
+			background: var(--background-secondary, #161616);
+			border-color: var(--background-modifier-border, #27272a);
+		}
+
+		.link-preview-card:hover {
+			border-color: var(--background-modifier-border-hover, #3f3f46);
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+		}
+
+		.preview-image {
+			background: var(--background-secondary-alt, #1a1a1a);
+		}
+
+		.image-loading {
+			background: var(--background-secondary-alt, #1a1a1a);
+		}
+
+		.loading-spinner {
+			border-color: var(--background-modifier-border, #27272a);
+			border-top-color: var(--interactive-accent, #6366f1);
+		}
+
+		.preview-img {
+			background: var(--background-secondary-alt, #1a1a1a);
+		}
+
+		.preview-meta {
+			color: var(--text-muted, #a1a1aa);
+		}
+
+		.preview-title {
+			color: var(--text-normal, #e4e4e7);
+		}
+
+		.preview-description {
+			color: var(--text-muted, #a1a1aa);
+		}
+
+		.link-preview-card:focus {
+			outline-color: var(--interactive-accent, #6366f1);
+		}
+	}
 </style>

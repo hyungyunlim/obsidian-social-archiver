@@ -3818,7 +3818,7 @@
         "dependencies": [
           67
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -3826,7 +3826,7 @@
             "description": "Build the base MediaGrid component with responsive CSS Grid layout that adapts from 2 columns on mobile to 3-4 columns on desktop",
             "dependencies": [],
             "details": "Create src/components/editor/MediaGrid.svelte using Svelte 5 Runes API. Implement responsive CSS Grid with 2 columns on mobile (grid-template-columns: repeat(2, 1fr)) and 3-4 columns on desktop (md:grid-template-columns: repeat(3, 1fr) lg:grid-template-columns: repeat(4, 1fr)). Add proper gap spacing (gap-2 md:gap-3) and hover states for grid items. Include props for media array and handle empty state display.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test responsive breakpoints on different screen sizes. Verify grid layout renders correctly with various numbers of images. Test empty state display."
           },
           {
@@ -3837,7 +3837,7 @@
               1
             ],
             "details": "Implement HTML5 drag API with dragstart, dragover, drop event handlers. Add draggable=true to grid items and visual feedback during drag (opacity, transform). Use dragImage for custom drag preview. Handle touch devices with touch events as fallback. Update media array order in parent component via callback prop. Add visual indicators for drop zones and smooth transitions for reordering.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test drag-to-reorder on desktop with mouse. Verify touch drag functionality on mobile devices. Test reorder state updates and visual feedback during drag operations."
           },
           {
@@ -3848,7 +3848,7 @@
               1
             ],
             "details": "Add delete button overlay on hover/touch for each grid item. Implement confirmation modal or toast with 'Delete' and 'Cancel' options. Add undo functionality with temporary removal and 5-second undo window. Use Obsidian Notice API for undo toast. Handle state management for deleted items and provide callback to parent component for permanent deletion. Include keyboard navigation for delete actions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test delete button accessibility and touch targets. Verify confirmation dialog prevents accidental deletion. Test undo functionality within time window and permanent deletion after timeout."
           },
           {
@@ -3859,7 +3859,7 @@
               1
             ],
             "details": "Create AltTextModal.svelte component with form input for alt text editing. Implement modal overlay with click-outside-to-close and ESC key handling. Add character limit (125 chars recommended for accessibility), save/cancel buttons, and validation. Use Obsidian Modal API for consistent styling. Include accessibility features like focus management and screen reader support. Provide callback to update alt text in parent component.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test modal keyboard navigation and focus management. Verify alt text validation and character limits. Test accessibility with screen readers and keyboard-only navigation."
           }
         ]
@@ -3988,7 +3988,7 @@
         "dependencies": [
           68
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -4377,11 +4377,39 @@
         ],
         "priority": "high",
         "subtasks": []
+      },
+      {
+        "id": 79,
+        "title": "Optimize PostDataParser with Obsidian MetadataCache for Enhanced Performance",
+        "description": "Replace manual frontmatter parsing with app.metadataCache.getFileCache() and vault.cachedRead() to improve loading performance from 8s to 1s for 10,000 posts.",
+        "details": "Refactor PostDataParser to leverage Obsidian's MetadataCache API for dramatic performance improvements. Replace vault.read() with vault.cachedRead() for file content access. Use app.metadataCache.getFileCache() instead of manual YAML frontmatter parsing to extract post metadata including share settings, platform info, and timestamps. Extract media references from cache.embeds rather than parsing markdown content. Implement cache invalidation handling when posts are modified. Add fallback mechanisms for cache misses. Update MediaHandler to extract media paths from cache.embeds array. Optimize batch processing for large numbers of posts by grouping cache reads. Follow implementation guide in .taskmaster/docs/metadatacache-scaling-optimization.md for specific API usage patterns and performance benchmarks.",
+        "testStrategy": "Performance benchmark tests comparing old vs new implementation with 1,000, 5,000, and 10,000 posts. Verify parsing accuracy by comparing cached metadata extraction with manual parsing results. Test cache invalidation scenarios when posts are modified. Validate media extraction from cache.embeds matches current behavior. Test fallback behavior when MetadataCache is unavailable or corrupted. Measure memory usage during large batch operations.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          35
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 80,
+        "title": "Implement PostIndexCache service for platform-based post indexing and caching",
+        "description": "Create a high-performance in-memory caching service that maintains indexed posts by platform with automatic invalidation and TTL-based queries to replace O(n) file scanning with O(1) lookups.",
+        "details": "Create src/services/PostIndexCache.ts implementing a singleton service that maintains Map<platform, Set<PostData>> for O(1) platform filtering. Integrate with Obsidian's MetadataCache events (app.metadataCache.on('changed', callback)) for automatic cache invalidation when posts are modified. Implement 5-minute TTL using setTimeout for cache expiration and lazy refresh. Create PostIndexManager class with methods: getPostsByPlatform(platform), invalidatePost(file), rebuildIndex(), and clearExpired(). Use WeakMap for file references to prevent memory leaks. Implement debounced rebuild (300ms) to handle rapid file changes. Store cache metadata including last rebuild time, hit/miss ratios, and platform counts. Add cache warming on plugin startup by scanning existing social archive files. Handle edge cases like file deletion, renaming, and corrupt metadata gracefully.",
+        "testStrategy": "Unit tests for cache hit/miss scenarios and TTL expiration behavior. Integration tests with MetadataCache events simulating file modifications. Performance benchmarks comparing O(1) cache lookups vs O(n) file scanning with 1,000, 5,000, and 10,000 posts. Memory usage tests to ensure no leaks with WeakMap implementation. Cache invalidation tests when posts are modified, deleted, or renamed. Stress testing with rapid file changes to verify debounced rebuilding works correctly.",
+        "status": "pending",
+        "dependencies": [
+          79,
+          1
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T14:14:52.849Z",
+      "updated": "2025-10-31T20:46:50.996Z",
       "description": "Tasks for master context"
     }
   }

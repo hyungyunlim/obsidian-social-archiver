@@ -46,27 +46,27 @@
 /* Dark mode - follows system preference */
 @media (prefers-color-scheme: dark) {
 	:root {
-		/* Dark mode colors */
-		--background-primary: #1e1e1e;
-		--background-secondary: #2a2a2a;
-		--background-secondary-alt: #252525;
+		/* Dark mode colors - unified dark theme without navy tones */
+		--background-primary: #0a0a0a;
+		--background-secondary: #161616;
+		--background-secondary-alt: #1a1a1a;
 
 		/* Text colors */
-		--text-normal: #dcddde;
-		--text-muted: #999999;
-		--text-faint: #666666;
+		--text-normal: #e4e4e7;
+		--text-muted: #a1a1aa;
+		--text-faint: #71717a;
 
 		/* Interactive colors */
-		--interactive-accent: #7c3aed;
-		--interactive-accent-hover: #6d28d9;
+		--interactive-accent: #6366f1;
+		--interactive-accent-hover: #4f46e5;
 
 		/* Border colors */
-		--background-modifier-border: #3a3a3a;
-		--background-modifier-border-hover: #4a4a4a;
-		--background-modifier-border-focus: #5a5a5a;
+		--background-modifier-border: #27272a;
+		--background-modifier-border-hover: #3f3f46;
+		--background-modifier-border-focus: #52525b;
 
 		/* Hover states */
-		--background-modifier-hover: #2d2d2d;
+		--background-modifier-hover: #1a1a1a;
 	}
 }
 

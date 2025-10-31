@@ -1,6 +1,7 @@
 export { ArchiveService } from './ArchiveService';
 export { MarkdownConverter } from './MarkdownConverter';
 export { MediaHandler } from './MediaHandler';
+export { ImageOptimizer } from './ImageOptimizer';
 export { VaultManager } from './VaultManager';
 export { VaultStorageService } from './VaultStorageService';
 export { ApiClient } from './ApiClient';
@@ -48,6 +49,13 @@ export type {
   MediaResult,
   DownloadProgressCallback,
 } from './MediaHandler';
+
+export type {
+  OptimizationOptions,
+  OptimizationResult,
+  BatchProgress,
+  ImageOptimizationError,
+} from './ImageOptimizer';
 
 export type {
   MarkdownResult,

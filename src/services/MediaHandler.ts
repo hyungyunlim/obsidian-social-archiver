@@ -3,6 +3,7 @@ import type { Vault, TFile } from 'obsidian';
 import type { Media, Platform } from '@/types/post';
 import { normalizePath } from 'obsidian';
 import type { WorkersAPIClient } from './WorkersAPIClient';
+import { ImageOptimizer } from './ImageOptimizer';
 
 /**
  * MediaHandler configuration
@@ -14,6 +15,8 @@ export interface MediaHandlerConfig {
   maxConcurrent?: number;
   maxImageDimension?: number;
   timeout?: number;
+  optimizeImages?: boolean; // Enable image optimization (default: true)
+  imageQuality?: number; // Image quality for optimization (0.0-1.0, default: 0.8)
 }
 
 /**
@@ -237,17 +240,22 @@ export class MediaHandler implements IService {
   private workersClient?: WorkersAPIClient;
   private pathGenerator: MediaPathGenerator;
   private downloadQueue: DownloadQueue;
-  // Reserved for future use: image dimension processing
-  // private _maxImageDimension: number;
+  private imageOptimizer: ImageOptimizer;
+  private maxImageDimension: number;
   private timeout: number;
+  private optimizeImages: boolean;
+  private imageQuality: number;
 
   constructor(config: MediaHandlerConfig) {
     this.vault = config.vault;
     this.workersClient = config.workersClient;
     this.pathGenerator = new MediaPathGenerator(config.basePath);
     this.downloadQueue = new DownloadQueue(config.maxConcurrent || 3);
-    // this._maxImageDimension = config.maxImageDimension || 2048;
+    this.imageOptimizer = new ImageOptimizer();
+    this.maxImageDimension = config.maxImageDimension || 2048;
     this.timeout = config.timeout || 30000;
+    this.optimizeImages = config.optimizeImages !== false; // Default: true
+    this.imageQuality = config.imageQuality || 0.8;
   }
 
   async initialize(): Promise<void> {
@@ -255,7 +263,8 @@ export class MediaHandler implements IService {
   }
 
   async dispose(): Promise<void> {
-    // No cleanup needed
+    // Clean up image optimizer resources
+    this.imageOptimizer.dispose();
   }
 
   /**
@@ -322,10 +331,30 @@ export class MediaHandler implements IService {
 
       // Process based on type
       let processedData = data;
-      if (detectedType === 'image') {
-        // Could optimize image here (resize, compress)
-        // For now, just use original data
-        processedData = data;
+      if (detectedType === 'image' && this.optimizeImages) {
+        try {
+          console.log('[MediaHandler] Optimizing image:', media.url.substring(0, 100) + '...');
+          const optimizationResult = await this.imageOptimizer.optimize(data, {
+            maxWidth: this.maxImageDimension,
+            maxHeight: this.maxImageDimension,
+            quality: this.imageQuality,
+            format: 'webp',
+            maintainAspectRatio: true,
+          });
+
+          console.log('[MediaHandler] Image optimized:', {
+            originalSize: optimizationResult.originalSize,
+            optimizedSize: optimizationResult.optimizedSize,
+            compressionRatio: optimizationResult.compressionRatio.toFixed(2),
+            dimensions: `${optimizationResult.width}x${optimizationResult.height}`,
+          });
+
+          processedData = optimizationResult.data;
+        } catch (error) {
+          console.warn('[MediaHandler] Image optimization failed, using original:', error);
+          // Fallback to original data if optimization fails
+          processedData = data;
+        }
       }
 
       // Generate path and save
