@@ -92,6 +92,7 @@
 	.main-content {
 		max-width: 1200px;
 		margin: 0 auto;
+		padding: 0 1rem;
 	}
 
 	/* Dark mode */
@@ -110,6 +111,10 @@
 	@media (max-width: 640px) {
 		.page-header {
 			padding: 1.25rem 1rem;
+		}
+
+		.main-content {
+			padding: 0 0.5rem;
 		}
 
 		.username-title {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { linkPreviewRouter, validateUrl, fetchHtml } from '@/handlers/link-preview';
+import { linkPreviewRouter, validateUrl, fetchHtml, extractMetadata } from '@/handlers/link-preview';
 import type { Bindings } from '@/types/bindings';
 import { Logger } from '@/utils/logger';
 import { errorHandler } from '@/middleware/errorHandler';
@@ -456,5 +456,258 @@ describe('fetchHtml', () => {
     mockFetch.mockRejectedValueOnce(new Error('Network failure'));
 
     await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Network error');
+  });
+});
+
+describe('extractMetadata', () => {
+  it('should extract Open Graph metadata (priority 1)', () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:title" content="OG Title" />
+          <meta property="og:description" content="OG Description" />
+          <meta property="og:image" content="https://example.com/og-image.jpg" />
+          <meta property="og:site_name" content="Example Site" />
+          <title>HTML Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.title).toBe('OG Title');
+    expect(metadata.description).toBe('OG Description');
+    expect(metadata.image).toBe('https://example.com/og-image.jpg');
+    expect(metadata.siteName).toBe('Example Site');
+  });
+
+  it('should fall back to Twitter Cards (priority 2)', () => {
+    const html = `
+      <html>
+        <head>
+          <meta name="twitter:title" content="Twitter Title" />
+          <meta name="twitter:description" content="Twitter Description" />
+          <meta name="twitter:image" content="https://example.com/twitter-image.jpg" />
+          <title>HTML Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.title).toBe('Twitter Title');
+    expect(metadata.description).toBe('Twitter Description');
+    expect(metadata.image).toBe('https://example.com/twitter-image.jpg');
+  });
+
+  it('should prioritize OG over Twitter', () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:title" content="OG Title" />
+          <meta name="twitter:title" content="Twitter Title" />
+          <title>HTML Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.title).toBe('OG Title');
+  });
+
+  it('should fall back to HTML title (priority 4)', () => {
+    const html = `
+      <html>
+        <head>
+          <title>HTML Title Only</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.title).toBe('HTML Title Only');
+  });
+
+  it('should fall back to domain name if no title found', () => {
+    const html = '<html><head></head><body></body></html>';
+
+    const metadata = extractMetadata(html, 'https://www.example.com/path', mockLogger);
+
+    expect(metadata.title).toBe('example.com');
+    expect(metadata.siteName).toBe('example.com');
+  });
+
+  it('should extract standard meta description (priority 3)', () => {
+    const html = `
+      <html>
+        <head>
+          <meta name="description" content="Standard Description" />
+          <title>Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.description).toBe('Standard Description');
+  });
+
+  it('should extract favicon', () => {
+    const html = `
+      <html>
+        <head>
+          <link rel="icon" href="/favicon.ico" />
+          <title>Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.favicon).toBe('https://example.com/favicon.ico');
+  });
+
+  it('should handle shortcut icon', () => {
+    const html = `
+      <html>
+        <head>
+          <link rel="shortcut icon" href="https://example.com/icon.png" />
+          <title>Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.favicon).toBe('https://example.com/icon.png');
+  });
+
+  it('should fall back to default favicon path', () => {
+    const html = '<html><head><title>Title</title></head><body></body></html>';
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.favicon).toBe('https://example.com/favicon.ico');
+  });
+
+  it('should resolve relative image URLs', () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:image" content="/images/og-image.jpg" />
+          <title>Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.image).toBe('https://example.com/images/og-image.jpg');
+  });
+
+  it('should handle protocol-relative URLs', () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:image" content="//cdn.example.com/image.jpg" />
+          <title>Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.image).toBe('https://cdn.example.com/image.jpg');
+  });
+
+  it('should decode HTML entities in content', () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:title" content="Title &amp; Subtitle &quot;Quoted&quot;" />
+          <meta property="og:description" content="Description with &lt;tags&gt; and &apos;quotes&apos;" />
+          <title>Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.title).toBe('Title & Subtitle "Quoted"');
+    expect(metadata.description).toBe("Description with <tags> and 'quotes'");
+  });
+
+  it('should handle numeric HTML entities', () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:title" content="Title with &#8220;smart quotes&#8221; and &#169; symbol" />
+          <title>Title</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    // Check that smart quotes were decoded (Unicode 8220 = left double quotation mark)
+    expect(metadata.title).toContain('smart quotes');
+    expect(metadata.title).toContain('©');
+  });
+
+  it('should handle attribute order variations', () => {
+    // content before property
+    const html1 = `<html><head><meta content="Test Title" property="og:title" /><title>Title</title></head></html>`;
+    const metadata1 = extractMetadata(html1, 'https://example.com', mockLogger);
+    expect(metadata1.title).toBe('Test Title');
+
+    // property before content
+    const html2 = `<html><head><meta property="og:title" content="Test Title" /><title>Title</title></head></html>`;
+    const metadata2 = extractMetadata(html2, 'https://example.com', mockLogger);
+    expect(metadata2.title).toBe('Test Title');
+  });
+
+  it('should handle missing optional fields', () => {
+    const html = `
+      <html>
+        <head>
+          <title>Title Only</title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.title).toBe('Title Only');
+    expect(metadata.description).toBeUndefined();
+    expect(metadata.image).toBeUndefined();
+  });
+
+  it('should handle empty title tag', () => {
+    const html = `
+      <html>
+        <head>
+          <title></title>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    const metadata = extractMetadata(html, 'https://example.com', mockLogger);
+
+    expect(metadata.title).toBe('example.com');
   });
 });

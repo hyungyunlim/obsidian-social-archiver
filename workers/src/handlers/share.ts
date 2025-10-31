@@ -18,7 +18,15 @@ shareRouter.post('/', async (c) => {
     const request = CreateShareRequestSchema.parse(body);
 
     // Use provided shareId (for updates) or generate new one
-    const shareId = (request.options as any)?.shareId || generateShareId();
+    const providedShareId = (request.options as any)?.shareId;
+    const shareId = providedShareId || generateShareId();
+
+    logger.info('Share creation/update request', {
+      providedShareId,
+      generatedShareId: shareId,
+      isUpdate: !!providedShareId,
+      username: request.options?.username
+    });
 
     // Use postData if provided (new format), otherwise use legacy format
     let shareData: any;
@@ -57,7 +65,7 @@ shareRouter.post('/', async (c) => {
 
     // Add to user index only for NEW shares (not updates)
     // If shareId was provided in options, this is an update (Phase 2), skip index
-    const isUpdate = !!(request.options as any)?.shareId;
+    const isUpdate = !!providedShareId;
     const username = request.options?.username;
     if (username && !isUpdate) {
       try {

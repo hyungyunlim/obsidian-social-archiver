@@ -282,6 +282,159 @@ export async function fetchHtml(url: string, logger: Logger, maxRedirects = 3): 
   throw new ValidationError('Unexpected error during HTML fetch');
 }
 
+/**
+ * Extract metadata from HTML using priority system:
+ * 1. Open Graph tags (og:*)
+ * 2. Twitter Cards (twitter:*)
+ * 3. Standard meta tags (description, etc.)
+ * 4. HTML title tag
+ * 5. Fallback to URL
+ */
+export function extractMetadata(html: string, url: string, logger: Logger): LinkPreviewResponse {
+  logger.debug('Starting metadata extraction', { url, htmlLength: html.length });
+
+  // Simple HTML parser - extract meta tags and title
+  const metadata: LinkPreviewResponse = {
+    url,
+    title: '',
+  };
+
+  // Extract Open Graph tags (priority 1)
+  const ogTitle = extractMetaTag(html, 'property', 'og:title');
+  const ogDescription = extractMetaTag(html, 'property', 'og:description');
+  const ogImage = extractMetaTag(html, 'property', 'og:image');
+  const ogSiteName = extractMetaTag(html, 'property', 'og:site_name');
+
+  // Extract Twitter Card tags (priority 2)
+  const twitterTitle = extractMetaTag(html, 'name', 'twitter:title');
+  const twitterDescription = extractMetaTag(html, 'name', 'twitter:description');
+  const twitterImage = extractMetaTag(html, 'name', 'twitter:image');
+
+  // Extract standard meta tags (priority 3)
+  const metaDescription = extractMetaTag(html, 'name', 'description');
+
+  // Extract HTML title tag (priority 4)
+  const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+  const htmlTitle = titleMatch?.[1] ? decodeHtmlEntities(titleMatch[1].trim()) : '';
+
+  // Apply priority system for title
+  metadata.title = ogTitle || twitterTitle || htmlTitle || extractDomainFromUrl(url);
+
+  // Apply priority system for description
+  metadata.description = ogDescription || twitterDescription || metaDescription;
+
+  // Apply priority system for image
+  metadata.image = resolveImageUrl(ogImage || twitterImage, url);
+
+  // Site name
+  metadata.siteName = ogSiteName || extractDomainFromUrl(url);
+
+  // Favicon
+  metadata.favicon = extractFavicon(html, url);
+
+  logger.info('Metadata extracted', {
+    url,
+    hasTitle: !!metadata.title,
+    hasDescription: !!metadata.description,
+    hasImage: !!metadata.image,
+    hasSiteName: !!metadata.siteName,
+    hasFavicon: !!metadata.favicon,
+  });
+
+  return metadata;
+}
+
+/**
+ * Extract meta tag content by attribute and value
+ */
+function extractMetaTag(html: string, attributeName: string, attributeValue: string): string | undefined {
+  // Match <meta property="og:title" content="..." /> or <meta name="description" content="..." />
+  const regex = new RegExp(
+    `<meta\\s+[^>]*${attributeName}=["']${escapeRegex(attributeValue)}["'][^>]*content=["']([^"']+)["'][^>]*>|` +
+    `<meta\\s+[^>]*content=["']([^"']+)["'][^>]*${attributeName}=["']${escapeRegex(attributeValue)}["'][^>]*>`,
+    'i'
+  );
+
+  const match = html.match(regex);
+  if (match) {
+    const content = match[1] || match[2];
+    return content ? decodeHtmlEntities(content.trim()) : undefined;
+  }
+
+  return undefined;
+}
+
+/**
+ * Extract favicon URL from HTML
+ */
+function extractFavicon(html: string, baseUrl: string): string | undefined {
+  // Try to find <link rel="icon" href="..." />
+  const iconMatch = html.match(/<link[^>]*rel=["'](?:icon|shortcut icon)["'][^>]*href=["']([^"']+)["'][^>]*>/i) ||
+                    html.match(/<link[^>]*href=["']([^"']+)["'][^>]*rel=["'](?:icon|shortcut icon)["'][^>]*>/i);
+
+  if (iconMatch) {
+    return resolveImageUrl(iconMatch[1], baseUrl);
+  }
+
+  // Fallback to /favicon.ico
+  const parsedUrl = new URL(baseUrl);
+  return `${parsedUrl.protocol}//${parsedUrl.host}/favicon.ico`;
+}
+
+/**
+ * Resolve relative image URLs to absolute
+ */
+function resolveImageUrl(imageUrl: string | undefined, baseUrl: string): string | undefined {
+  if (!imageUrl) return undefined;
+
+  try {
+    // If already absolute, return as-is
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+
+    // Resolve relative URL
+    const resolved = new URL(imageUrl, baseUrl);
+    return resolved.toString();
+  } catch (error) {
+    // Invalid URL, return undefined
+    return undefined;
+  }
+}
+
+/**
+ * Extract domain name from URL for fallback site name
+ */
+function extractDomainFromUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch (error) {
+    return url;
+  }
+}
+
+/**
+ * Decode HTML entities in text
+ */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+/**
+ * Escape special regex characters
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // POST /api/link-preview - Extract metadata from URL
 linkPreviewRouter.post('/', async (c) => {
   const logger = c.get('logger') as Logger;
@@ -298,17 +451,12 @@ linkPreviewRouter.post('/', async (c) => {
     // Step 2: Fetch HTML content with timeout and redirect handling
     const html = await fetchHtml(validatedUrl.toString(), logger);
 
-    // TODO: Step 3: Extract metadata from HTML
-    // For now, return a placeholder response
-    const response: LinkPreviewResponse = {
-      url: request.url,
-      title: 'Link Preview (HTML Fetched)',
-      description: `Successfully fetched ${html.length} bytes of HTML`,
-    };
+    // Step 3: Extract metadata from HTML
+    const metadata = extractMetadata(html, validatedUrl.toString(), logger);
 
     return c.json({
       success: true,
-      data: response
+      data: metadata
     }, 200);
 
   } catch (error) {
