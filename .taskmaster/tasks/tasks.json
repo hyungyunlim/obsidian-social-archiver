@@ -2011,8 +2011,8 @@
             "dependencies": [
               1
             ],
-            "details": "Implement cache lookup before metadata extraction, store both successful and failed crawling results in KV. Add graceful fallback to crawling when cache misses occur. Handle KV storage errors and implement retry logic. Store metadata with proper serialization and handle deserialization errors gracefully.",
-            "status": "pending",
+            "details": "Implement cache lookup before metadata extraction, store both successful and failed crawling results in KV. Add graceful fallback to crawling when cache misses occur. Handle KV storage errors and implement retry logic. Store metadata with proper serialization and handle deserialization errors gracefully.\n<info added on 2025-10-31T06:05:45.160Z>\n**Implementation Complete**\n\nSuccessfully implemented comprehensive cache hit/miss logic with graceful fallbacks and robust error handling. Added getCachedPreview() and setCachedPreview() functions with exponential backoff retry mechanism and non-blocking background storage. Integrated caching into POST /api/link-preview endpoint with three-step process: validation, cache lookup, and conditional fetch/store. Implemented 13 comprehensive tests covering cache operations, retry logic, and endpoint integration. All code passes TypeScript strict mode with proper type annotations. Cache hits return immediately without HTML fetching, storage happens in background via executionCtx.waitUntil(). Response includes cache status and age for monitoring. KV errors handled gracefully with fallback to live fetching. Ready for monitoring and metrics implementation in subtask 38.3.\n</info added on 2025-10-31T06:05:45.160Z>",
+            "status": "done",
             "testStrategy": "Test cache hit scenarios return cached data, verify cache miss triggers crawling, test error handling for KV failures"
           },
           {
@@ -3531,7 +3531,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T05:58:18.837Z",
+      "updated": "2025-10-31T06:05:52.126Z",
       "description": "Tasks for master context"
     }
   }

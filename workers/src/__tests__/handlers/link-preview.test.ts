@@ -7,6 +7,8 @@ import {
   extractMetadata,
   normalizeUrl,
   generateCacheKey,
+  getCachedPreview,
+  setCachedPreview,
   CACHE_CONFIG
 } from '@/handlers/link-preview';
 import type { Bindings } from '@/types/bindings';
@@ -1144,6 +1146,355 @@ describe('Cache Key Strategy and URL Normalization', () => {
 
       // Should generate same key due to parameter sorting
       expect(key1).toBe(key2);
+    });
+  });
+});
+
+describe('Cache Hit/Miss Logic', () => {
+  let mockKV: {
+    get: ReturnType<typeof vi.fn>;
+    put: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(() => {
+    mockKV = {
+      get: vi.fn(),
+      put: vi.fn(),
+      delete: vi.fn(),
+    };
+  });
+
+  describe('getCachedPreview', () => {
+    it('should return null on cache miss', async () => {
+      mockKV.get.mockResolvedValueOnce(null);
+
+      const result = await getCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        mockLogger
+      );
+
+      expect(result).toBeNull();
+      expect(mockKV.get).toHaveBeenCalledWith(
+        expect.stringContaining('preview:'),
+        'json'
+      );
+    });
+
+    it('should return cached data on cache hit', async () => {
+      const now = Date.now();
+      const cachedData = {
+        url: 'https://example.com',
+        title: 'Cached Title',
+        description: 'Cached Description',
+        cachedAt: now - 3600000, // 1 hour ago
+        expiresAt: now + 86400000, // 1 day from now
+      };
+
+      mockKV.get.mockResolvedValueOnce(cachedData);
+
+      const result = await getCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        mockLogger
+      );
+
+      expect(result).toEqual(cachedData);
+      expect(result?.title).toBe('Cached Title');
+    });
+
+    it('should delete expired cache entries', async () => {
+      const now = Date.now();
+      const expiredData = {
+        url: 'https://example.com',
+        title: 'Expired Title',
+        cachedAt: now - 10000000,
+        expiresAt: now - 1000, // Expired 1 second ago
+      };
+
+      mockKV.get.mockResolvedValueOnce(expiredData);
+      mockKV.delete.mockResolvedValueOnce(undefined);
+
+      const result = await getCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        mockLogger
+      );
+
+      expect(result).toBeNull();
+      expect(mockKV.delete).toHaveBeenCalledWith(
+        expect.stringContaining('preview:')
+      );
+    });
+
+    it('should handle KV errors gracefully', async () => {
+      mockKV.get.mockRejectedValueOnce(new Error('KV connection failed'));
+
+      const result = await getCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        mockLogger
+      );
+
+      expect(result).toBeNull();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Cache lookup failed',
+        expect.objectContaining({
+          url: 'https://example.com',
+          error: 'KV connection failed'
+        })
+      );
+    });
+  });
+
+  describe('setCachedPreview', () => {
+    it('should store metadata in cache with TTL', async () => {
+      const metadata = {
+        url: 'https://example.com',
+        title: 'Test Title',
+        description: 'Test Description',
+      };
+
+      mockKV.put.mockResolvedValueOnce(undefined);
+
+      await setCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        metadata,
+        mockLogger
+      );
+
+      expect(mockKV.put).toHaveBeenCalledWith(
+        expect.stringContaining('preview:'),
+        expect.stringContaining('"title":"Test Title"'),
+        { expirationTtl: CACHE_CONFIG.TTL }
+      );
+    });
+
+    it('should include cachedAt and expiresAt timestamps', async () => {
+      const metadata = {
+        url: 'https://example.com',
+        title: 'Test Title',
+      };
+
+      mockKV.put.mockResolvedValueOnce(undefined);
+
+      await setCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        metadata,
+        mockLogger
+      );
+
+      const putCall = mockKV.put.mock.calls[0];
+      const storedData = JSON.parse(putCall[1]);
+
+      expect(storedData).toHaveProperty('cachedAt');
+      expect(storedData).toHaveProperty('expiresAt');
+      expect(storedData.expiresAt).toBeGreaterThan(storedData.cachedAt);
+    });
+
+    it('should retry on failure with exponential backoff', async () => {
+      const metadata = {
+        url: 'https://example.com',
+        title: 'Test Title',
+      };
+
+      // Fail twice, succeed on third attempt
+      mockKV.put
+        .mockRejectedValueOnce(new Error('KV write failed'))
+        .mockRejectedValueOnce(new Error('KV write failed'))
+        .mockResolvedValueOnce(undefined);
+
+      await setCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        metadata,
+        mockLogger,
+        2 // maxRetries
+      );
+
+      expect(mockKV.put).toHaveBeenCalledTimes(3);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Cache stored successfully',
+        expect.any(Object)
+      );
+    });
+
+    it('should give up after max retries', async () => {
+      const metadata = {
+        url: 'https://example.com',
+        title: 'Test Title',
+      };
+
+      // Always fail
+      mockKV.put.mockRejectedValue(new Error('KV permanently unavailable'));
+
+      await setCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        metadata,
+        mockLogger,
+        2 // maxRetries
+      );
+
+      expect(mockKV.put).toHaveBeenCalledTimes(3); // Initial + 2 retries
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Cache storage abandoned after max retries',
+        expect.objectContaining({
+          url: 'https://example.com',
+          maxRetries: 2
+        })
+      );
+    });
+
+    it('should not throw on storage failure', async () => {
+      const metadata = {
+        url: 'https://example.com',
+        title: 'Test Title',
+      };
+
+      mockKV.put.mockRejectedValue(new Error('KV error'));
+
+      // Should not throw
+      await expect(
+        setCachedPreview(
+          mockKV as any,
+          'https://example.com',
+          metadata,
+          mockLogger,
+          0 // No retries
+        )
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('POST /api/link-preview with caching', () => {
+    let app: Hono;
+    let mockEnv: Partial<Bindings>;
+
+    beforeEach(() => {
+      app = new Hono();
+
+      app.use('*', async (c, next) => {
+        c.set('logger', mockLogger);
+        await next();
+      });
+
+      app.route('/api/link-preview', linkPreviewRouter);
+      app.onError(errorHandler);
+
+      mockEnv = {
+        ARCHIVE_CACHE: mockKV as any,
+      };
+
+      mockFetch.mockReset();
+      vi.clearAllMocks();
+    });
+
+    it('should return cached data on cache hit', async () => {
+      const now = Date.now();
+      const cachedData = {
+        url: 'https://example.com/article',
+        title: 'Cached Article',
+        description: 'From cache',
+        cachedAt: now - 3600000,
+        expiresAt: now + 86400000,
+      };
+
+      mockKV.get.mockResolvedValueOnce(cachedData);
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com/article' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      const json = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(json.success).toBe(true);
+      expect(json.cached).toBe(true);
+      expect(json.data.title).toBe('Cached Article');
+      expect(json.cacheAge).toBeGreaterThan(0);
+
+      // Should not fetch HTML on cache hit
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should fetch and cache on cache miss', async () => {
+      mockKV.get.mockResolvedValueOnce(null); // Cache miss
+      mockKV.put.mockResolvedValueOnce(undefined);
+
+      const mockHtml = `
+        <html>
+          <head>
+            <title>Fresh Article</title>
+            <meta property="og:description" content="Fresh content" />
+          </head>
+        </html>
+      `;
+
+      const headers = new Headers();
+      headers.set('content-type', 'text/html');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers,
+        text: async () => mockHtml,
+      });
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com/fresh' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      const json = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(json.success).toBe(true);
+      expect(json.cached).toBe(false);
+      expect(json.data.title).toBe('Fresh Article');
+
+      // Should fetch HTML on cache miss
+      expect(mockFetch).toHaveBeenCalled();
+
+      // Note: setCachedPreview is called in background via waitUntil,
+      // so we can't directly test mockKV.put being called in this test
+    });
+
+    it('should handle cache lookup errors gracefully', async () => {
+      mockKV.get.mockRejectedValueOnce(new Error('KV unavailable'));
+
+      const mockHtml = '<html><head><title>Test</title></head></html>';
+      const headers = new Headers();
+      headers.set('content-type', 'text/html');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers,
+        text: async () => mockHtml,
+      });
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      const json = await res.json();
+
+      // Should still succeed by fetching fresh data
+      expect(res.status).toBe(200);
+      expect(json.success).toBe(true);
+      expect(json.data.title).toBe('Test');
     });
   });
 });

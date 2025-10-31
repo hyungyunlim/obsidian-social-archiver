@@ -252,6 +252,126 @@ function simpleHash(str: string): string {
 }
 
 /**
+ * Look up cached link preview metadata from KV store
+ * Returns cached data if found and not expired, otherwise null
+ */
+export async function getCachedPreview(
+  kv: KVNamespace,
+  url: string,
+  logger: Logger
+): Promise<CachedLinkPreview | null> {
+  try {
+    const cacheKey = generateCacheKey(url, logger);
+    logger.debug('Looking up cache', { cacheKey, url });
+
+    const cached = await kv.get(cacheKey, 'json') as CachedLinkPreview | null;
+
+    if (!cached) {
+      logger.debug('Cache miss', { url, cacheKey });
+      return null;
+    }
+
+    // Verify cache hasn't expired (additional check beyond KV TTL)
+    const now = Date.now();
+    if (cached.expiresAt && cached.expiresAt < now) {
+      logger.warn('Cached data expired', { url, expiresAt: cached.expiresAt, now });
+      // Delete expired entry
+      await kv.delete(cacheKey).catch(err => {
+        logger.error('Failed to delete expired cache entry', { error: err });
+      });
+      return null;
+    }
+
+    logger.info('Cache hit', {
+      url,
+      cacheKey,
+      age: now - cached.cachedAt,
+      ttl: cached.expiresAt - now
+    });
+
+    return cached;
+  } catch (error) {
+    // Log error but don't fail the request
+    logger.error('Cache lookup failed', {
+      url,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return null;
+  }
+}
+
+/**
+ * Store link preview metadata in KV cache
+ * Handles serialization and error recovery gracefully
+ */
+export async function setCachedPreview(
+  kv: KVNamespace,
+  url: string,
+  metadata: LinkPreviewResponse,
+  logger: Logger,
+  maxRetries = 2
+): Promise<void> {
+  const cacheKey = generateCacheKey(url, logger);
+  const now = Date.now();
+
+  const cachedData: CachedLinkPreview = {
+    ...metadata,
+    cachedAt: now,
+    expiresAt: now + (CACHE_CONFIG.TTL * 1000), // Convert seconds to milliseconds
+  };
+
+  let attempt = 0;
+
+  while (attempt <= maxRetries) {
+    try {
+      logger.debug('Storing in cache', {
+        cacheKey,
+        url,
+        attempt: attempt + 1,
+        ttl: CACHE_CONFIG.TTL
+      });
+
+      await kv.put(
+        cacheKey,
+        JSON.stringify(cachedData),
+        { expirationTtl: CACHE_CONFIG.TTL }
+      );
+
+      logger.info('Cache stored successfully', {
+        url,
+        cacheKey,
+        ttl: CACHE_CONFIG.TTL
+      });
+
+      return;
+    } catch (error) {
+      attempt++;
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Cache storage failed', {
+        url,
+        cacheKey,
+        attempt,
+        maxRetries,
+        error: errorMessage
+      });
+
+      // If max retries exceeded, give up
+      if (attempt > maxRetries) {
+        logger.error('Cache storage abandoned after max retries', {
+          url,
+          maxRetries
+        });
+        return; // Don't throw - cache storage failure shouldn't fail the request
+      }
+
+      // Wait briefly before retry (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt - 1)));
+    }
+  }
+}
+
+/**
  * Fetch HTML content with timeout, redirect handling, and security checks
  * @throws ValidationError if request fails or content is invalid
  */
@@ -551,9 +671,10 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// POST /api/link-preview - Extract metadata from URL
+// POST /api/link-preview - Extract metadata from URL with caching
 linkPreviewRouter.post('/', async (c) => {
   const logger = c.get('logger') as Logger;
+  const startTime = Date.now();
 
   try {
     const body = await c.req.json();
@@ -563,16 +684,55 @@ linkPreviewRouter.post('/', async (c) => {
 
     // Step 1: Validate URL and check for SSRF
     const validatedUrl = validateUrl(request.url, logger);
+    const urlString = validatedUrl.toString();
 
-    // Step 2: Fetch HTML content with timeout and redirect handling
-    const html = await fetchHtml(validatedUrl.toString(), logger);
+    // Step 2: Check cache
+    const cached = await getCachedPreview(c.env.ARCHIVE_CACHE, urlString, logger);
 
-    // Step 3: Extract metadata from HTML
-    const metadata = extractMetadata(html, validatedUrl.toString(), logger);
+    if (cached) {
+      // Cache hit - return cached data
+      const responseTime = Date.now() - startTime;
+      logger.info('Returning cached preview', {
+        url: urlString,
+        responseTime,
+        cacheAge: Date.now() - cached.cachedAt
+      });
+
+      // Return cached data (without cachedAt/expiresAt fields)
+      const { cachedAt, expiresAt, ...metadata } = cached;
+
+      return c.json({
+        success: true,
+        data: metadata,
+        cached: true,
+        cacheAge: Date.now() - cachedAt
+      }, 200);
+    }
+
+    // Step 3: Cache miss - fetch and extract metadata
+    logger.info('Cache miss, fetching fresh data', { url: urlString });
+
+    const html = await fetchHtml(urlString, logger);
+    const metadata = extractMetadata(html, urlString, logger);
+
+    // Step 4: Store in cache (non-blocking)
+    c.executionCtx.waitUntil(
+      setCachedPreview(c.env.ARCHIVE_CACHE, urlString, metadata, logger)
+        .catch(error => {
+          logger.error('Background cache storage failed', {
+            url: urlString,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        })
+    );
+
+    const responseTime = Date.now() - startTime;
+    logger.info('Returning fresh preview', { url: urlString, responseTime });
 
     return c.json({
       success: true,
-      data: metadata
+      data: metadata,
+      cached: false
     }, 200);
 
   } catch (error) {
