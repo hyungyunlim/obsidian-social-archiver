@@ -28,10 +28,15 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
         .setPlaceholder('You')
         .setValue(this.plugin.settings.userName)
         .onChange(async (value) => {
-          this.plugin.settings.userName = value || 'You';
+          // Keep the value as-is, only use 'You' if actually empty
+          this.plugin.settings.userName = value.trim() || 'You';
           // Auto-generate username from display name (temporary until proper signup)
-          const cleanUsername = (value || 'You').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-          this.plugin.settings.username = cleanUsername;
+          const displayName = this.plugin.settings.userName;
+          const cleanUsername = displayName.toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .substring(0, 30);
+          this.plugin.settings.username = cleanUsername || 'you';
           await this.plugin.saveSettings();
         }));
 

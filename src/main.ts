@@ -107,12 +107,25 @@ export default class SocialArchiverPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const savedData = await this.loadData() || {};
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, savedData);
 
-    // Auto-generate username from userName if not set or is default
-    if (!this.settings.username || this.settings.username === 'you') {
+    // Only auto-generate username if both username and userName are defaults
+    // This ensures user-set display names are preserved
+    const isDefaultUsername = !this.settings.username || this.settings.username === 'you';
+    const hasCustomDisplayName = savedData.userName && savedData.userName !== 'You';
+
+    if (isDefaultUsername && !hasCustomDisplayName) {
+      // Only regenerate if both are defaults
       const displayName = this.settings.userName || 'You';
       this.settings.username = displayName.toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .substring(0, 30);
+      await this.saveData(this.settings);
+    } else if (isDefaultUsername && hasCustomDisplayName) {
+      // User has custom display name but username needs regeneration
+      this.settings.username = this.settings.userName.toLowerCase()
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .substring(0, 30);
