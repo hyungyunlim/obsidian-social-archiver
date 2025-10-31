@@ -2171,7 +2171,7 @@
           38,
           41
         ],
-        "status": "deferred",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -2179,7 +2179,7 @@
             "description": "Add server-side API call functionality to PostCard.svelte for fetching link preview metadata from Worker API during SSR rendering",
             "dependencies": [],
             "details": "Update PostCard.svelte to include SSR-compatible API calls to Worker endpoint for link preview metadata. Implement async data loading pattern using SvelteKit's load function or server-side rendering hooks. Ensure API calls are made only during server-side rendering phase and not duplicated on client hydration. Configure proper headers and authentication for Worker API communication.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test SSR rendering with link preview API calls, verify no client-side duplication, validate API authentication and headers"
           },
           {
@@ -2190,7 +2190,7 @@
               1
             ],
             "details": "Implement conditional display logic that checks visibleImages.length === 0 before rendering link previews. Create reactive statements to monitor image/video presence and toggle preview visibility accordingly. Ensure proper component state management when media content loads asynchronously. Handle edge cases where images fail to load but should still prevent preview display.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test conditional rendering with various media combinations, verify preview hiding when images exist, test edge cases with failed image loads"
           },
           {
@@ -2201,7 +2201,7 @@
               1
             ],
             "details": "Implement try-catch blocks around API calls with specific error types for network failures, timeout errors, and API rate limits. Create fallback UI states for when link previews fail to load. Add user-friendly error messaging without breaking the overall post rendering. Implement retry logic with exponential backoff for transient failures. Log errors appropriately for debugging while maintaining user experience.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test API failure scenarios, verify graceful degradation UI, validate retry logic behavior, ensure post rendering continues despite preview failures"
           },
           {
@@ -2214,7 +2214,7 @@
               3
             ],
             "details": "Replace sequential API calls with Promise.all to fetch multiple link preview metadata concurrently. Implement proper batching logic to handle arrays of URLs from YAML frontmatter linkPreviews field. Add timeout controls for the entire batch operation and individual requests. Handle partial failures where some URLs succeed and others fail. Optimize performance by limiting concurrent requests to prevent API rate limiting.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test concurrent fetching performance with multiple URLs, verify partial failure handling, validate timeout behavior and rate limiting protection"
           }
         ]
@@ -3531,7 +3531,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T06:37:58.036Z",
+      "updated": "2025-10-31T06:47:46.304Z",
       "description": "Tasks for master context"
     }
   }

@@ -225,6 +225,7 @@ function transformPostData(apiData: any): Post {
       bookmarks: apiData.metadata?.bookmarks
     },
     comments: fixRedditComments(apiData.comments || [], apiData.platform || 'x'), // Fix Reddit comment data
+    linkPreviews: apiData.linkPreviews, // Extracted URLs for link preview generation
     comment: apiData.comment, // User's personal comment/note
     like: apiData.like, // User's personal like status
     archive: apiData.archive, // Archive status
@@ -345,5 +346,75 @@ export async function checkApiHealth(
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Fetch link preview metadata for a single URL
+ *
+ * @param url - URL to fetch preview metadata for
+ * @param config - Optional API client configuration
+ * @returns Promise resolving to LinkPreview or null if fetch fails
+ */
+export async function fetchLinkPreviewMetadata(
+  url: string,
+  config: Partial<ApiClientConfig> = {}
+): Promise<import('$lib/types').LinkPreview | null> {
+  const clientConfig = { ...DEFAULT_CONFIG, ...config };
+
+  try {
+    const response = await fetchWithTimeout(
+      `${clientConfig.baseUrl}/api/link-preview`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      },
+      10000 // 10 second timeout for link preview fetch
+    );
+
+    const data = await parseResponse<any>(response);
+
+    if (data.success && data.data) {
+      return data.data as import('$lib/types').LinkPreview;
+    }
+
+    return null;
+  } catch (error) {
+    // Log error but don't throw - graceful degradation
+    console.error(`[API] Failed to fetch link preview for ${url}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch link preview metadata for multiple URLs concurrently
+ *
+ * @param urls - Array of URLs to fetch preview metadata for
+ * @param config - Optional API client configuration
+ * @returns Promise resolving to array of LinkPreview (nulls filtered out)
+ */
+export async function fetchLinkPreviewsMetadata(
+  urls: string[],
+  config: Partial<ApiClientConfig> = {}
+): Promise<import('$lib/types').LinkPreview[]> {
+  if (!urls || urls.length === 0) {
+    return [];
+  }
+
+  try {
+    // Fetch all previews concurrently with Promise.all
+    const results = await Promise.all(
+      urls.map(url => fetchLinkPreviewMetadata(url, config))
+    );
+
+    // Filter out null results (failed fetches)
+    return results.filter((preview): preview is import('$lib/types').LinkPreview => preview !== null);
+  } catch (error) {
+    // If Promise.all fails entirely, return empty array (graceful degradation)
+    console.error('[API] Failed to fetch link previews:', error);
+    return [];
   }
 }

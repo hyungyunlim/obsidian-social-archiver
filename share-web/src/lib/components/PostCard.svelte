@@ -1,6 +1,8 @@
 <script lang="ts">
-	import type { Post } from '$lib/types';
+	import type { Post, LinkPreview } from '$lib/types';
 	import PlatformIcon from './PlatformIcon.svelte';
+	import LinkPreviewCard from './LinkPreviewCard.svelte';
+	import { fetchLinkPreviewsMetadata } from '$lib/api/client';
 	import { marked } from 'marked';
 
 	interface Props {
@@ -12,6 +14,11 @@
 
 	let { post, showShareButton = true, username, onCardClick }: Props = $props();
 
+	// Link preview state
+	let linkPreviewsMetadata = $state<LinkPreview[]>([]);
+	let loadingPreviews = $state(false);
+	let previewError = $state(false);
+
 	// Debug logging to check if comment is received
 	$effect(() => {
 		console.log('[PostCard] Received post data:', {
@@ -20,7 +27,8 @@
 			like: post.like,
 			archive: post.archive,
 			comments: post.comments,
-			firstCommentAuthorUrl: post.comments?.[0]?.author?.url
+			firstCommentAuthorUrl: post.comments?.[0]?.author?.url,
+			linkPreviews: post.linkPreviews
 		});
 	});
 
@@ -143,8 +151,6 @@
 		return [...mediaImages, ...markdownImages];
 	});
 
-	const hasMultipleImages = $derived(images.length > 1);
-
 	// Track failed image loads
 	let failedImages = $state<Set<string>>(new Set());
 
@@ -154,6 +160,49 @@
 
 	// Filter out failed images
 	const visibleImages = $derived(images.filter(img => !failedImages.has(img.url)));
+
+	// Fetch link preview metadata when post has linkPreviews and no visible images
+	$effect(() => {
+		// Only fetch if:
+		// 1. Post has linkPreviews URLs
+		// 2. No visible images (to avoid cluttering the card)
+		// 3. Not already loading or errored
+		if (
+			post.linkPreviews &&
+			post.linkPreviews.length > 0 &&
+			visibleImages.length === 0 &&
+			!loadingPreviews &&
+			!previewError
+		) {
+			loadingPreviews = true;
+			previewError = false;
+
+			const urls = post.linkPreviews.map(lp => lp.url);
+
+			fetchLinkPreviewsMetadata(urls)
+				.then(metadata => {
+					linkPreviewsMetadata = metadata;
+					loadingPreviews = false;
+
+					if (metadata.length === 0) {
+						console.warn('[PostCard] No link preview metadata fetched');
+					}
+				})
+				.catch(error => {
+					console.error('[PostCard] Failed to fetch link previews:', error);
+					previewError = true;
+					loadingPreviews = false;
+				});
+		}
+	});
+
+	// Determine if we should show link previews
+	const shouldShowLinkPreviews = $derived(
+		visibleImages.length === 0 &&
+		linkPreviewsMetadata.length > 0 &&
+		!loadingPreviews &&
+		!previewError
+	);
 
 	// Comments logic
 	const maxVisibleComments = 2;
@@ -326,7 +375,7 @@
 						alt={visibleImages[currentImageIndex].altText || `Image ${currentImageIndex + 1}`}
 						class="main-image"
 						loading="lazy"
-						onerror={(e) => {
+						onerror={() => {
 							handleImageError(visibleImages[currentImageIndex].url);
 						}}
 					/>
@@ -373,10 +422,10 @@
 								aria-label={`View image ${i + 1}`}
 							>
 								<img
-									src={image.thumbnail || image.url}
+									src={'thumbnail' in image && image.thumbnail ? image.thumbnail : image.url}
 									alt={image.altText || `Thumbnail ${i + 1}`}
 									loading="lazy"
-									onerror={(e) => {
+									onerror={() => {
 										handleImageError(image.url);
 									}}
 								/>
@@ -384,6 +433,15 @@
 						{/each}
 					</div>
 				{/if}
+			</div>
+		{/if}
+
+		<!-- Link Previews (only when no images) -->
+		{#if shouldShowLinkPreviews}
+			<div class="link-previews-section">
+				{#each linkPreviewsMetadata as preview (preview.url)}
+					<LinkPreviewCard {preview} mode="card" />
+				{/each}
 			</div>
 		{/if}
 
@@ -643,7 +701,7 @@
 		content: '';
 		position: absolute;
 		left: 0;
-		top: 0;
+		top: 0.75rem; /* Start from author name position */
 		bottom: 0.5rem; /* Stop before reaching bottom to avoid connecting with border */
 		width: 2px;
 		background-color: var(--background-modifier-border);
@@ -838,6 +896,14 @@
 		border-radius: 0.5rem;
 		overflow: hidden;
 		background-color: var(--background-modifier-border);
+	}
+
+	/* Link Previews Section */
+	.link-previews-section {
+		margin: 0.75rem 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
 	}
 
 	.media-container {
@@ -1067,7 +1133,7 @@
 	/* Mobile optimizations */
 	@media (max-width: 640px) {
 		.card-content {
-			padding: 0.625rem 1rem; /* Further reduced for mobile */
+			padding: 0.625rem 1rem;
 		}
 
 		.nested-header {
@@ -1078,6 +1144,10 @@
 		.post-card.nested-card {
 			margin-left: 0.5rem;
 			padding-left: 1rem;
+		}
+
+		.post-card.nested-card::before {
+			top: 0.625rem; /* Start from author name position on mobile */
 		}
 
 		.platform-icon {

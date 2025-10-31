@@ -104,7 +104,7 @@
 					width="16"
 					height="16"
 					onerror={(e) => {
-						e.currentTarget.style.display = 'none';
+						(e.currentTarget as HTMLImageElement).style.display = 'none';
 					}}
 				/>
 			{/if}
