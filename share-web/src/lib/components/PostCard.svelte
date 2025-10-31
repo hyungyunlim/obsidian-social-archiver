@@ -170,10 +170,9 @@
 		onclick={onCardClick !== undefined ? handleCardClick : undefined}
 		onkeydown={onCardClick !== undefined ? handleKeyDown : undefined}
 	>
-	<!-- Nested Card Header (like timeline) -->
+	<!-- Nested Card Header (Reddit-style) -->
 	{#if username}
 		<div class="nested-header">
-			<div class="nested-indicator"></div>
 			<span class="nested-text">
 				<strong>{username}</strong> saved this post
 			</span>
@@ -427,13 +426,16 @@
 </article>
 
 <style>
-	/* Card Container - No border, only subtle dividers */
+	/* Card Container - Only bottom border between posts */
 	.post-card {
 		position: relative;
 		background-color: var(--background-primary);
-		border-top: 1px solid var(--background-modifier-border);
 		border-bottom: 1px solid var(--background-modifier-border);
-		margin: -1px 0; /* Overlap borders to prevent double lines */
+	}
+
+	/* Remove top border from first card */
+	.post-card:first-child {
+		border-top: none;
 	}
 
 	.card-content {
@@ -450,30 +452,18 @@
 		background-color: var(--background-modifier-hover);
 	}
 
-	/* Nested card header (like timeline) */
+	/* Nested card header - Reddit style with left border */
 	.nested-header {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 1rem;
-		padding-bottom: 0.75rem;
-		border-bottom: 1px solid var(--background-modifier-border);
-	}
-
-	.nested-indicator {
-		width: 3px;
-		height: 1.5rem;
-		background: linear-gradient(
-			to bottom,
-			var(--interactive-accent),
-			transparent
-		);
-		border-radius: 2px;
+		position: relative;
+		padding-left: 1rem;
+		margin-bottom: 0.75rem;
+		border-left: 2px solid var(--background-modifier-border);
 	}
 
 	.nested-text {
 		font-size: 0.813rem;
 		color: var(--text-muted);
+		display: block;
 	}
 
 	.nested-text strong {
@@ -766,9 +756,7 @@
 		display: flex;
 		align-items: center;
 		gap: 1.5rem;
-		padding-top: 0.75rem;
 		margin-top: 0.75rem;
-		border-top: 1px solid var(--background-modifier-border);
 		color: var(--text-muted);
 		flex-wrap: wrap;
 		font-size: 0.813rem;
@@ -809,8 +797,6 @@
 	/* Comments Section */
 	.comments-section {
 		margin-top: 12px;
-		padding-top: 12px;
-		border-top: 1px solid var(--background-modifier-border);
 	}
 
 	.view-all-comments-btn {
