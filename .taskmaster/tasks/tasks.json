@@ -2036,7 +2036,7 @@
         "testStrategy": "Unit tests for URL extraction from various content formats, test regex pattern accuracy, verify integration with PostData interface, test exclusion rules for images and platform URLs",
         "priority": "high",
         "dependencies": [],
-        "status": "deferred",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -2044,7 +2044,7 @@
             "description": "Create the main LinkPreviewExtractor service class with proper TypeScript interfaces and method signatures following existing service patterns",
             "dependencies": [],
             "details": "Create src/services/LinkPreviewExtractor.ts file implementing IService interface if applicable. Define class structure with extractUrls() method signature that accepts content string and returns array of link preview objects. Follow existing service patterns from src/services/ directory for consistency with codebase architecture.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for class instantiation and method signatures, verify TypeScript interface compliance"
           },
           {
@@ -2055,7 +2055,7 @@
               1
             ],
             "details": "Implement extractUrls() method using regex pattern /https?:\\/\\/(?!.*\\.(jpg|jpeg|png|gif|webp|mp4|mov))[^\\s<]+/gi for URL detection. Add filtering logic to exclude image URLs and platform-specific URLs (facebook.com, instagram.com, etc.). Limit extraction to first 3 URLs per post. Handle edge cases like malformed URLs and empty content.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests with various content formats, test regex accuracy against different URL types, verify exclusion rules work correctly"
           },
           {
@@ -2064,7 +2064,7 @@
             "description": "Modify the existing PostData interface to include the new linkPreviews field as an array of URL objects",
             "dependencies": [],
             "details": "Add linkPreviews field to PostData interface as array of {url: string} objects. Update all related type definitions and ensure backwards compatibility. Modify any existing PostData creation or processing code to handle the new optional field. Update TypeScript declarations and ensure strict type checking passes.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Type checking tests, verify interface compatibility with existing code, test optional field handling"
           },
           {
@@ -2077,7 +2077,7 @@
               3
             ],
             "details": "Integrate LinkPreviewExtractor into the main archiving workflow. Call extractUrls() during post processing and populate the linkPreviews field in PostData. Handle integration with existing services like ArchiveService and ensure proper error handling. Add configuration option to enable/disable link extraction. Test integration with all supported platforms.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Integration tests with existing archiving workflow, test with real post data from different platforms, verify PostData population works correctly"
           }
         ]
@@ -3531,7 +3531,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T06:10:33.077Z",
+      "updated": "2025-10-31T06:27:29.682Z",
       "description": "Tasks for master context"
     }
   }

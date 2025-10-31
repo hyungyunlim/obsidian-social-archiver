@@ -3,6 +3,7 @@ import type { ArchiveService } from './ArchiveService';
 import type { MarkdownConverter } from './MarkdownConverter';
 import type { VaultManager } from './VaultManager';
 import type { MediaHandler, MediaResult } from './MediaHandler';
+import type { LinkPreviewExtractor } from './LinkPreviewExtractor';
 import type { PostData } from '@/types/post';
 import type { ArchiveOptions, ArchiveResult, ArchiveProgress } from '@/types/archive';
 import type { TFile } from 'obsidian';
@@ -15,6 +16,7 @@ export interface OrchestratorConfig {
   markdownConverter: MarkdownConverter;
   vaultManager: VaultManager;
   mediaHandler: MediaHandler;
+  linkPreviewExtractor: LinkPreviewExtractor;
   enableCache?: boolean;
   maxRetries?: number;
   retryDelay?: number;
@@ -174,6 +176,7 @@ export class ArchiveOrchestrator implements IService {
   private markdownConverter: MarkdownConverter;
   private vaultManager: VaultManager;
   private mediaHandler: MediaHandler;
+  private linkPreviewExtractor: LinkPreviewExtractor;
   private eventEmitter: EventEmitter;
   private cache: Map<string, CacheEntry>;
   private enableCache: boolean;
@@ -185,6 +188,7 @@ export class ArchiveOrchestrator implements IService {
     this.markdownConverter = config.markdownConverter;
     this.vaultManager = config.vaultManager;
     this.mediaHandler = config.mediaHandler;
+    this.linkPreviewExtractor = config.linkPreviewExtractor;
     this.eventEmitter = new EventEmitter();
     this.cache = new Map();
     this.enableCache = config.enableCache ?? true;
@@ -199,6 +203,7 @@ export class ArchiveOrchestrator implements IService {
       this.markdownConverter.initialize?.(),
       this.vaultManager.initialize?.(),
       this.mediaHandler.initialize?.(),
+      this.linkPreviewExtractor.initialize?.(),
     ]);
   }
 
@@ -209,6 +214,7 @@ export class ArchiveOrchestrator implements IService {
       this.markdownConverter.dispose?.(),
       this.vaultManager.dispose?.(),
       this.mediaHandler.dispose?.(),
+      this.linkPreviewExtractor.dispose?.(),
     ]);
 
     // Clear cache and listeners
@@ -223,6 +229,7 @@ export class ArchiveOrchestrator implements IService {
       this.markdownConverter.isHealthy?.() ?? true,
       this.vaultManager.isHealthy?.() ?? true,
       this.mediaHandler.isHealthy?.() ?? true,
+      this.linkPreviewExtractor.isHealthy?.() ?? true,
     ]);
 
     return healthChecks.every((healthy: boolean) => healthy);
@@ -310,6 +317,22 @@ export class ArchiveOrchestrator implements IService {
 
       this.checkCancellation(options.abortSignal);
       this.emitStageComplete('fetching');
+
+      // Stage 3.5: Extract link previews from content
+      if (postData.content?.text) {
+        try {
+          const linkPreviews = this.linkPreviewExtractor.extractUrls(
+            postData.content.text,
+            platform
+          );
+          if (linkPreviews.length > 0) {
+            postData.linkPreviews = linkPreviews;
+          }
+        } catch (error) {
+          // Link preview extraction is non-critical, log error but continue
+          console.error('[ArchiveOrchestrator] Failed to extract link previews:', error);
+        }
+      }
 
       // Stage 4: Download media (if enabled)
       // Note: YouTube videos use original URL embed, no download needed

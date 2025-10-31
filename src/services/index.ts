@@ -7,6 +7,7 @@ export { ArchiveOrchestrator } from './ArchiveOrchestrator';
 export { ErrorHandler } from './ErrorHandler';
 export { PlatformDetector } from './PlatformDetector';
 export { URLExpander } from './URLExpander';
+export { LinkPreviewExtractor } from './LinkPreviewExtractor';
 export { GumroadClient } from './GumroadClient';
 export { LicenseValidator } from './LicenseValidator';
 export { LicenseStorage } from './LicenseStorage';
@@ -64,6 +65,12 @@ export type {
   ExpansionResult,
   ExpansionOptions,
 } from './URLExpander';
+
+export type {
+  LinkPreview,
+  ExtractionOptions,
+  ExtractionResult,
+} from './LinkPreviewExtractor';
 
 export type {
   GumroadClientConfig,

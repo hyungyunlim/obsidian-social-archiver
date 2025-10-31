@@ -129,6 +129,7 @@ export interface PostData {
   publishedDate?: Date;     // Original post publication date
   archivedDate?: Date;      // Date when post was archived
   mediaSourceUrls?: string[]; // Original media URLs (before proxy download)
+  linkPreviews?: Array<{ url: string }>; // Extracted URLs for link preview generation
   ai?: AIAnalysis;
   raw?: unknown; // Original API response
 }
@@ -191,6 +192,9 @@ export const PostDataSchema = z.object({
     externalLink: z.string().optional(),
     downloadTime: z.number().optional()
   }),
+  linkPreviews: z.array(z.object({
+    url: z.string().url()
+  })).optional(),
   ai: z.object({
     summary: z.string(),
     factCheck: z.array(z.object({
