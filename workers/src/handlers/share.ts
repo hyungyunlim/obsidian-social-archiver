@@ -55,9 +55,11 @@ shareRouter.post('/', async (c) => {
       { expirationTtl: ttl }
     );
 
-    // Add to user index if username is provided
+    // Add to user index only for NEW shares (not updates)
+    // If shareId was provided in options, this is an update (Phase 2), skip index
+    const isUpdate = !!(request.options as any)?.shareId;
     const username = request.options?.username;
-    if (username) {
+    if (username && !isUpdate) {
       try {
         await addPostToUserIndex(
           c.env.SHARE_LINKS,
@@ -74,6 +76,8 @@ shareRouter.post('/', async (c) => {
           shareId
         });
       }
+    } else if (isUpdate) {
+      logger.info('Skipping user index update (share update)', { username, shareId });
     }
 
     // Generate share URL using share-web domain (not API domain)

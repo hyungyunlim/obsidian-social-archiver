@@ -1933,8 +1933,8 @@
             "title": "Implement URL validation and SSRF protection",
             "description": "Create URL validation logic with comprehensive SSRF protection to prevent server-side request forgery attacks",
             "dependencies": [],
-            "details": "Implement URL parsing and validation using URL constructor. Create SSRF protection by blocking private IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, ::1/128, fc00::/7). Validate URL schemes (only http/https). Implement hostname resolution checks to prevent bypassing via domain redirects. Add input sanitization and reject malformed URLs.",
-            "status": "pending",
+            "details": "Implement URL parsing and validation using URL constructor. Create SSRF protection by blocking private IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, ::1/128, fc00::/7). Validate URL schemes (only http/https). Implement hostname resolution checks to prevent bypassing via domain redirects. Add input sanitization and reject malformed URLs.\n<info added on 2025-10-31T05:25:55.922Z>\nImplementation completed successfully with comprehensive SSRF protection and test coverage. Created workers/src/handlers/link-preview.ts with URL validation that blocks all private IP ranges including IPv4 (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 0.0.0.0/8, 100.64.0.0/10) and IPv6 (::1, fc00::/7, fe80::/10, ff00::/8) ranges. Added protection against dangerous hostnames like localhost and cloud metadata endpoints. Developed comprehensive test suite with 23 passing tests covering all validation scenarios. Successfully integrated router into main index.ts. Ready for next subtask implementation.\n</info added on 2025-10-31T05:25:55.922Z>",
+            "status": "done",
             "testStrategy": "Unit tests for valid/invalid URLs, test private IP blocking, test various SSRF bypass attempts, verify hostname validation"
           },
           {
@@ -1945,7 +1945,7 @@
               1
             ],
             "details": "Implement fetch request with 5-second timeout using AbortController. Handle HTTP redirects with maximum 3 redirect limit to prevent redirect loops. Set appropriate User-Agent header. Handle various HTTP status codes (200, 3xx redirects, 4xx/5xx errors). Implement content-type validation to ensure HTML content. Add request size limits to prevent abuse.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Test timeout handling, verify redirect limits, test various HTTP status responses, test content-type validation, verify request size limits"
           },
           {
@@ -3531,7 +3531,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T05:22:27.366Z",
+      "updated": "2025-10-31T05:26:07.953Z",
       "description": "Tasks for master context"
     }
   }

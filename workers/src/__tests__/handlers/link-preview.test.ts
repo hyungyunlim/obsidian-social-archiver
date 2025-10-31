@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { linkPreviewRouter, validateUrl } from '@/handlers/link-preview';
+import { linkPreviewRouter, validateUrl, fetchHtml } from '@/handlers/link-preview';
 import type { Bindings } from '@/types/bindings';
 import { Logger } from '@/utils/logger';
+import { errorHandler } from '@/middleware/errorHandler';
 
 // Mock Logger
 const mockLogger = {
@@ -13,13 +14,27 @@ const mockLogger = {
   setContext: vi.fn(),
 } as unknown as Logger;
 
+// Mock fetch globally
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
 describe('Link Preview Handler', () => {
   let app: Hono;
   let mockEnv: Partial<Bindings>;
 
   beforeEach(() => {
     app = new Hono();
+
+    // Mock logger middleware
+    app.use('*', async (c, next) => {
+      c.set('logger', mockLogger);
+      await next();
+    });
+
     app.route('/api/link-preview', linkPreviewRouter);
+
+    // Add error handler
+    app.onError(errorHandler);
 
     mockEnv = {
       // Add KV namespaces when needed for caching
@@ -135,12 +150,14 @@ describe('validateUrl', () => {
 
   it('should reject link-local IPs (169.254.0.0/16)', () => {
     expect(() => validateUrl('http://169.254.0.1', mockLogger)).toThrow('Access to private IP addresses is not allowed');
-    expect(() => validateUrl('http://169.254.169.254', mockLogger)).toThrow('Access to private IP addresses is not allowed');
+    // 169.254.169.254 is in BLOCKED_HOSTNAMES, so different error message
+    expect(() => validateUrl('http://169.254.169.254', mockLogger)).toThrow('Access to this hostname is not allowed');
   });
 
   it('should reject cloud metadata endpoints', () => {
     expect(() => validateUrl('http://metadata.google.internal', mockLogger)).toThrow('Access to this hostname is not allowed');
-    expect(() => validateUrl('http://169.254.169.254/latest/meta-data', mockLogger)).toThrow('Access to private IP addresses is not allowed');
+    // 169.254.169.254 is in BLOCKED_HOSTNAMES, so different error message
+    expect(() => validateUrl('http://169.254.169.254/latest/meta-data', mockLogger)).toThrow('Access to this hostname is not allowed');
   });
 
   it('should reject IPv6 loopback', () => {
@@ -183,5 +200,232 @@ describe('validateUrl', () => {
 
   it('should handle URLs with authentication', () => {
     expect(() => validateUrl('https://user:pass@example.com', mockLogger)).not.toThrow();
+  });
+});
+
+describe('fetchHtml', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+    vi.useRealTimers(); // Use real timers for most tests
+  });
+
+  it('should fetch HTML successfully', async () => {
+    const mockHtml = '<html><head><title>Test</title></head><body>Content</body></html>';
+
+    const mockHeaders = new Headers();
+    mockHeaders.set('content-type', 'text/html');
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: mockHeaders,
+      text: async () => mockHtml,
+    });
+
+    const html = await fetchHtml('https://example.com', mockLogger);
+
+    expect(html).toBe(mockHtml);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://example.com',
+      expect.objectContaining({
+        method: 'GET',
+        redirect: 'manual',
+      })
+    );
+  });
+
+  it('should follow redirects (single redirect)', async () => {
+    // First request: redirect
+    const redirectHeaders = new Headers();
+    redirectHeaders.set('location', 'https://example.com/redirected');
+
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 301,
+      headers: redirectHeaders,
+    });
+
+    // Second request: success
+    const mockHtml = '<html><body>Redirected content</body></html>';
+    const successHeaders = new Headers();
+    successHeaders.set('content-type', 'text/html');
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: successHeaders,
+      text: async () => mockHtml,
+    });
+
+    const html = await fetchHtml('https://example.com', mockLogger);
+
+    expect(html).toBe(mockHtml);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('should handle relative redirects', async () => {
+    // First request: relative redirect
+    const redirectHeaders = new Headers();
+    redirectHeaders.set('location', '/redirected-page');
+
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 302,
+      headers: redirectHeaders,
+    });
+
+    // Second request: success
+    const mockHtml = '<html><body>Redirected</body></html>';
+    const successHeaders = new Headers();
+    successHeaders.set('content-type', 'text/html');
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: successHeaders,
+      text: async () => mockHtml,
+    });
+
+    const html = await fetchHtml('https://example.com/original', mockLogger);
+
+    expect(html).toBe(mockHtml);
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://example.com/redirected-page',
+      expect.anything()
+    );
+  });
+
+  it('should reject too many redirects', async () => {
+    // Mock 4 redirects (exceeds limit of 3)
+    for (let i = 0; i < 4; i++) {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 301,
+        headers: new Map([['location', `https://example.com/redirect${i + 1}`]]),
+      });
+    }
+
+    await expect(fetchHtml('https://example.com', mockLogger, 3)).rejects.toThrow('Too many redirects');
+  });
+
+  it('should reject redirect to private IP', async () => {
+    // Redirect to private IP
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 301,
+      headers: new Map([['location', 'http://192.168.1.1']]),
+    });
+
+    await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Access to private IP addresses is not allowed');
+  });
+
+  it('should handle 404 error', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      headers: new Map(),
+    });
+
+    await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Page not found (404)');
+  });
+
+  it('should handle 403 error', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      headers: new Map(),
+    });
+
+    await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Access forbidden (403)');
+  });
+
+  it('should handle 500 error', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      headers: new Map(),
+    });
+
+    await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Server error (500)');
+  });
+
+  it('should validate content-type is HTML', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Map([['content-type', 'application/json']]),
+      text: async () => '{"data": "json"}',
+    });
+
+    await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Invalid content type');
+  });
+
+  it('should accept various HTML content types', async () => {
+    const mockHtml = '<html><body>Test</body></html>';
+
+    // Test text/html
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Map([['content-type', 'text/html; charset=utf-8']]),
+      text: async () => mockHtml,
+    });
+    await expect(fetchHtml('https://example.com', mockLogger)).resolves.toBe(mockHtml);
+
+    // Test application/xhtml+xml
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Map([['content-type', 'application/xhtml+xml']]),
+      text: async () => mockHtml,
+    });
+    await expect(fetchHtml('https://example.com', mockLogger)).resolves.toBe(mockHtml);
+  });
+
+  it('should reject content exceeding size limit', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Map([
+        ['content-type', 'text/html'],
+        ['content-length', '20000000'], // 20MB
+      ]),
+      text: async () => '<html>Content</html>',
+    });
+
+    await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Content too large');
+  });
+
+  it('should reject content exceeding size limit after reading', async () => {
+    // Content-length header not set, but actual content is too large
+    const largeHtml = 'x'.repeat(11 * 1024 * 1024); // 11MB
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Map([['content-type', 'text/html']]),
+      text: async () => largeHtml,
+    });
+
+    await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Content too large');
+  });
+
+  it('should handle network errors', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network failure'));
+
+    await expect(fetchHtml('https://example.com', mockLogger)).rejects.toThrow('Network error');
+  });
+
+  it('should timeout after 5 seconds', async () => {
+    // Mock a fetch that never resolves
+    mockFetch.mockImplementationOnce(() => new Promise(() => {}));
+
+    const fetchPromise = fetchHtml('https://example.com', mockLogger);
+
+    // Fast-forward time by 5 seconds
+    await vi.advanceTimersByTimeAsync(5000);
+
+    await expect(fetchPromise).rejects.toThrow('Request timeout');
   });
 });
