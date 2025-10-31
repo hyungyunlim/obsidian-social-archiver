@@ -59,6 +59,14 @@ export class PostDataParser {
         console.log('[PostDataParser] No frontmatter or platform, skipping');
         return null;
       }
+
+      // Validate platform: 'post' data
+      if (frontmatter.platform === 'post') {
+        if (!this.validateUserPost(frontmatter)) {
+          console.warn('[PostDataParser] Invalid user post data, skipping:', file.path);
+          return null;
+        }
+      }
       const contentText = this.extractContentText(content);
       const metadata = this.extractMetadata(content);
       const mediaUrls = this.extractMedia(content);
@@ -67,10 +75,14 @@ export class PostDataParser {
       const publishedDate = frontmatter.published ? new Date(frontmatter.published) : undefined;
       const archivedDate = frontmatter.archived ? new Date(frontmatter.archived) : undefined;
 
+      // Determine if this is a user-created post
+      const isUserPost = frontmatter.platform === 'post';
+
       const postData: PostData = {
         platform: frontmatter.platform as any,
         id: file.basename,
-        url: frontmatter.originalUrl || '',
+        // For user posts, url is the vault file path; for archived posts, use originalUrl
+        url: isUserPost ? file.path : (frontmatter.originalUrl || ''),
         videoId: (frontmatter as any).videoId, // YouTube video ID
         filePath: file.path, // Store file path for opening
         comment: frontmatter.comment, // User's personal note
@@ -83,6 +95,8 @@ export class PostDataParser {
         author: {
           name: frontmatter.author || 'Unknown',
           url: frontmatter.authorUrl || '',
+          avatar: (frontmatter as any).authorAvatar as string | undefined,
+          handle: (frontmatter as any).authorHandle as string | undefined,
         },
         content: {
           text: contentText,
@@ -106,6 +120,27 @@ export class PostDataParser {
       console.warn(`[PostDataParser] Failed to load ${file.path}:`, err);
       return null;
     }
+  }
+
+  /**
+   * Validate user-created post data
+   * Returns true if the post data is valid for platform: 'post'
+   */
+  private validateUserPost(frontmatter: YamlFrontmatter): boolean {
+    // User posts must have author name
+    if (!frontmatter.author || typeof frontmatter.author !== 'string') {
+      console.warn('[PostDataParser] User post missing author name');
+      return false;
+    }
+
+    // User posts must have a timestamp (published or archived)
+    if (!frontmatter.published && !frontmatter.archived) {
+      console.warn('[PostDataParser] User post missing timestamp');
+      return false;
+    }
+
+    // Validation passed
+    return true;
   }
 
   /**

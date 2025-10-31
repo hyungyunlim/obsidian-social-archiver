@@ -20,6 +20,20 @@
 	let loadingPreviews = $state(false);
 	let previewError = $state(false);
 
+	// Reset link preview state when post changes (for re-sharing scenarios)
+	$effect(() => {
+		// Track post.id and post.linkPreviews as dependencies
+		const currentId = post.id;
+		const currentLinkPreviews = post.linkPreviews;
+
+		// Reset state when post ID or linkPreviews change
+		linkPreviewsMetadata = [];
+		loadingPreviews = false;
+		previewError = false;
+
+		console.log('[PostCard] Link preview state reset for post:', currentId, currentLinkPreviews);
+	});
+
 	// Debug logging to check if comment is received
 	$effect(() => {
 		console.log('[PostCard] Received post data:', {

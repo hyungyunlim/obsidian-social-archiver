@@ -69,6 +69,7 @@ export function canonicalizeUrl(url: string): string {
 			threads: ['utm_source', 'utm_medium', 'utm_campaign'],
 			youtube: ['feature', 'si', 'pp', 'kw', 'ab_channel', 'app', 'cbrd'],
 			reddit: ['utm_source', 'utm_medium', 'utm_campaign', 'share_id', 'context', 'rdt_cid'],
+			post: [], // No tracking parameters for user-created posts
 		};
 
 		// Remove tracking parameters based on platform

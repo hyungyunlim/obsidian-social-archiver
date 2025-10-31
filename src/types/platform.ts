@@ -181,6 +181,24 @@ export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
       threads: true, // Reddit comment threads
     },
   },
+  post: {
+    platform: 'post',
+    displayName: 'User Post',
+    domains: [], // No external domains for user-created posts
+    supportsMedia: true,
+    supportsAI: false, // AI analysis not supported for user posts in Phase 1
+    maxMediaSize: 10 * 1024 * 1024, // 10MB per image (max 10 images)
+    rateLimit: {
+      requestsPerHour: 10,
+      requestsPerDay: 50,
+    },
+    features: {
+      stories: false,
+      live: false,
+      reels: false,
+      threads: false,
+    },
+  },
 };
 
 /**
