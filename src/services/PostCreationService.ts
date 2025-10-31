@@ -4,8 +4,10 @@
  * Handles business logic for creating user-generated posts:
  * - PostData generation with platform: 'post'
  * - Content validation (character limits, media count)
- * - Credit calculation (1 for basic, 3 with AI)
  * - Author info integration from Obsidian settings
+ *
+ * Note: User-created posts are FREE and do NOT consume credits.
+ * Credits are only used for archiving external social media posts.
  *
  * Single Responsibility: Post creation business logic
  */
@@ -19,7 +21,6 @@ import { SocialArchiverSettings } from '../types/settings';
 export interface PostCreationInput {
   content: string; // Markdown content
   media?: Media[]; // Attached images/videos
-  useAI?: boolean; // Enable AI features (summary, fact-check, etc.)
   linkPreviews?: string[]; // Extracted URLs for preview
 }
 
@@ -32,17 +33,6 @@ export interface ValidationResult {
   warnings: string[];
 }
 
-/**
- * Credit calculation result
- */
-export interface CreditCalculation {
-  total: number;
-  breakdown: {
-    base: number; // Base cost (1 credit)
-    ai?: number; // AI enhancement cost (2 credits)
-  };
-  description: string;
-}
 
 /**
  * PostCreationService class
@@ -53,10 +43,6 @@ export class PostCreationService {
   private static readonly MIN_CONTENT_LENGTH = 1; // At least 1 character
   private static readonly MAX_MEDIA_COUNT = 10; // Maximum 10 images
   private static readonly MAX_LINK_PREVIEWS = 5; // Maximum 5 link previews
-
-  // Credit costs
-  private static readonly CREDIT_BASIC_POST = 1;
-  private static readonly CREDIT_AI_ENHANCEMENT = 2; // Total 3 credits with base
 
   constructor(private settings: SocialArchiverSettings) {}
 
@@ -177,73 +163,6 @@ export class PostCreationService {
     };
   }
 
-  /**
-   * Calculate credits required for post
-   */
-  calculateCredits(input: PostCreationInput): CreditCalculation {
-    const breakdown = {
-      base: PostCreationService.CREDIT_BASIC_POST,
-    };
-
-    let total = breakdown.base;
-    let description = 'Basic post creation';
-
-    // Add AI enhancement cost if requested
-    if (input.useAI) {
-      breakdown.ai = PostCreationService.CREDIT_AI_ENHANCEMENT;
-      total += breakdown.ai;
-      description = 'Post with AI enhancement (summary, fact-check, sentiment analysis)';
-    }
-
-    return {
-      total,
-      breakdown,
-      description,
-    };
-  }
-
-  /**
-   * Check if user has enough credits
-   */
-  hasEnoughCredits(input: PostCreationInput): boolean {
-    const required = this.calculateCredits(input);
-    return this.settings.creditsRemaining >= required.total;
-  }
-
-  /**
-   * Get credit balance information
-   */
-  getCreditBalance(): {
-    remaining: number;
-    resetDate: Date;
-    isLowBalance: boolean;
-  } {
-    const remaining = this.settings.creditsRemaining;
-    const resetDate = new Date(this.settings.creditResetDate);
-    const isLowBalance = remaining < 3; // Warning threshold
-
-    return {
-      remaining,
-      resetDate,
-      isLowBalance,
-    };
-  }
-
-  /**
-   * Format credit cost for display
-   */
-  formatCreditCost(input: PostCreationInput): string {
-    const calc = this.calculateCredits(input);
-    const parts: string[] = [];
-
-    parts.push(`${calc.breakdown.base} credit (base)`);
-
-    if (calc.breakdown.ai) {
-      parts.push(`${calc.breakdown.ai} credits (AI)`);
-    }
-
-    return `${calc.total} total (${parts.join(' + ')})`;
-  }
 
   /**
    * Get content statistics
@@ -282,17 +201,6 @@ export class PostCreationService {
       minContentLength: PostCreationService.MIN_CONTENT_LENGTH,
       maxMediaCount: PostCreationService.MAX_MEDIA_COUNT,
       maxLinkPreviews: PostCreationService.MAX_LINK_PREVIEWS,
-    };
-  }
-
-  /**
-   * Get credit costs for UI display
-   */
-  static getCreditCosts() {
-    return {
-      basicPost: PostCreationService.CREDIT_BASIC_POST,
-      aiEnhancement: PostCreationService.CREDIT_AI_ENHANCEMENT,
-      totalWithAI: PostCreationService.CREDIT_BASIC_POST + PostCreationService.CREDIT_AI_ENHANCEMENT,
     };
   }
 }

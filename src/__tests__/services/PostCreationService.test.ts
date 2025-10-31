@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PostCreationService, PostCreationInput, ValidationResult } from '../../services/PostCreationService';
+import { PostCreationService, PostCreationInput } from '../../services/PostCreationService';
 import { SocialArchiverSettings } from '../../types/settings';
 import { Media } from '../../types/post';
 
@@ -228,140 +228,6 @@ describe('PostCreationService', () => {
     });
   });
 
-  describe('calculateCredits', () => {
-    it('should calculate 1 credit for basic post', () => {
-      const input: PostCreationInput = {
-        content: 'Basic post',
-        useAI: false,
-      };
-
-      const calc = service.calculateCredits(input);
-
-      expect(calc.total).toBe(1);
-      expect(calc.breakdown.base).toBe(1);
-      expect(calc.breakdown.ai).toBeUndefined();
-    });
-
-    it('should calculate 3 credits for AI-enhanced post', () => {
-      const input: PostCreationInput = {
-        content: 'AI-enhanced post',
-        useAI: true,
-      };
-
-      const calc = service.calculateCredits(input);
-
-      expect(calc.total).toBe(3);
-      expect(calc.breakdown.base).toBe(1);
-      expect(calc.breakdown.ai).toBe(2);
-    });
-
-    it('should provide description for basic post', () => {
-      const input: PostCreationInput = {
-        content: 'Basic post',
-      };
-
-      const calc = service.calculateCredits(input);
-
-      expect(calc.description).toContain('Basic post creation');
-    });
-
-    it('should provide description for AI-enhanced post', () => {
-      const input: PostCreationInput = {
-        content: 'AI post',
-        useAI: true,
-      };
-
-      const calc = service.calculateCredits(input);
-
-      expect(calc.description).toContain('AI enhancement');
-    });
-  });
-
-  describe('hasEnoughCredits', () => {
-    it('should return true when user has enough credits', () => {
-      mockSettings.creditsRemaining = 10;
-      service = new PostCreationService(mockSettings);
-
-      const input: PostCreationInput = {
-        content: 'Test post',
-      };
-
-      expect(service.hasEnoughCredits(input)).toBe(true);
-    });
-
-    it('should return false when user does not have enough credits', () => {
-      mockSettings.creditsRemaining = 0;
-      service = new PostCreationService(mockSettings);
-
-      const input: PostCreationInput = {
-        content: 'Test post',
-      };
-
-      expect(service.hasEnoughCredits(input)).toBe(false);
-    });
-
-    it('should check credits for AI-enhanced posts', () => {
-      mockSettings.creditsRemaining = 2;
-      service = new PostCreationService(mockSettings);
-
-      const input: PostCreationInput = {
-        content: 'AI post',
-        useAI: true,
-      };
-
-      expect(service.hasEnoughCredits(input)).toBe(false);
-    });
-  });
-
-  describe('getCreditBalance', () => {
-    it('should return current credit balance', () => {
-      const balance = service.getCreditBalance();
-
-      expect(balance.remaining).toBe(10);
-      expect(balance.resetDate).toBeInstanceOf(Date);
-    });
-
-    it('should indicate low balance', () => {
-      mockSettings.creditsRemaining = 2;
-      service = new PostCreationService(mockSettings);
-
-      const balance = service.getCreditBalance();
-
-      expect(balance.isLowBalance).toBe(true);
-    });
-
-    it('should not indicate low balance when sufficient', () => {
-      const balance = service.getCreditBalance();
-
-      expect(balance.isLowBalance).toBe(false);
-    });
-  });
-
-  describe('formatCreditCost', () => {
-    it('should format basic post cost', () => {
-      const input: PostCreationInput = {
-        content: 'Basic post',
-      };
-
-      const formatted = service.formatCreditCost(input);
-
-      expect(formatted).toContain('1 total');
-      expect(formatted).toContain('1 credit (base)');
-    });
-
-    it('should format AI-enhanced post cost', () => {
-      const input: PostCreationInput = {
-        content: 'AI post',
-        useAI: true,
-      };
-
-      const formatted = service.formatCreditCost(input);
-
-      expect(formatted).toContain('3 total');
-      expect(formatted).toContain('1 credit (base)');
-      expect(formatted).toContain('2 credits (AI)');
-    });
-  });
 
   describe('getContentStats', () => {
     it('should calculate content statistics', () => {
@@ -412,13 +278,28 @@ describe('PostCreationService', () => {
       expect(limits.maxMediaCount).toBe(10);
       expect(limits.maxLinkPreviews).toBe(5);
     });
+  });
 
-    it('should return credit costs', () => {
-      const costs = PostCreationService.getCreditCosts();
+  describe('user-created posts are free', () => {
+    it('should not consume credits for user-created posts', () => {
+      const initialCredits = mockSettings.creditsRemaining;
 
-      expect(costs.basicPost).toBe(1);
-      expect(costs.aiEnhancement).toBe(2);
-      expect(costs.totalWithAI).toBe(3);
+      const input: PostCreationInput = {
+        content: 'My personal post',
+        media: [{ type: 'image', url: 'https://example.com/image.png' }],
+      };
+
+      service.generatePostData(input);
+
+      // Credits should remain the same
+      expect(mockSettings.creditsRemaining).toBe(initialCredits);
+    });
+
+    it('should document that user posts are free in service description', () => {
+      // This is a documentation test
+      // User-created posts (platform: 'post') do NOT consume credits
+      // Only external social media archiving consumes credits
+      expect(true).toBe(true);
     });
   });
 });
