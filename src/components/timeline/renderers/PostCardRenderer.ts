@@ -14,6 +14,7 @@ import {
 import { MediaGalleryRenderer } from './MediaGalleryRenderer';
 import { CommentRenderer } from './CommentRenderer';
 import { YouTubeEmbedRenderer } from './YouTubeEmbedRenderer';
+import { LinkPreviewRenderer } from './LinkPreviewRenderer';
 import { YouTubePlayerController } from '../controllers/YouTubePlayerController';
 
 /**
@@ -29,6 +30,7 @@ export class PostCardRenderer {
   private mediaGalleryRenderer: MediaGalleryRenderer;
   private commentRenderer: CommentRenderer;
   private youtubeEmbedRenderer: YouTubeEmbedRenderer;
+  private linkPreviewRenderer: LinkPreviewRenderer;
 
   // YouTube player controllers map (shared with parent)
   private youtubeControllers: Map<string, YouTubePlayerController>;
@@ -43,6 +45,7 @@ export class PostCardRenderer {
     mediaGalleryRenderer: MediaGalleryRenderer,
     commentRenderer: CommentRenderer,
     youtubeEmbedRenderer: YouTubeEmbedRenderer,
+    linkPreviewRenderer: LinkPreviewRenderer,
     youtubeControllers: Map<string, YouTubePlayerController>
   ) {
     this.vault = vault;
@@ -51,6 +54,7 @@ export class PostCardRenderer {
     this.mediaGalleryRenderer = mediaGalleryRenderer;
     this.commentRenderer = commentRenderer;
     this.youtubeEmbedRenderer = youtubeEmbedRenderer;
+    this.linkPreviewRenderer = linkPreviewRenderer;
     this.youtubeControllers = youtubeControllers;
   }
 
@@ -233,6 +237,12 @@ export class PostCardRenderer {
       this.mediaGalleryRenderer.render(contentArea, post.media, post);
     } else {
       console.log('[PostCardRenderer] No media to render');
+    }
+
+    // Link previews (if any)
+    if (post.linkPreviews && post.linkPreviews.length > 0) {
+      console.log('[PostCardRenderer] Rendering link previews:', post.linkPreviews);
+      this.linkPreviewRenderer.renderPreviews(contentArea, post.linkPreviews);
     }
 
     // Interaction bar

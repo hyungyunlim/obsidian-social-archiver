@@ -17,6 +17,7 @@ import { SortDropdown } from './filters/SortDropdown';
 import { MediaGalleryRenderer } from './renderers/MediaGalleryRenderer';
 import { CommentRenderer } from './renderers/CommentRenderer';
 import { YouTubeEmbedRenderer } from './renderers/YouTubeEmbedRenderer';
+import { LinkPreviewRenderer } from './renderers/LinkPreviewRenderer';
 import { PostCardRenderer } from './renderers/PostCardRenderer';
 import { YouTubePlayerController } from './controllers/YouTubePlayerController';
 
@@ -53,6 +54,7 @@ export class TimelineContainer {
   private mediaGalleryRenderer: MediaGalleryRenderer;
   private commentRenderer: CommentRenderer;
   private youtubeEmbedRenderer: YouTubeEmbedRenderer;
+  private linkPreviewRenderer: LinkPreviewRenderer;
   private postCardRenderer: PostCardRenderer;
 
   // Store YouTube player controllers for each post
@@ -100,6 +102,10 @@ export class TimelineContainer {
     // Initialize YouTubeEmbedRenderer
     this.youtubeEmbedRenderer = new YouTubeEmbedRenderer();
 
+    // Initialize LinkPreviewRenderer
+    const workerUrl = props.plugin.settings.workerUrl || 'https://social-archiver-api.junlim.org';
+    this.linkPreviewRenderer = new LinkPreviewRenderer(workerUrl);
+
     // Initialize PostCardRenderer
     this.postCardRenderer = new PostCardRenderer(
       this.vault,
@@ -108,6 +114,7 @@ export class TimelineContainer {
       this.mediaGalleryRenderer,
       this.commentRenderer,
       this.youtubeEmbedRenderer,
+      this.linkPreviewRenderer,
       this.youtubeControllers
     );
 

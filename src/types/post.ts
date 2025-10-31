@@ -69,6 +69,24 @@ export interface Comment {
   replies?: Comment[];
 }
 
+// Link preview metadata
+export interface LinkPreview {
+  url: string;
+  title: string;
+  description?: string;
+  image?: string;
+  siteName?: string;
+  favicon?: string;
+  error?: LinkPreviewError;
+}
+
+// Link preview error types
+export interface LinkPreviewError {
+  type: 'not_found' | 'forbidden' | 'timeout' | 'server_error' | 'network_error' | 'invalid_content';
+  message: string;
+  retryable: boolean; // Whether the error is temporary and can be retried
+}
+
 // AI analysis results
 export interface FactCheckResult {
   claim: string;
