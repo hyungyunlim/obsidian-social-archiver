@@ -14,24 +14,24 @@
 			{#if type === 'card'}
 				<div class="skeleton-card">
 					<div class="skeleton-header">
-						<div class="skeleton-avatar" />
+						<div class="skeleton-avatar"></div>
 						<div class="skeleton-meta">
-							<div class="skeleton-line short" />
-							<div class="skeleton-line shorter" />
+							<div class="skeleton-line short"></div>
+							<div class="skeleton-line shorter"></div>
 						</div>
 					</div>
 					<div class="skeleton-content">
-						<div class="skeleton-line" />
-						<div class="skeleton-line" />
-						<div class="skeleton-line short" />
+						<div class="skeleton-line"></div>
+						<div class="skeleton-line"></div>
+						<div class="skeleton-line short"></div>
 					</div>
 				</div>
 			{:else if type === 'image'}
-				<div class="skeleton-image" />
+				<div class="skeleton-image"></div>
 			{:else if type === 'avatar'}
-				<div class="skeleton-avatar" />
+				<div class="skeleton-avatar"></div>
 			{:else}
-				<div class="skeleton-line" />
+				<div class="skeleton-line"></div>
 			{/if}
 		</div>
 	{/each}

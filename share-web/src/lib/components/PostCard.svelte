@@ -130,7 +130,7 @@
 	}
 
 	// Handle card click
-	function handleCardClick(e: MouseEvent) {
+	function handleCardClick(e: MouseEvent | KeyboardEvent) {
 		// Ignore clicks on interactive elements
 		const target = e.target as HTMLElement;
 		if (
@@ -147,15 +147,29 @@
 			onCardClick(post);
 		}
 	}
+
+	// Handle keyboard navigation (Enter or Space)
+	function handleKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			handleCardClick(e);
+		}
+	}
 </script>
 
 <article
 	class="post-card"
-	role="article"
 	aria-label={`Post by ${post.author.name} on ${post.platform}`}
-	onclick={handleCardClick}
-	class:clickable={onCardClick !== undefined}
 >
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<div
+		class="card-content"
+		class:clickable={onCardClick !== undefined}
+		role={onCardClick !== undefined ? 'button' : undefined}
+		tabindex={onCardClick !== undefined ? 0 : -1}
+		onclick={onCardClick !== undefined ? handleCardClick : undefined}
+		onkeydown={onCardClick !== undefined ? handleKeyDown : undefined}
+	>
 	<!-- Nested Card Header (like timeline) -->
 	{#if username}
 		<div class="nested-header">
@@ -409,26 +423,30 @@
 			</div>
 		{/if}
 	</div>
+	</div>
 </article>
 
 <style>
 	/* Card Container - No border, only subtle dividers */
 	.post-card {
 		position: relative;
-		padding: 1.5rem 1.5rem;
 		background-color: var(--background-primary);
-		transition: background-color 0.2s ease;
 		border-top: 1px solid var(--background-modifier-border);
 		border-bottom: 1px solid var(--background-modifier-border);
 		margin: -1px 0; /* Overlap borders to prevent double lines */
 	}
 
-	.post-card.clickable {
+	.card-content {
+		padding: 1.5rem 1.5rem;
+		transition: background-color 0.2s ease;
+	}
+
+	.card-content.clickable {
 		cursor: pointer;
 	}
 
 	/* Subtle hover effect */
-	.post-card:hover {
+	.card-content.clickable:hover {
 		background-color: var(--background-modifier-hover);
 	}
 

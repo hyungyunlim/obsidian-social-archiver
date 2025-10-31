@@ -1,16 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		fallback?: () => void;
 		resetButtonText?: string;
 		showDetails?: boolean;
+		children?: Snippet;
 	}
 
 	let {
 		fallback,
 		resetButtonText = 'Try Again',
-		showDetails = false
+		showDetails = false,
+		children
 	}: Props = $props();
 
 	let error = $state<Error | null>(null);
@@ -92,7 +95,7 @@
 		</div>
 	</div>
 {:else}
-	<slot />
+	{@render children?.()}
 {/if}
 
 <style>
