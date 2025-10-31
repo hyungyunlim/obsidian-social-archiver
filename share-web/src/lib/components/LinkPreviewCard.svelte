@@ -209,8 +209,9 @@
 	.preview-img {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: scale-down;
 		display: block;
+		background: var(--bg-secondary, #f3f3f3);
 	}
 
 	/* Content Section */
