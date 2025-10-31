@@ -1,77 +1,93 @@
 {
 	"meta": {
-		"generatedAt": "2025-10-30T12:34:24.666Z",
-		"tasksAnalyzed": 8,
-		"totalTasks": 35,
-		"analysisCount": 8,
+		"generatedAt": "2025-10-31T05:03:17.116Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 46,
+		"analysisCount": 10,
 		"thresholdScore": 5,
 		"projectName": "Taskmaster",
 		"usedResearch": true
 	},
 	"complexityAnalysis": [
 		{
-			"taskId": 28,
-			"taskTitle": "Initialize SvelteKit Share Web Application",
-			"complexityScore": 4,
-			"recommendedSubtasks": 5,
-			"expansionPrompt": "Break down SvelteKit project initialization into specific setup steps including project creation, dependency installation, TypeScript configuration, Tailwind CSS setup, and routing structure setup. Each subtask should focus on a single aspect of the initial setup.",
-			"reasoning": "Medium complexity project initialization requiring multiple configuration files, dependency management, and proper TypeScript setup. The codebase already has Svelte 5 experience and Tailwind configured in the main plugin, so patterns exist to follow. However, SvelteKit is a new addition requiring adapter configuration and routing setup."
-		},
-		{
-			"taskId": 29,
-			"taskTitle": "Extend Workers API with User Timeline Endpoints",
+			"taskId": 37,
+			"taskTitle": "Create Worker API endpoint for link preview metadata extraction",
 			"complexityScore": 6,
-			"recommendedSubtasks": 6,
-			"expansionPrompt": "Split Workers API extension into discrete tasks: create user posts endpoint handler, modify existing share handler for user indexing, implement KV user index operations, add proper error handling and validation, implement CORS configuration, and write comprehensive tests. Focus on maintaining existing API patterns.",
-			"reasoning": "Higher complexity due to extending existing Workers infrastructure with new endpoints while maintaining backward compatibility. Requires careful KV data modeling for user_posts indexes, proper error handling, and integration with existing share functionality. The codebase shows mature Workers patterns but this adds new concepts."
-		},
-		{
-			"taskId": 30,
-			"taskTitle": "Implement SvelteKit API Client and Type Definitions",
-			"complexityScore": 3,
-			"recommendedSubtasks": 4,
-			"expansionPrompt": "Create separate subtasks for API client implementation, shared type definitions setup, environment configuration, and error handling implementation. Ensure TypeScript type safety and proper integration with existing type definitions from the workers.",
-			"reasoning": "Relatively straightforward API client implementation with existing type definitions to build upon. The project already has well-defined API schemas in workers/src/types/api.ts that can be shared. Main complexity is ensuring type safety and proper error handling patterns."
-		},
-		{
-			"taskId": 31,
-			"taskTitle": "Create Reusable Svelte Components",
-			"complexityScore": 5,
-			"recommendedSubtasks": 6,
-			"expansionPrompt": "Break into individual component creation tasks: PostCard component with platform-specific rendering, Timeline container component, PlatformIcon component with SVG assets, SeeMoreButton interactive component, responsive design implementation, and Svelte 5 Runes migration. Each component should follow the existing plugin design patterns.",
-			"reasoning": "Moderate complexity requiring Svelte 5 Runes API implementation and consistent styling with existing plugin components. The codebase has existing Svelte components to reference but requires careful attention to design consistency and responsive behavior. Platform icon implementation needs comprehensive SVG asset management."
-		},
-		{
-			"taskId": 32,
-			"taskTitle": "Implement Timeline and Individual Post Pages",
-			"complexityScore": 7,
-			"recommendedSubtasks": 7,
-			"expansionPrompt": "Divide into page-specific implementations: timeline page component and data loading, individual post page component and data loading, markdown rendering with marked.js, SEO meta tag implementation, error handling for 404 cases, image handling and lazy loading, and mobile-responsive design testing.",
-			"reasoning": "High complexity involving multiple SvelteKit concepts including server-side data loading, dynamic routing, SEO optimization, and markdown rendering. Requires integration with the Workers API, proper error states, and performance optimization. The combination of SSR, client-side interactivity, and SEO requirements adds significant complexity."
-		},
-		{
-			"taskId": 33,
-			"taskTitle": "Update Plugin Share Functionality",
-			"complexityScore": 4,
-			"recommendedSubtasks": 4,
-			"expansionPrompt": "Split into focused integration tasks: modify PostCardRenderer createShare method, implement username extraction logic, update API request payload structure, and ensure backward compatibility with existing shares. Maintain existing share functionality while adding user timeline indexing.",
-			"reasoning": "Medium complexity requiring careful modification of existing plugin functionality. The codebase shows mature plugin architecture but requires careful integration to avoid breaking existing share features. Username extraction and API payload modification need thorough testing for edge cases."
-		},
-		{
-			"taskId": 34,
-			"taskTitle": "Configure Cloudflare Pages Deployment",
-			"complexityScore": 5,
 			"recommendedSubtasks": 5,
-			"expansionPrompt": "Break deployment into configuration steps: wrangler.toml setup with proper bindings, Cloudflare dashboard build configuration, environment variable setup, domain configuration and routing, and deployment pipeline testing. Ensure integration with existing Workers environment.",
-			"reasoning": "Moderate complexity involving Cloudflare infrastructure configuration and integration with existing Workers setup. Requires understanding of KV namespace bindings, R2 bucket access, and proper security configurations. The project has existing Workers deployment experience but Pages deployment adds new concepts."
+			"expansionPrompt": "Break down link preview endpoint creation into: 1) URL validation and SSRF protection implementation, 2) HTML fetching with timeout handling, 3) metadata extraction prioritizing Open Graph > Twitter Cards > meta tags, 4) error handling and response formatting, 5) endpoint routing and integration testing. Consider existing Worker patterns and metadata extraction libraries.",
+			"reasoning": "Creating a new Worker endpoint requires URL validation, security measures (SSRF protection), HTML parsing, metadata extraction, and error handling. Based on existing workers/src/handlers/ structure, this involves significant HTTP client work, security considerations, and parsing logic."
 		},
 		{
-			"taskId": 35,
-			"taskTitle": "Performance Optimization and Testing",
-			"complexityScore": 8,
-			"recommendedSubtasks": 8,
-			"expansionPrompt": "Organize into optimization and testing categories: bundle size optimization and lazy loading implementation, Lighthouse performance audit and improvements, comprehensive test suite setup (unit, integration, E2E), accessibility compliance verification, SEO optimization with sitemap generation, error boundary implementation, cross-browser testing, and performance monitoring setup.",
-			"reasoning": "High complexity covering multiple optimization domains and comprehensive testing strategies. Requires expertise in performance optimization, accessibility compliance, testing frameworks (Vitest, Playwright), and monitoring setup. The scope includes both technical optimization and quality assurance across multiple dimensions, making it the most complex task."
+			"taskId": 38,
+			"taskTitle": "Implement KV caching layer for link preview metadata",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Implement KV caching with: 1) cache key strategy and TTL configuration (7 days), 2) cache hit/miss logic with graceful fallbacks, 3) monitoring and metrics for cache performance. Follow existing KV patterns from archive.ts and consider cache warming strategies.",
+			"reasoning": "Moderate complexity building on existing KV patterns. The project already has KV storage implementations in workers, so this leverages existing patterns. Main complexity is in cache strategy and performance monitoring."
+		},
+		{
+			"taskId": 39,
+			"taskTitle": "Create LinkPreviewExtractor service in Obsidian plugin",
+			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Create URL extraction service with: 1) regex pattern implementation for URL detection, 2) filtering logic for images and platform-specific URLs, 3) PostData interface updates for linkPreviews field, 4) integration with existing archiving workflow. Follow existing service patterns from src/services/.",
+			"reasoning": "Medium complexity due to regex implementation, interface changes to core PostData type, and integration with existing archiving flow. Requires careful regex design and integration testing with existing services."
+		},
+		{
+			"taskId": 40,
+			"taskTitle": "Update YAML frontmatter structure to include linkPreviews",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Update frontmatter generation with: 1) linkPreviews field addition to YAML schema with backward compatibility, 2) serialization/deserialization logic updates. Leverage existing FrontmatterGenerator.ts patterns.",
+			"reasoning": "Low-medium complexity as it builds on existing frontmatter generation patterns. Main concern is maintaining backward compatibility with existing archived posts."
+		},
+		{
+			"taskId": 41,
+			"taskTitle": "Create LinkPreviewCard Svelte component",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Build component with: 1) Svelte 5 Runes implementation with preview metadata props, 2) error handling for failed image loads and responsive design, 3) Tailwind styling following existing design patterns. Reference existing share-web components like PostCard.svelte.",
+			"reasoning": "Moderate complexity for new component creation. Project uses Svelte 5 with Runes API as seen in PostCard.svelte. Requires responsive design, error handling, and following established design patterns."
+		},
+		{
+			"taskId": 42,
+			"taskTitle": "Integrate link preview fetching in share-web SSR",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Implement SSR integration with: 1) API call integration in PostCard.svelte for metadata fetching, 2) conditional display logic (no images/videos check), 3) error handling and graceful degradation, 4) concurrent fetching optimization with Promise.all. Build on existing PostCard patterns.",
+			"reasoning": "Higher complexity due to SSR considerations, conditional rendering logic, concurrent API calls, and error handling. Requires understanding of SvelteKit SSR patterns and integration with existing PostCard component."
+		},
+		{
+			"taskId": 43,
+			"taskTitle": "Implement rate limiting and abuse prevention",
+			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Implement rate limiting with: 1) Cloudflare rate limiting or KV-based solution (100 req/IP/hour), 2) request validation and user-agent requirements, 3) suspicious pattern detection and exponential backoff, 4) monitoring and alerting setup. Follow existing security patterns from archive.ts.",
+			"reasoning": "Medium-high complexity for security implementation. Requires rate limiting strategy, monitoring, and abuse detection. Can leverage existing patterns from archive handler but needs new security logic."
+		},
+		{
+			"taskId": 44,
+			"taskTitle": "Add loading states and skeleton UI for link previews",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create loading states with: 1) skeleton UI components and progressive enhancement from URL to full metadata, 2) CSS transitions and timeout handling. Follow existing loading patterns from share-web components.",
+			"reasoning": "Lower complexity as it's primarily UI/UX work building on existing component patterns. Main considerations are smooth transitions and progressive enhancement."
+		},
+		{
+			"taskId": 45,
+			"taskTitle": "Implement metadata extraction optimization and caching strategies",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Optimize metadata extraction with: 1) enhanced HTML parsing using DOM API in Worker, 2) intelligent caching with content-type specific TTLs, 3) cache warming for popular domains, 4) image URL validation and favicon fallback optimization, 5) batch processing implementation for multiple URLs.",
+			"reasoning": "High complexity involving performance optimization, advanced caching strategies, DOM parsing in Worker environment, and batch processing. Requires deep understanding of web scraping optimization and Worker limitations."
+		},
+		{
+			"taskId": 46,
+			"taskTitle": "Add monitoring, metrics, and cost tracking dashboard",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Implement monitoring with: 1) metrics collection for success rates, cache hits, response times, 2) alert threshold configuration and triggering, 3) Cloudflare Analytics integration and usage tracking, 4) dashboard development for visualization and cost tracking.",
+			"reasoning": "Medium-high complexity for comprehensive monitoring system. Requires metrics collection, analytics integration, dashboard development, and cost tracking. Building monitoring infrastructure is always complex but critical for production systems."
 		}
 	]
 }
