@@ -16,6 +16,7 @@ export interface SocialArchiverSettings {
 
   // User Settings
   userName: string; // User's display name for comments
+  userAvatar: string; // Avatar URL for user-created posts (optional)
 
   // Storage Settings
   archivePath: string;
@@ -51,6 +52,7 @@ export const DEFAULT_SETTINGS: SocialArchiverSettings = {
 
   // User Settings
   userName: 'You', // Default name for comments
+  userAvatar: '', // No avatar by default
 
   // Storage Settings
   archivePath: 'Social Archives',

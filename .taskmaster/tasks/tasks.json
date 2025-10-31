@@ -3544,7 +3544,7 @@
             "description": "Update Platform union type in both src/types/post.ts and workers/src/types/post.ts to include 'post' as a valid platform option",
             "dependencies": [],
             "details": "Modify the Platform union type in src/types/post.ts and workers/src/types/post.ts to add 'post' alongside existing platforms ('facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads'). Ensure TypeScript compilation passes without errors and all existing type references remain valid.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify TypeScript compilation succeeds with new platform type, test that existing platform type checks still work correctly"
           },
           {
@@ -3555,7 +3555,7 @@
               1
             ],
             "details": "Extend the PostData interface to support platform: 'post' with specific fields for user-created content. Add author data integration that pulls from Obsidian user settings. Include fields for user-generated content metadata, creation timestamp, and proper typing for content that doesn't come from external social platforms.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Unit tests for PostData validation with platform: 'post', verify author data properly integrates with Obsidian settings, test serialization/deserialization"
           },
           {
@@ -4215,7 +4215,40 @@
           74
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify PostCardRenderer.ts to handle platform: 'post' posts",
+            "description": "Update the PostCardRenderer class to detect and process user-created posts with platform type 'post'",
+            "dependencies": [],
+            "details": "Extend the existing PostCardRenderer.ts to add conditional logic for handling platform: 'post' posts. Add type guards to distinguish between archived social media posts and user-created posts. Update the rendering pipeline to handle different data structures for user posts vs archived posts. Ensure proper fallbacks for missing fields in user posts.",
+            "status": "pending",
+            "testStrategy": "Unit tests for platform detection logic, verify correct rendering path selection for user posts vs archived posts"
+          },
+          {
+            "id": 2,
+            "title": "Add user post styling and author display",
+            "description": "Implement distinct visual styling for user-created posts including modified header and author display components",
+            "dependencies": [
+              1
+            ],
+            "details": "Create specific CSS classes and styling for user posts to visually distinguish them from archived posts. Modify the header component to show different metadata for user posts (creation date, edit status). Update author display to show the current user as author for user posts. Implement responsive design ensuring mobile-first approach with proper touch targets.",
+            "status": "pending",
+            "testStrategy": "Visual regression tests for user post styling, verify mobile responsiveness, test author display for user vs archived posts"
+          },
+          {
+            "id": 3,
+            "title": "Implement edit/delete actions and share URL functionality",
+            "description": "Add interactive controls for editing and deleting user posts, plus share URL copying functionality",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement edit/delete action buttons that only appear for user's own posts. Add permission checking to ensure users can only modify their own content. Create share URL display with copy-to-clipboard functionality using navigator.clipboard API with fallback. Handle async operations with proper loading states and error handling. Integrate with existing PostData interface for sharing.",
+            "status": "pending",
+            "testStrategy": "Test edit/delete permission enforcement, verify share URL generation and clipboard copying, test error states and loading indicators"
+          }
+        ]
       },
       {
         "id": 76,
@@ -4228,7 +4261,51 @@
           66
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create DraftService.ts with localStorage auto-save",
+            "description": "Implement the core DraftService class with automatic saving functionality to localStorage every 60 seconds",
+            "dependencies": [],
+            "details": "Create src/services/DraftService.ts with auto-save timer mechanism, debounced saving to prevent excessive writes, localStorage interface for draft persistence, and proper TypeScript interfaces for draft data structure. Include draft versioning and timestamp tracking.",
+            "status": "pending",
+            "testStrategy": "Unit tests for auto-save timing, debounce functionality, localStorage write operations, and draft data structure validation"
+          },
+          {
+            "id": 2,
+            "title": "Implement draft recovery on composer open",
+            "description": "Add draft recovery functionality that detects and restores saved drafts when the composer is opened",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement draft detection on composer initialization, UI notification for available drafts, draft restoration with content and metadata recovery, and seamless integration with existing composer state management. Handle cases where drafts exist from previous sessions.",
+            "status": "pending",
+            "testStrategy": "Test draft recovery after browser crash/refresh, verify content restoration accuracy, validate UI notification behavior, and test integration with composer state"
+          },
+          {
+            "id": 3,
+            "title": "Add conflict resolution for multiple drafts",
+            "description": "Create conflict resolution system to handle scenarios where multiple drafts exist from different devices or sessions",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement draft comparison UI showing differences between multiple drafts, timestamp-based conflict resolution with user choice options, merge capabilities for compatible drafts, and clear presentation of draft metadata including creation time and device information.",
+            "status": "pending",
+            "testStrategy": "Test multiple draft detection, conflict resolution UI functionality, merge operation accuracy, and user choice handling for draft selection"
+          },
+          {
+            "id": 4,
+            "title": "Handle storage quota limitations and cleanup",
+            "description": "Implement storage management with quota monitoring, cleanup of old drafts, and graceful handling of storage limitations",
+            "dependencies": [
+              1
+            ],
+            "details": "Add localStorage quota monitoring and error handling, automatic cleanup of drafts older than 7 days, LRU-based cleanup when storage is full, user notifications for storage issues, and fallback mechanisms when localStorage is unavailable or full.",
+            "status": "pending",
+            "testStrategy": "Test storage quota detection, automatic cleanup of old drafts, LRU cleanup logic, error handling for storage failures, and fallback mechanism validation"
+          }
+        ]
       },
       {
         "id": 77,
@@ -4242,12 +4319,55 @@
           76
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add error boundaries to all components",
+            "description": "Implement error boundaries for all React/Svelte components to catch and handle component-level errors gracefully",
+            "dependencies": [],
+            "details": "Create ErrorBoundary component using Svelte 5 error handling patterns. Add error boundaries to ArchiveModal, PostCard, MediaGallery, and all other UI components. Implement fallback UI for error states. Ensure errors don't crash the entire plugin interface and provide graceful degradation.",
+            "status": "pending",
+            "testStrategy": "Test error boundaries by intentionally throwing errors in components, verify fallback UI renders correctly, ensure error boundaries don't interfere with normal operation"
+          },
+          {
+            "id": 2,
+            "title": "Implement user-friendly error messages with Notice API",
+            "description": "Create comprehensive user-facing error messages using Obsidian's Notice API for all error scenarios",
+            "dependencies": [
+              1
+            ],
+            "details": "Create ErrorNotificationService using Obsidian Notice API. Define user-friendly messages for all error types: vault quota exceeded, network timeout, invalid image format, share API failures. Implement different notice types (error, warning, info) with appropriate duration and styling. Create error message mapping from technical errors to user-friendly descriptions.",
+            "status": "pending",
+            "testStrategy": "Test all error scenarios display appropriate user messages, verify Notice API integration works correctly, ensure message clarity and actionability for users"
+          },
+          {
+            "id": 3,
+            "title": "Add retry mechanisms for network failures",
+            "description": "Implement intelligent retry logic for network operations with exponential backoff and circuit breaker patterns",
+            "dependencies": [],
+            "details": "Create RetryService with exponential backoff: baseDelay * Math.pow(2, attempt) + jitter. Implement retry logic for BrightData API calls, image downloads, and share API operations. Add circuit breaker pattern to prevent cascading failures. Configure max retry attempts (3-5) and timeout thresholds. Integrate with existing error handling infrastructure.",
+            "status": "pending",
+            "testStrategy": "Test retry mechanisms with simulated network failures, verify exponential backoff timing, ensure circuit breaker opens after consecutive failures, validate retry limits are respected"
+          },
+          {
+            "id": 4,
+            "title": "Create error tracking and logging system",
+            "description": "Implement comprehensive error tracking and logging system for debugging and monitoring plugin health",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create ErrorTracker service for capturing, categorizing, and logging errors. Implement structured logging with error context, stack traces, and user actions. Add error categorization by type (network, vault, validation, etc.) and severity levels. Create debug logging toggle in plugin settings. Ensure sensitive data is not logged while maintaining debugging capability.",
+            "status": "pending",
+            "testStrategy": "Test error logging captures all relevant context, verify sensitive data is filtered out, ensure logging toggle works correctly, validate error categorization accuracy"
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T08:25:38.238Z",
+      "updated": "2025-10-31T08:43:44.041Z",
       "description": "Tasks for master context"
     }
   }

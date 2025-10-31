@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Platform types
-export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube' | 'reddit';
+export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube' | 'reddit' | 'post';
 
 // Media types
 export interface Media {
@@ -86,7 +86,20 @@ export interface AIAnalysis {
   readingTime: number;
 }
 
-// Main PostData interface
+/**
+ * Main PostData interface
+ *
+ * Supports both archived social media posts and user-created posts.
+ *
+ * For platform: 'post' (user-created posts):
+ * - id: Auto-generated UUID or timestamp
+ * - url: Vault file path (e.g., "Social Archives/Posts/2024/03/2024-03-15-143052.md")
+ * - author: Populated from Obsidian user settings (userName, username, userAvatar)
+ * - content: User-written markdown content
+ * - media: User-attached images/videos
+ * - metadata.timestamp: Post creation time
+ */
+
 /**
  * YouTube transcript entry
  */
@@ -137,7 +150,7 @@ export interface PostData {
 // Zod schema for validation with version
 export const PostDataSchema = z.object({
   schemaVersion: z.literal('1.0.0'),
-  platform: z.enum(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube', 'reddit']),
+  platform: z.enum(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube', 'reddit', 'post']),
   id: z.string(),
   url: z.string().url(),
   author: z.object({

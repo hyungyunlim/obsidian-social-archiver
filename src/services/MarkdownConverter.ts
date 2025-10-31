@@ -360,6 +360,19 @@ const DEFAULT_TEMPLATES: Record<Platform, string> = {
 
 **Original URL:** {{url}}
 `,
+  post: `{{content.text}}
+
+{{#if media}}
+
+---
+
+{{media}}
+{{/if}}
+
+---
+
+**Author:** {{author.name}} | **Published:** {{metadata.timestamp}}
+`,
 };
 
 /**

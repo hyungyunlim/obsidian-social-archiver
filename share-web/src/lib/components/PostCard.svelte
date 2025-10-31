@@ -172,19 +172,21 @@
 			linkPreviewsLength: post.linkPreviews?.length,
 			visibleImagesLength: visibleImages.length,
 			loadingPreviews,
-			previewError
+			previewError,
+			alreadyFetched: linkPreviewsMetadata.length > 0
 		});
 
 		// Only fetch if:
 		// 1. Post has linkPreviews URLs
 		// 2. No visible images (to avoid cluttering the card)
-		// 3. Not already loading or errored
+		// 3. Not already loading, errored, or already fetched
 		if (
 			post.linkPreviews &&
 			post.linkPreviews.length > 0 &&
 			visibleImages.length === 0 &&
 			!loadingPreviews &&
-			!previewError
+			!previewError &&
+			linkPreviewsMetadata.length === 0
 		) {
 			console.log('[PostCard] Starting link preview fetch for URLs:', post.linkPreviews);
 			loadingPreviews = true;

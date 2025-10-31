@@ -320,7 +320,8 @@ export class ArchiveModal extends Modal {
       x: 'X',
       threads: 'Threads',
       youtube: 'YouTube',
-      reddit: 'Reddit'
+      reddit: 'Reddit',
+      post: 'User Post'
     };
 
     return names[platform] || platform;

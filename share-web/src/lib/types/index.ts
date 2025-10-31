@@ -5,7 +5,7 @@
  * and plugin PostData structure
  */
 
-export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube' | 'reddit';
+export type Platform = 'facebook' | 'linkedin' | 'instagram' | 'tiktok' | 'x' | 'threads' | 'youtube' | 'reddit' | 'post';
 
 /**
  * Post author information
