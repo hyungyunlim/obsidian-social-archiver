@@ -6,6 +6,13 @@ import { Logger } from '@/utils/logger';
 
 export const linkPreviewRouter = new Hono<Env>();
 
+// Cache configuration constants
+export const CACHE_CONFIG = {
+  TTL: 604800, // 7 days in seconds
+  KEY_PREFIX: 'preview:',
+  MAX_KEY_LENGTH: 512, // KV key length limit
+} as const;
+
 // Request/Response schemas
 export const LinkPreviewRequestSchema = z.object({
   url: z.string().url('Invalid URL format')
@@ -21,6 +28,11 @@ export interface LinkPreviewResponse {
   siteName?: string;
   favicon?: string;
   error?: string;
+}
+
+export interface CachedLinkPreview extends LinkPreviewResponse {
+  cachedAt: number;
+  expiresAt: number;
 }
 
 // SSRF Protection: Private IP ranges to block
@@ -133,6 +145,110 @@ async function checkHostnameResolution(hostname: string, logger: Logger): Promis
 
   // For now, we trust the URL validation above
   logger.debug('Hostname resolution check (placeholder)', { hostname });
+}
+
+/**
+ * Normalize URL for consistent cache key generation
+ * - Convert to lowercase hostname
+ * - Remove trailing slashes
+ * - Sort query parameters
+ * - Remove common tracking parameters
+ * - Remove fragment identifiers
+ */
+export function normalizeUrl(urlString: string, logger: Logger): string {
+  logger.debug('Normalizing URL', { url: urlString });
+
+  try {
+    const url = new URL(urlString);
+
+    // Normalize hostname to lowercase
+    url.hostname = url.hostname.toLowerCase();
+
+    // Remove www. prefix for consistency
+    if (url.hostname.startsWith('www.')) {
+      url.hostname = url.hostname.substring(4);
+    }
+
+    // Remove fragment identifier
+    url.hash = '';
+
+    // Remove common tracking parameters
+    const trackingParams = [
+      'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+      'fbclid', 'gclid', 'msclkid', 'mc_cid', 'mc_eid',
+      '_ga', '_gl', 'ref', 'source'
+    ];
+
+    trackingParams.forEach(param => url.searchParams.delete(param));
+
+    // Sort query parameters for consistency
+    const sortedParams = new URLSearchParams(
+      Array.from(url.searchParams.entries()).sort(([a], [b]) => a.localeCompare(b))
+    );
+    url.search = sortedParams.toString();
+
+    // Remove trailing slash from pathname (unless it's just "/")
+    if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+      url.pathname = url.pathname.slice(0, -1);
+    }
+
+    const normalized = url.toString();
+    logger.debug('URL normalized', { original: urlString, normalized });
+
+    return normalized;
+  } catch (error) {
+    logger.warn('Failed to normalize URL, using original', {
+      url: urlString,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    // Fallback to original URL if normalization fails
+    return urlString;
+  }
+}
+
+/**
+ * Generate cache key for link preview
+ * Format: preview:${normalizedUrl}
+ * Handles key length limits by hashing long URLs
+ */
+export function generateCacheKey(urlString: string, logger: Logger): string {
+  const normalizedUrl = normalizeUrl(urlString, logger);
+  const key = `${CACHE_CONFIG.KEY_PREFIX}${normalizedUrl}`;
+
+  // Check if key exceeds KV length limit
+  if (key.length > CACHE_CONFIG.MAX_KEY_LENGTH) {
+    // Hash the URL using simple hash function for shorter key
+    const hash = simpleHash(normalizedUrl);
+    const hashedKey = `${CACHE_CONFIG.KEY_PREFIX}hash:${hash}`;
+
+    logger.debug('URL too long, using hashed key', {
+      originalLength: key.length,
+      hashedLength: hashedKey.length,
+      url: urlString
+    });
+
+    return hashedKey;
+  }
+
+  logger.debug('Cache key generated', { key, url: urlString });
+  return key;
+}
+
+/**
+ * Simple hash function for URL to cache key conversion
+ * Uses FNV-1a algorithm for fast, collision-resistant hashing
+ */
+function simpleHash(str: string): string {
+  let hash = 2166136261; // FNV offset basis
+
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash *= 16777619; // FNV prime
+    hash |= 0; // Convert to 32-bit integer
+  }
+
+  // Convert to positive hex string
+  return (hash >>> 0).toString(16);
 }
 
 /**

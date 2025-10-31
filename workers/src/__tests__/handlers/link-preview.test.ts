@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { linkPreviewRouter, validateUrl, fetchHtml, extractMetadata } from '@/handlers/link-preview';
+import {
+  linkPreviewRouter,
+  validateUrl,
+  fetchHtml,
+  extractMetadata,
+  normalizeUrl,
+  generateCacheKey,
+  CACHE_CONFIG
+} from '@/handlers/link-preview';
 import type { Bindings } from '@/types/bindings';
 import { Logger } from '@/utils/logger';
 import { errorHandler } from '@/middleware/errorHandler';
@@ -953,6 +961,189 @@ describe('Error Handling and Response Formatting', () => {
 
       const contentType = res.headers.get('content-type');
       expect(contentType).toContain('application/json');
+    });
+  });
+});
+
+describe('Cache Key Strategy and URL Normalization', () => {
+  describe('CACHE_CONFIG constants', () => {
+    it('should have correct TTL value (7 days)', () => {
+      expect(CACHE_CONFIG.TTL).toBe(604800); // 7 days = 7 * 24 * 60 * 60
+    });
+
+    it('should have correct key prefix', () => {
+      expect(CACHE_CONFIG.KEY_PREFIX).toBe('preview:');
+    });
+
+    it('should have reasonable max key length', () => {
+      expect(CACHE_CONFIG.MAX_KEY_LENGTH).toBe(512);
+    });
+  });
+
+  describe('normalizeUrl', () => {
+    it('should convert hostname to lowercase', () => {
+      const url = 'https://EXAMPLE.COM/path';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/path');
+    });
+
+    it('should remove www. prefix', () => {
+      const url = 'https://www.example.com/path';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/path');
+    });
+
+    it('should remove fragment identifiers', () => {
+      const url = 'https://example.com/path#section';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/path');
+    });
+
+    it('should remove trailing slash from pathname', () => {
+      const url = 'https://example.com/path/';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/path');
+    });
+
+    it('should keep single slash for root path', () => {
+      const url = 'https://example.com/';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/');
+    });
+
+    it('should remove common tracking parameters', () => {
+      const url = 'https://example.com/article?utm_source=twitter&utm_campaign=promo&id=123';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/article?id=123');
+    });
+
+    it('should remove all tracking parameters', () => {
+      const trackingParams = [
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'fbclid', 'gclid', 'msclkid', 'mc_cid', 'mc_eid',
+        '_ga', '_gl', 'ref', 'source'
+      ];
+
+      trackingParams.forEach(param => {
+        const url = `https://example.com/path?${param}=value&id=123`;
+        const normalized = normalizeUrl(url, mockLogger);
+        expect(normalized).toBe('https://example.com/path?id=123');
+      });
+    });
+
+    it('should sort query parameters alphabetically', () => {
+      const url = 'https://example.com/path?z=3&a=1&m=2';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/path?a=1&m=2&z=3');
+    });
+
+    it('should handle URLs without query parameters', () => {
+      const url = 'https://example.com/path';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/path');
+    });
+
+    it('should normalize complex URLs correctly', () => {
+      const url = 'https://WWW.EXAMPLE.COM/Article/?utm_source=fb&z=last&a=first#heading';
+      const normalized = normalizeUrl(url, mockLogger);
+      expect(normalized).toBe('https://example.com/Article?a=first&z=last');
+    });
+
+    it('should handle invalid URLs gracefully', () => {
+      const invalidUrl = 'not-a-valid-url';
+      const normalized = normalizeUrl(invalidUrl, mockLogger);
+      expect(normalized).toBe(invalidUrl); // Should return original on error
+    });
+
+    it('should produce same normalized URL for equivalent URLs', () => {
+      const urls = [
+        'https://www.example.com/article?utm_source=twitter&id=123#section',
+        'https://EXAMPLE.COM/article?id=123&utm_source=fb',
+        'https://example.com/article/?id=123',
+      ];
+
+      const normalized = urls.map(url => normalizeUrl(url, mockLogger));
+
+      // All should normalize to the same URL
+      expect(normalized[0]).toBe(normalized[1]);
+      expect(normalized[1]).toBe(normalized[2]);
+      expect(normalized[0]).toBe('https://example.com/article?id=123');
+    });
+  });
+
+  describe('generateCacheKey', () => {
+    it('should generate cache key with correct prefix', () => {
+      const url = 'https://example.com/article';
+      const key = generateCacheKey(url, mockLogger);
+      expect(key).toStartWith('preview:');
+    });
+
+    it('should generate same key for equivalent URLs', () => {
+      const url1 = 'https://www.example.com/article?utm_source=twitter';
+      const url2 = 'https://EXAMPLE.COM/article/';
+
+      const key1 = generateCacheKey(url1, mockLogger);
+      const key2 = generateCacheKey(url2, mockLogger);
+
+      expect(key1).toBe(key2);
+    });
+
+    it('should generate different keys for different URLs', () => {
+      const url1 = 'https://example.com/article1';
+      const url2 = 'https://example.com/article2';
+
+      const key1 = generateCacheKey(url1, mockLogger);
+      const key2 = generateCacheKey(url2, mockLogger);
+
+      expect(key1).not.toBe(key2);
+    });
+
+    it('should handle very long URLs by hashing', () => {
+      // Create a URL longer than MAX_KEY_LENGTH
+      const longPath = 'a'.repeat(CACHE_CONFIG.MAX_KEY_LENGTH);
+      const longUrl = `https://example.com/${longPath}`;
+
+      const key = generateCacheKey(longUrl, mockLogger);
+
+      // Key should be shorter than original URL
+      expect(key.length).toBeLessThan(longUrl.length);
+
+      // Key should start with prefix and contain 'hash:'
+      expect(key).toStartWith('preview:hash:');
+    });
+
+    it('should generate consistent hashed keys for same long URL', () => {
+      const longPath = 'a'.repeat(CACHE_CONFIG.MAX_KEY_LENGTH);
+      const longUrl = `https://example.com/${longPath}`;
+
+      const key1 = generateCacheKey(longUrl, mockLogger);
+      const key2 = generateCacheKey(longUrl, mockLogger);
+
+      expect(key1).toBe(key2);
+    });
+
+    it('should respect MAX_KEY_LENGTH limit', () => {
+      const urls = [
+        'https://example.com/short',
+        'https://example.com/' + 'a'.repeat(100),
+        'https://example.com/' + 'a'.repeat(CACHE_CONFIG.MAX_KEY_LENGTH * 2)
+      ];
+
+      urls.forEach(url => {
+        const key = generateCacheKey(url, mockLogger);
+        expect(key.length).toBeLessThanOrEqual(CACHE_CONFIG.MAX_KEY_LENGTH);
+      });
+    });
+
+    it('should handle query parameters in cache key generation', () => {
+      const url1 = 'https://example.com/article?id=123&sort=asc';
+      const url2 = 'https://example.com/article?sort=asc&id=123';
+
+      const key1 = generateCacheKey(url1, mockLogger);
+      const key2 = generateCacheKey(url2, mockLogger);
+
+      // Should generate same key due to parameter sorting
+      expect(key1).toBe(key2);
     });
   });
 });

@@ -1926,7 +1926,7 @@
         "testStrategy": "Unit tests for metadata extraction from various HTML structures, integration tests for API endpoint responses, test SSRF protection with private IPs, verify timeout handling and error responses",
         "priority": "high",
         "dependencies": [],
-        "status": "deferred",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1978,7 +1978,7 @@
               4
             ],
             "details": "Create worker/src/handlers/link-preview.ts following existing handler patterns. Implement POST /api/link-preview endpoint with request body validation. Integrate with existing Worker routing system. Add CORS headers for client-side access. Implement rate limiting if needed. Create comprehensive integration tests covering end-to-end functionality with real URLs and mocked responses.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Integration tests with real and mocked URLs, test CORS functionality, verify rate limiting, test endpoint routing, performance testing with various URL types"
           }
         ]
@@ -1993,15 +1993,15 @@
         "dependencies": [
           37
         ],
-        "status": "deferred",
+        "status": "pending",
         "subtasks": [
           {
             "id": 1,
             "title": "Implement cache key strategy and TTL configuration",
             "description": "Design and implement the caching key format and TTL configuration for link preview metadata storage in Cloudflare KV",
             "dependencies": [],
-            "details": "Create cache key format 'preview:${url}' with proper URL normalization to handle duplicates. Configure TTL to 604800 seconds (7 days). Implement cache key collision handling and URL validation. Add configuration constants for cache settings and ensure consistent key generation across the application.",
-            "status": "pending",
+            "details": "Create cache key format 'preview:${url}' with proper URL normalization to handle duplicates. Configure TTL to 604800 seconds (7 days). Implement cache key collision handling and URL validation. Add configuration constants for cache settings and ensure consistent key generation across the application.\n<info added on 2025-10-31T05:58:12.023Z>\nSuccessfully implemented complete cache key strategy and TTL configuration. All cache configuration constants properly defined with CACHE_CONFIG containing 7-day TTL, 'preview:' key prefix, and 512-byte maximum key length. URL normalization function handles hostname case conversion, www prefix removal, fragment stripping, trailing slash cleanup, tracking parameter removal, and query parameter sorting for consistent duplicate detection. Cache key generation uses normalized URLs with automatic FNV-1a hashing for long URLs to stay within KV limits. Added comprehensive test coverage with 23 test cases covering all normalization scenarios, cache key generation, and edge cases. All code passes TypeScript strict mode validation. Ready for implementation of cache hit/miss logic in subtask 38.2.\n</info added on 2025-10-31T05:58:12.023Z>",
+            "status": "done",
             "testStrategy": "Test cache key generation with various URL formats, verify TTL configuration, test key collision scenarios"
           },
           {
@@ -3531,7 +3531,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T05:43:43.963Z",
+      "updated": "2025-10-31T05:58:18.837Z",
       "description": "Tasks for master context"
     }
   }
