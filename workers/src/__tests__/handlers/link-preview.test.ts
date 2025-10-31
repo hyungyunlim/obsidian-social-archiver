@@ -9,7 +9,8 @@ import {
   generateCacheKey,
   getCachedPreview,
   setCachedPreview,
-  CACHE_CONFIG
+  CACHE_CONFIG,
+  cacheMetrics
 } from '@/handlers/link-preview';
 import type { Bindings } from '@/types/bindings';
 import { Logger } from '@/utils/logger';
@@ -1495,6 +1496,275 @@ describe('Cache Hit/Miss Logic', () => {
       expect(res.status).toBe(200);
       expect(json.success).toBe(true);
       expect(json.data.title).toBe('Test');
+    });
+  });
+});
+
+describe('Cache Monitoring and Metrics', () => {
+  beforeEach(() => {
+    // Reset metrics before each test
+    cacheMetrics.reset();
+  });
+
+  describe('cacheMetrics', () => {
+    it('should start with zero counts', () => {
+      const stats = cacheMetrics.getStats();
+
+      expect(stats.total).toBe(0);
+      expect(stats.hits).toBe(0);
+      expect(stats.misses).toBe(0);
+      expect(stats.errors).toBe(0);
+      expect(stats.storageFailures).toBe(0);
+      expect(stats.hitRate).toBe(0);
+    });
+
+    it('should record cache hits', () => {
+      cacheMetrics.recordHit();
+      cacheMetrics.recordHit();
+
+      const stats = cacheMetrics.getStats();
+
+      expect(stats.hits).toBe(2);
+      expect(stats.total).toBe(2);
+      expect(stats.hitRate).toBe(100);
+    });
+
+    it('should record cache misses', () => {
+      cacheMetrics.recordMiss();
+      cacheMetrics.recordMiss();
+      cacheMetrics.recordMiss();
+
+      const stats = cacheMetrics.getStats();
+
+      expect(stats.misses).toBe(3);
+      expect(stats.total).toBe(3);
+      expect(stats.hitRate).toBe(0);
+    });
+
+    it('should calculate hit rate correctly', () => {
+      cacheMetrics.recordHit();
+      cacheMetrics.recordHit();
+      cacheMetrics.recordHit();
+      cacheMetrics.recordMiss();
+
+      const stats = cacheMetrics.getStats();
+
+      expect(stats.hits).toBe(3);
+      expect(stats.misses).toBe(1);
+      expect(stats.total).toBe(4);
+      expect(stats.hitRate).toBe(75); // 3/4 = 75%
+    });
+
+    it('should record errors', () => {
+      cacheMetrics.recordError();
+
+      const stats = cacheMetrics.getStats();
+
+      expect(stats.errors).toBe(1);
+    });
+
+    it('should record storage failures', () => {
+      cacheMetrics.recordStorageFailure();
+      cacheMetrics.recordStorageFailure();
+
+      const stats = cacheMetrics.getStats();
+
+      expect(stats.storageFailures).toBe(2);
+    });
+
+    it('should reset all metrics', () => {
+      cacheMetrics.recordHit();
+      cacheMetrics.recordMiss();
+      cacheMetrics.recordError();
+      cacheMetrics.recordStorageFailure();
+
+      cacheMetrics.reset();
+
+      const stats = cacheMetrics.getStats();
+
+      expect(stats.total).toBe(0);
+      expect(stats.hits).toBe(0);
+      expect(stats.misses).toBe(0);
+      expect(stats.errors).toBe(0);
+      expect(stats.storageFailures).toBe(0);
+    });
+
+    it('should round hit rate to 2 decimal places', () => {
+      cacheMetrics.recordHit();
+      cacheMetrics.recordHit();
+      cacheMetrics.recordMiss();
+      cacheMetrics.recordMiss();
+      cacheMetrics.recordMiss();
+
+      const stats = cacheMetrics.getStats();
+
+      // 2/5 = 40%
+      expect(stats.hitRate).toBe(40);
+      expect(typeof stats.hitRate).toBe('number');
+    });
+  });
+
+  describe('GET /api/link-preview/health', () => {
+    let app: Hono;
+    let mockEnv: Partial<Bindings>;
+
+    beforeEach(() => {
+      app = new Hono();
+
+      app.use('*', async (c, next) => {
+        c.set('logger', mockLogger);
+        await next();
+      });
+
+      app.route('/api/link-preview', linkPreviewRouter);
+
+      mockEnv = {};
+
+      cacheMetrics.reset();
+    });
+
+    it('should return health status with cache metrics', async () => {
+      // Simulate some cache activity
+      cacheMetrics.recordHit();
+      cacheMetrics.recordHit();
+      cacheMetrics.recordMiss();
+
+      const req = new Request('http://localhost/api/link-preview/health', {
+        method: 'GET'
+      });
+
+      const res = await app.request(req, mockEnv);
+      const json = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(json.success).toBe(true);
+      expect(json.data.service).toBe('link-preview');
+      expect(json.data.status).toBe('operational');
+      expect(json.data.cache).toBeDefined();
+      expect(json.data.cache.enabled).toBe(true);
+      expect(json.data.cache.ttl).toBe(CACHE_CONFIG.TTL);
+    });
+
+    it('should include cache metrics in health response', async () => {
+      cacheMetrics.recordHit();
+      cacheMetrics.recordHit();
+      cacheMetrics.recordMiss();
+      cacheMetrics.recordError();
+
+      const req = new Request('http://localhost/api/link-preview/health', {
+        method: 'GET'
+      });
+
+      const res = await app.request(req, mockEnv);
+      const json = await res.json();
+
+      expect(json.data.cache.metrics).toBeDefined();
+      expect(json.data.cache.metrics.total).toBe(3);
+      expect(json.data.cache.metrics.hits).toBe(2);
+      expect(json.data.cache.metrics.misses).toBe(1);
+      expect(json.data.cache.metrics.errors).toBe(1);
+      expect(json.data.cache.metrics.hitRate).toBeCloseTo(66.67, 1);
+    });
+
+    it('should include note about stateless metrics', async () => {
+      const req = new Request('http://localhost/api/link-preview/health', {
+        method: 'GET'
+      });
+
+      const res = await app.request(req, mockEnv);
+      const json = await res.json();
+
+      expect(json.data.cache.metrics.note).toContain('stateless');
+    });
+
+    it('should return timestamp', async () => {
+      const beforeTimestamp = Date.now();
+
+      const req = new Request('http://localhost/api/link-preview/health', {
+        method: 'GET'
+      });
+
+      const res = await app.request(req, mockEnv);
+      const json = await res.json();
+
+      const afterTimestamp = Date.now();
+
+      expect(json.data.timestamp).toBeGreaterThanOrEqual(beforeTimestamp);
+      expect(json.data.timestamp).toBeLessThanOrEqual(afterTimestamp);
+    });
+  });
+
+  describe('Metrics integration with cache operations', () => {
+    let mockKV: {
+      get: ReturnType<typeof vi.fn>;
+      put: ReturnType<typeof vi.fn>;
+      delete: ReturnType<typeof vi.fn>;
+    };
+
+    beforeEach(() => {
+      mockKV = {
+        get: vi.fn(),
+        put: vi.fn(),
+        delete: vi.fn(),
+      };
+
+      cacheMetrics.reset();
+    });
+
+    it('should increment hit counter on cache hit', async () => {
+      const cachedData = {
+        url: 'https://example.com',
+        title: 'Test',
+        cachedAt: Date.now() - 1000,
+        expiresAt: Date.now() + 1000000,
+      };
+
+      mockKV.get.mockResolvedValueOnce(cachedData);
+
+      await getCachedPreview(mockKV as any, 'https://example.com', mockLogger);
+
+      const stats = cacheMetrics.getStats();
+      expect(stats.hits).toBe(1);
+      expect(stats.misses).toBe(0);
+    });
+
+    it('should increment miss counter on cache miss', async () => {
+      mockKV.get.mockResolvedValueOnce(null);
+
+      await getCachedPreview(mockKV as any, 'https://example.com', mockLogger);
+
+      const stats = cacheMetrics.getStats();
+      expect(stats.hits).toBe(0);
+      expect(stats.misses).toBe(1);
+    });
+
+    it('should increment error counter on cache lookup error', async () => {
+      mockKV.get.mockRejectedValueOnce(new Error('KV error'));
+
+      await getCachedPreview(mockKV as any, 'https://example.com', mockLogger);
+
+      const stats = cacheMetrics.getStats();
+      expect(stats.errors).toBe(1);
+    });
+
+    it('should increment storage failure counter on max retries', async () => {
+      mockKV.put.mockRejectedValue(new Error('KV write error'));
+
+      const metadata = {
+        url: 'https://example.com',
+        title: 'Test'
+      };
+
+      await setCachedPreview(
+        mockKV as any,
+        'https://example.com',
+        metadata,
+        mockLogger,
+        1 // maxRetries
+      );
+
+      const stats = cacheMetrics.getStats();
+      expect(stats.storageFailures).toBe(1);
     });
   });
 });

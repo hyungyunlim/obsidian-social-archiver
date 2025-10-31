@@ -13,6 +13,52 @@ export const CACHE_CONFIG = {
   MAX_KEY_LENGTH: 512, // KV key length limit
 } as const;
 
+// Simple in-memory metrics for monitoring
+// Note: Resets on worker restart (stateless)
+export const cacheMetrics = {
+  hits: 0,
+  misses: 0,
+  errors: 0,
+  storageFailures: 0,
+
+  recordHit() {
+    this.hits++;
+  },
+
+  recordMiss() {
+    this.misses++;
+  },
+
+  recordError() {
+    this.errors++;
+  },
+
+  recordStorageFailure() {
+    this.storageFailures++;
+  },
+
+  getStats() {
+    const total = this.hits + this.misses;
+    const hitRate = total > 0 ? (this.hits / total) * 100 : 0;
+
+    return {
+      total,
+      hits: this.hits,
+      misses: this.misses,
+      errors: this.errors,
+      storageFailures: this.storageFailures,
+      hitRate: Math.round(hitRate * 100) / 100, // Round to 2 decimals
+    };
+  },
+
+  reset() {
+    this.hits = 0;
+    this.misses = 0;
+    this.errors = 0;
+    this.storageFailures = 0;
+  }
+};
+
 // Request/Response schemas
 export const LinkPreviewRequestSchema = z.object({
   url: z.string().url('Invalid URL format')
@@ -268,6 +314,7 @@ export async function getCachedPreview(
 
     if (!cached) {
       logger.debug('Cache miss', { url, cacheKey });
+      cacheMetrics.recordMiss();
       return null;
     }
 
@@ -279,6 +326,7 @@ export async function getCachedPreview(
       await kv.delete(cacheKey).catch(err => {
         logger.error('Failed to delete expired cache entry', { error: err });
       });
+      cacheMetrics.recordMiss();
       return null;
     }
 
@@ -289,6 +337,7 @@ export async function getCachedPreview(
       ttl: cached.expiresAt - now
     });
 
+    cacheMetrics.recordHit();
     return cached;
   } catch (error) {
     // Log error but don't fail the request
@@ -296,6 +345,7 @@ export async function getCachedPreview(
       url,
       error: error instanceof Error ? error.message : String(error)
     });
+    cacheMetrics.recordError();
     return null;
   }
 }
@@ -362,6 +412,7 @@ export async function setCachedPreview(
           url,
           maxRetries
         });
+        cacheMetrics.recordStorageFailure();
         return; // Don't throw - cache storage failure shouldn't fail the request
       }
 
@@ -746,12 +797,22 @@ linkPreviewRouter.post('/', async (c) => {
 
 // GET /api/link-preview/health - Health check for link preview service
 linkPreviewRouter.get('/health', async (c) => {
+  const stats = cacheMetrics.getStats();
+
   return c.json({
     success: true,
     data: {
       service: 'link-preview',
       status: 'operational',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      cache: {
+        enabled: true,
+        ttl: CACHE_CONFIG.TTL,
+        metrics: {
+          ...stats,
+          note: 'Metrics reset on worker restart (stateless)'
+        }
+      }
     }
   });
 });
