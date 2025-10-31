@@ -731,7 +731,8 @@ export class PostCardRenderer {
         },
         comments: post.comments || [],
         title: post.title,
-        thumbnail: post.thumbnail
+        thumbnail: post.thumbnail,
+        archivedDate: post.archivedDate // Include archive timestamp
       };
 
       // Create share request with full post data

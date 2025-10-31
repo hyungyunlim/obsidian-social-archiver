@@ -91,11 +91,15 @@ export interface Post {
 	metadata: PostMetadata;
 	comments?: Comment[]; // Post comments
 
+	// Archive timestamps
+	archivedDate?: Date; // When user archived this post
+	publishedDate?: Date; // When post was originally published
+
 	// Legacy/compatibility fields
 	title?: string; // Derived from content or author
 	previewText?: string; // First N characters of content
 	thumbnail?: string; // First media thumbnail
-	createdAt?: string; // Alias for metadata.timestamp
+	createdAt?: string; // Share creation timestamp
 }
 
 /**

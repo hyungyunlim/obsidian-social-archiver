@@ -193,7 +193,9 @@ function transformPostData(apiData: any): Post {
     title: apiData.title || apiData.metadata?.title,
     previewText: apiData.previewText,
     thumbnail: apiData.thumbnail,
-    createdAt: apiData.createdAt
+    archivedDate: apiData.archivedDate ? new Date(apiData.archivedDate) : undefined,
+    publishedDate: apiData.publishedDate ? new Date(apiData.publishedDate) : undefined,
+    createdAt: apiData.createdAt // Share creation timestamp
   };
 
   return post;

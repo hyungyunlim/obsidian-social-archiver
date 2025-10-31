@@ -12,6 +12,15 @@
 
 	let { post, showShareButton = true, username, onCardClick }: Props = $props();
 
+	// Get archive time (when user originally archived this post)
+	const archiveTime = $derived(
+		!post.archivedDate ? '' : getRelativeTime(
+			post.archivedDate instanceof Date
+				? post.archivedDate.toISOString()
+				: post.archivedDate
+		)
+	);
+
 	// Svelte 5 Runes
 	let expanded = $state(false);
 	let commentsExpanded = $state(false);
@@ -36,7 +45,7 @@
 	const needsTruncation = $derived(cleanContent.length > previewLength);
 
 	// Smart preview truncation - don't cut markdown links in half
-	const truncatedContent = $derived(() => {
+	const truncatedContent = $derived.by(() => {
 		if (!needsTruncation) return cleanContent;
 
 		let preview = cleanContent.substring(0, previewLength);
@@ -55,7 +64,7 @@
 
 	// Parse markdown content
 	const displayContent = $derived(
-		marked.parse(expanded ? cleanContent : truncatedContent()) as string
+		marked.parse(expanded ? cleanContent : truncatedContent) as string
 	);
 
 	// Get image media only
@@ -65,7 +74,7 @@
 	// Comments logic
 	const maxVisibleComments = 2;
 	const hasMoreComments = $derived(post.comments && post.comments.length > maxVisibleComments);
-	const visibleComments = $derived(() => {
+	const visibleComments = $derived.by(() => {
 		if (!post.comments) return [];
 		if (commentsExpanded || !hasMoreComments) return post.comments;
 		return post.comments.slice(-maxVisibleComments);
@@ -157,10 +166,7 @@
 	}
 </script>
 
-<article
-	class="post-card"
-	aria-label={`Post by ${post.author.name} on ${post.platform}`}
->
+{#snippet cardContent()}
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
 		class="card-content"
@@ -170,14 +176,6 @@
 		onclick={onCardClick !== undefined ? handleCardClick : undefined}
 		onkeydown={onCardClick !== undefined ? handleKeyDown : undefined}
 	>
-	<!-- Nested Card Header (Reddit-style) -->
-	{#if username}
-		<div class="nested-header">
-			<span class="nested-text">
-				<strong>{username}</strong> saved this post
-			</span>
-		</div>
-	{/if}
 
 	<!-- Platform Icon (top right) -->
 	<div class="platform-icon">
@@ -366,7 +364,7 @@
 
 				<!-- Comments list -->
 				<div class="comments-list">
-					{#each visibleComments() as comment (comment.id)}
+					{#each visibleComments as comment (comment.id)}
 						<div class="comment">
 							<div class="comment-content">
 								<a
@@ -423,47 +421,59 @@
 		{/if}
 	</div>
 	</div>
-</article>
+{/snippet}
+
+{#if username}
+	<!-- Wrapper for nested cards (when saved/commented by user) -->
+	<div class="nested-wrapper">
+		<!-- Nested header outside the card -->
+		<div class="nested-header">
+			<span class="nested-text">
+				<strong>{username}</strong> saved this post
+				{#if archiveTime}
+					<span class="nested-time"> · Archived {archiveTime}</span>
+				{/if}
+			</span>
+		</div>
+
+		<!-- The actual post card -->
+		<article
+			class="post-card nested-card"
+			aria-label={`Post by ${post.author.name} on ${post.platform}`}
+		>
+			{@render cardContent()}
+		</article>
+	</div>
+{:else}
+	<!-- Regular post card without nesting -->
+	<article
+		class="post-card"
+		aria-label={`Post by ${post.author.name} on ${post.platform}`}
+	>
+		{@render cardContent()}
+	</article>
+{/if}
 
 <style>
-	/* Card Container - Only bottom border between posts */
-	.post-card {
+	/* Nested wrapper - wraps entire card when saved/commented by user */
+	.nested-wrapper {
 		position: relative;
-		background-color: var(--background-primary);
+		padding-bottom: 1rem; /* Add padding to separate vertical line from bottom border */
 		border-bottom: 1px solid var(--background-modifier-border);
 	}
 
-	/* Remove top border from first card */
-	.post-card:first-child {
-		border-top: none;
+	/* Remove bottom border from last nested wrapper */
+	.nested-wrapper:last-child {
+		border-bottom: none;
 	}
 
-	.card-content {
-		padding: 1.5rem 1.5rem;
-		transition: background-color 0.2s ease;
-	}
-
-	.card-content.clickable {
-		cursor: pointer;
-	}
-
-	/* Subtle hover effect */
-	.card-content.clickable:hover {
-		background-color: var(--background-modifier-hover);
-	}
-
-	/* Nested card header - Reddit style with left border */
+	/* Nested header - "username saved this post · 2h ago" */
 	.nested-header {
-		position: relative;
-		padding-left: 1rem;
-		margin-bottom: 0.75rem;
-		border-left: 2px solid var(--background-modifier-border);
-	}
-
-	.nested-text {
-		font-size: 0.813rem;
+		margin-bottom: 0.375rem; /* Reduced from 0.75rem */
+		padding-left: 0;
+		font-size: var(--font-size-base);
 		color: var(--text-muted);
-		display: block;
+		line-height: 1.4;
 	}
 
 	.nested-text strong {
@@ -471,17 +481,73 @@
 		font-weight: 600;
 	}
 
+	.nested-time {
+		color: var(--text-faint);
+		font-size: var(--font-size-sm);
+	}
+
+	/* Card Container - Only bottom border between posts */
+	.post-card {
+		position: relative;
+		background-color: var(--background-primary);
+		border-bottom: 1px solid var(--background-modifier-border);
+	}
+
+	/* Remove bottom border from last card (when not nested) */
+	.post-card:last-child {
+		border-bottom: none;
+	}
+
+	/* Nested cards - vertical line on the left to show nesting */
+	.post-card.nested-card {
+		position: relative;
+		border-bottom: none;
+		margin-bottom: 0;
+		margin-left: 0.75rem;
+		padding-left: 1.25rem;
+	}
+
+	/* Vertical line for nested cards - separate element for better control */
+	.post-card.nested-card::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0.5rem; /* Stop before reaching bottom to avoid connecting with border */
+		width: 2px;
+		background-color: var(--background-modifier-border);
+	}
+
+	/* Remove top border from first card */
+	.post-card:first-child {
+		border-top: none;
+	}
+
+	/* Also remove for first nested wrapper */
+	.nested-wrapper:first-child .post-card {
+		border-top: none;
+	}
+
+	.card-content {
+		padding: 0.875rem 1.25rem; /* Reduced top/bottom padding from 1rem */
+	}
+
+	.card-content.clickable {
+		cursor: pointer;
+		/* No hover effects - clean minimal design */
+	}
+
 	/* Platform Icon */
 	.platform-icon {
 		position: absolute;
-		top: 1.5rem;
-		right: 1.5rem;
-		width: 2.5rem;
-		height: 2.5rem;
+		top: 1rem;
+		right: 1.25rem;
+		width: 2rem;
+		height: 2rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		opacity: 0.2;
+		opacity: 0.25;
 		transition: opacity 0.2s;
 		z-index: 10;
 	}
@@ -494,12 +560,14 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--interactive-accent);
+		color: var(--text-muted);
+		width: 100%;
+		height: 100%;
 	}
 
 	/* Header */
 	.post-header {
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.5rem;
 	}
 
 	.author-link {
@@ -514,9 +582,9 @@
 
 	.author-name {
 		color: var(--text-normal);
-		display: block;
-		margin-bottom: 0.25rem;
-		font-size: 1rem;
+		display: inline-block;
+		margin-bottom: 0.125rem;
+		font-size: var(--font-size-md);
 		font-weight: 600;
 		max-width: calc(100% - 3rem);
 		overflow: hidden;
@@ -525,8 +593,10 @@
 	}
 
 	.timestamp {
-		font-size: 0.75rem;
+		font-size: var(--font-size-sm);
 		color: var(--text-muted);
+		display: block;
+		margin-top: 0.125rem;
 	}
 
 	/* Content */
@@ -535,24 +605,24 @@
 	}
 
 	.content-text {
-		font-size: 0.875rem;
-		line-height: 1.5;
+		font-size: var(--font-size-md);
+		line-height: 1.6;
 		color: var(--text-normal);
 		word-break: break-word;
 		margin: 0;
 	}
 
 	.see-more-btn {
-		font-size: 0.75rem;
+		font-size: var(--font-size-sm);
 		color: var(--text-muted);
-		margin-top: 0.5rem;
+		margin-top: 0.375rem;
 		display: inline-block;
 		padding: 0;
 		background: transparent;
 		border: none;
 		cursor: pointer;
-		transition: color 0.2s;
 		font-family: inherit;
+		transition: color 0.2s;
 	}
 
 	.see-more-btn:hover {
@@ -670,12 +740,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: background-color 0.2s;
 		z-index: 10;
-	}
-
-	.carousel-btn:hover {
-		background: rgba(0, 0, 0, 0.7);
 	}
 
 	.carousel-btn-prev {
@@ -730,13 +795,8 @@
 		overflow: hidden;
 		cursor: pointer;
 		border: 2px solid transparent;
-		transition: all 0.2s;
 		background: none;
 		padding: 0;
-	}
-
-	.thumbnail:hover {
-		border-color: var(--interactive-accent);
 	}
 
 	.thumbnail.active {
@@ -755,11 +815,13 @@
 	.interactions {
 		display: flex;
 		align-items: center;
-		gap: 1.5rem;
+		gap: 1.25rem;
 		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--background-modifier-border);
 		color: var(--text-muted);
 		flex-wrap: wrap;
-		font-size: 0.813rem;
+		font-size: var(--font-size-base);
 	}
 
 	.interaction-item {
@@ -771,7 +833,7 @@
 	}
 
 	.interaction-item:hover {
-		color: var(--interactive-accent);
+		color: var(--text-normal);
 	}
 
 	.spacer {
@@ -782,7 +844,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.375rem;
-		padding: 0.25rem;
+		padding: 0.125rem 0.25rem;
 		background: transparent;
 		border: none;
 		color: var(--text-muted);
@@ -800,19 +862,14 @@
 	}
 
 	.view-all-comments-btn {
-		font-size: 0.813rem;
+		font-size: var(--font-size-base);
 		color: var(--text-muted);
 		cursor: pointer;
 		margin-bottom: 8px;
-		transition: color 0.2s;
 		background: transparent;
 		border: none;
 		padding: 0;
 		font-family: inherit;
-	}
-
-	.view-all-comments-btn:hover {
-		color: var(--text-normal);
 	}
 
 	.comments-list {
@@ -822,7 +879,7 @@
 	}
 
 	.comment {
-		font-size: 0.813rem;
+		font-size: var(--font-size-base);
 		line-height: 1.4;
 	}
 
@@ -841,23 +898,19 @@
 		cursor: pointer;
 	}
 
-	.comment-author:hover {
-		text-decoration: underline;
-	}
-
 	.comment-text {
 		color: var(--text-normal);
 		margin-left: 4px;
 	}
 
 	.comment-time {
-		font-size: 0.75rem;
+		font-size: var(--font-size-sm);
 		color: var(--text-muted);
 		margin-left: 8px;
 	}
 
 	.comment-likes {
-		font-size: 0.75rem;
+		font-size: var(--font-size-sm);
 		color: var(--text-muted);
 	}
 
@@ -867,12 +920,24 @@
 
 	/* Mobile optimizations */
 	@media (max-width: 640px) {
-		.post-card {
-			padding: 1.25rem 1.25rem;
+		.card-content {
+			padding: 0.75rem 1rem; /* Reduced for mobile */
+		}
+
+		.nested-header {
+			font-size: var(--font-size-sm);
+			margin-bottom: 0.25rem; /* Reduced from 0.5rem */
+		}
+
+		.post-card.nested-card {
+			margin-left: 0.5rem;
+			padding-left: 1rem;
 		}
 
 		.platform-icon {
-			right: 1.25rem;
+			right: 1rem;
+			width: 1.75rem;
+			height: 1.75rem;
 		}
 
 		.carousel-btn {
@@ -890,6 +955,18 @@
 
 		.interactions {
 			gap: 1rem;
+			font-size: var(--font-size-sm);
+			padding-top: 0.625rem;
+			margin-top: 0.625rem;
+		}
+
+		.author-name {
+			font-size: var(--font-size-base);
+		}
+
+		.content-text {
+			font-size: var(--font-size-base);
+			line-height: 1.5;
 		}
 	}
 </style>

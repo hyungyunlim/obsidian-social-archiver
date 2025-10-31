@@ -9,12 +9,7 @@ const config = {
 
 	kit: {
 		// adapter-cloudflare for Cloudflare Pages deployment
-		adapter: adapter({
-			routes: {
-				include: ['/*'],
-				exclude: ['<all>']
-			}
-		}),
+		adapter: adapter(),
 		alias: {
 			$lib: './src/lib',
 			$components: './src/lib/components'

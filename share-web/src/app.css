@@ -31,6 +31,16 @@
 
 	/* Font family */
 	--font-interface: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+	/* Font sizes - centralized for easier management */
+	--font-size-xs: 0.75rem;     /* 12px */
+	--font-size-sm: 0.813rem;    /* 13px */
+	--font-size-base: 0.875rem;  /* 14px */
+	--font-size-md: 0.9375rem;   /* 15px */
+	--font-size-lg: 1rem;         /* 16px */
+	--font-size-xl: 1.125rem;    /* 18px */
+	--font-size-2xl: 1.25rem;    /* 20px */
+	--font-size-3xl: 1.5rem;     /* 24px */
 }
 
 /* Dark mode - follows system preference */
@@ -58,6 +68,15 @@
 		/* Hover states */
 		--background-modifier-hover: #2d2d2d;
 	}
+}
+
+/* Reset margins and paddings */
+html, body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 /* Base styles for mobile-first design */
