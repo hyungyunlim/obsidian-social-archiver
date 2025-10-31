@@ -58,6 +58,9 @@ export class TimelineContainer {
   // Store YouTube player controllers for each post
   private youtubeControllers: Map<string, YouTubePlayerController> = new Map();
 
+  // Store scroll position for restoration after reload
+  private savedScrollPosition: number = 0;
+
   constructor(target: HTMLElement, props: TimelineContainerProps) {
     this.containerEl = target;
     this.vault = props.vault;
@@ -549,7 +552,16 @@ export class TimelineContainer {
    * Reload the timeline (useful when view is re-activated)
    */
   public async reload(): Promise<void> {
+    // Save current scroll position before reloading
+    this.savedScrollPosition = this.containerEl.scrollTop;
+
     this.youtubeControllers.clear();
     await this.loadPosts();
+
+    // Restore scroll position after rendering
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      this.containerEl.scrollTop = this.savedScrollPosition;
+    });
   }
 }
