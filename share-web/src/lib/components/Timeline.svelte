@@ -87,7 +87,7 @@
 <style>
 	.timeline-container {
 		min-height: 200px;
-		padding: 0;
+		padding: 1.5rem 1rem 1rem 2rem; /* top right bottom left - more left padding, extra top padding */
 	}
 
 	/* Grid Layouts */
@@ -192,6 +192,10 @@
 
 	/* Mobile optimizations */
 	@media (max-width: 640px) {
+		.timeline-container {
+			padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+		}
+
 		/* Force single column on mobile */
 		.posts-grid {
 			grid-template-columns: 1fr !important;
