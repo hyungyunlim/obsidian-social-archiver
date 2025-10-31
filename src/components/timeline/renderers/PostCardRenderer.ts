@@ -803,10 +803,11 @@ export class PostCardRenderer {
 
       // PHASE 2: Upload media in background and update share
       if (hasMedia) {
-        this.uploadMediaAndUpdateShare(post, shareId, username, workerUrl, shareUrl).catch(err => {
-          console.error('[PostCardRenderer] Background media upload failed:', err);
-          new Notice('⚠️ Some images failed to upload');
-        });
+        this.uploadMediaAndUpdateShare(post, shareId, username, workerUrl, shareUrl)
+          .catch(err => {
+            console.error('[PostCardRenderer] Background media upload failed:', err);
+            new Notice('⚠️ Some images failed to upload');
+          });
       }
 
     } catch (err) {
@@ -832,8 +833,22 @@ export class PostCardRenderer {
   ): Promise<void> {
     console.log('[PostCardRenderer] Starting background media upload for share:', shareId);
 
-    // Upload media files to R2
-    const remoteMedia = await this.uploadMediaFilesToR2(post.media, shareId, workerUrl);
+    // Progress tracking with Notice
+    let progressNotice: Notice | null = null;
+    const totalImages = post.media.length;
+
+    const onProgress = (current: number, total: number) => {
+      // Hide previous notice
+      if (progressNotice) {
+        progressNotice.hide();
+      }
+      // Show new progress notice
+      progressNotice = new Notice(`Uploading images... (${current}/${total})`, 0); // 0 = don't auto-hide
+    };
+
+    try {
+      // Upload media files to R2 with progress callback
+      const remoteMedia = await this.uploadMediaFilesToR2(post.media, shareId, workerUrl, onProgress);
 
     // Prepare updated PostData with media
     const postDataWithMedia = {
@@ -895,8 +910,21 @@ export class PostCardRenderer {
       throw new Error(`Media update failed: ${response.statusText}`);
     }
 
-    console.log('[PostCardRenderer] Media uploaded and share updated:', shareId);
-    new Notice('✅ Images uploaded successfully!');
+      // Hide progress notice and show completion message
+      if (progressNotice) {
+        progressNotice.hide();
+      }
+
+      console.log('[PostCardRenderer] Media uploaded and share updated:', shareId);
+      new Notice(`✅ All ${totalImages} image${totalImages > 1 ? 's' : ''} uploaded successfully!`);
+    } catch (err) {
+      // Hide progress notice on error
+      if (progressNotice) {
+        progressNotice.hide();
+      }
+      // Re-throw to be handled by caller
+      throw err;
+    }
   }
 
   /**
@@ -1976,10 +2004,17 @@ export class PostCardRenderer {
   /**
    * Upload local media files to R2 and return updated media array with remote URLs
    */
-  private async uploadMediaFilesToR2(media: Media[], shareId: string, workerUrl: string): Promise<Media[]> {
+  private async uploadMediaFilesToR2(
+    media: Media[],
+    shareId: string,
+    workerUrl: string,
+    onProgress?: (current: number, total: number) => void
+  ): Promise<Media[]> {
     const updatedMedia: Media[] = [];
+    const totalMedia = media.length;
 
-    for (const mediaItem of media) {
+    for (let i = 0; i < media.length; i++) {
+      const mediaItem = media[i];
       // Skip if URL is already remote (http/https)
       if (mediaItem.url.startsWith('http://') || mediaItem.url.startsWith('https://')) {
         updatedMedia.push(mediaItem);
@@ -2044,6 +2079,11 @@ export class PostCardRenderer {
             url: uploadResult.data.url,
             thumbnail: uploadResult.data.url // Use same URL for thumbnail
           });
+
+          // Report progress after successful upload
+          if (onProgress) {
+            onProgress(i + 1, totalMedia);
+          }
         } else {
           console.error('[PostCardRenderer] Invalid upload response:', uploadResult);
           // Keep original media item

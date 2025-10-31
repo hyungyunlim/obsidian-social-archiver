@@ -18,6 +18,7 @@ import { mediaProxyRouter } from './handlers/media-proxy-router';
 import { statsRouter } from './handlers/stats-router';
 import { uploadMediaRouter } from './handlers/upload-media';
 import { userPostsRouter } from './handlers/user-posts';
+import { linkPreviewRouter } from './handlers/link-preview';
 
 const app = new Hono<Env>();
 
@@ -63,6 +64,7 @@ app.route('/api/license', licenseRouter);
 app.route('/api/proxy-media', mediaProxyRouter);
 app.route('/api/stats', statsRouter);
 app.route('/api/users', userPostsRouter);
+app.route('/api/link-preview', linkPreviewRouter);
 
 // Public share pages (no rate limiting, no CORS)
 app.route('/share', publicShareRouter);

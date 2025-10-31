@@ -1859,7 +1859,7 @@
         "description": "Replace insecure license key-based share deletion with proper token-based authentication using unique delete tokens stored in YAML frontmatter.",
         "details": "Generate unique delete tokens (UUID v4) when creating shares and store them in YAML frontmatter alongside shareUrl. Update ShareService.createShare() to generate deleteToken field and include it in frontmatter. Modify Worker API DELETE /api/share/:shareId endpoint to authenticate using delete token from request headers (X-Delete-Token) instead of license key validation. Update PostCardRenderer.unsharePost() method to extract deleteToken from post frontmatter and include it in API request headers. Implement proper error handling for missing/invalid delete tokens with clear user feedback. Add token validation logic in workers/src/handlers/share.ts with secure comparison (crypto.timingSafeEqual). Update ShareResponse interface to include deleteToken field. Ensure backward compatibility by supporting both old license-based and new token-based deletion during transition period.",
         "testStrategy": "Unit tests for delete token generation and validation logic. Integration tests for DELETE endpoint with valid/invalid tokens. Test PostCardRenderer unshare functionality with new token authentication. Verify tokens are properly stored in and retrieved from YAML frontmatter. Test error handling for missing delete tokens. Security testing to ensure tokens cannot be guessed or brute-forced. Test backward compatibility with existing shares.",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [],
         "priority": "high",
         "subtasks": [
@@ -1926,7 +1926,7 @@
         "testStrategy": "Unit tests for metadata extraction from various HTML structures, integration tests for API endpoint responses, test SSRF protection with private IPs, verify timeout handling and error responses",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1993,7 +1993,7 @@
         "dependencies": [
           37
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2036,7 +2036,7 @@
         "testStrategy": "Unit tests for URL extraction from various content formats, test regex pattern accuracy, verify integration with PostData interface, test exclusion rules for images and platform URLs",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2092,7 +2092,7 @@
         "dependencies": [
           39
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2124,7 +2124,7 @@
         "testStrategy": "Component unit tests with @testing-library/svelte, visual regression tests for different screen sizes, test error handling for broken images, verify accessibility with screen readers",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2171,7 +2171,7 @@
           38,
           41
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2230,7 +2230,7 @@
           37,
           38
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2290,7 +2290,7 @@
           41,
           42
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2327,7 +2327,7 @@
           37,
           38
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2397,7 +2397,7 @@
           38,
           42
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2452,7 +2452,7 @@
         "testStrategy": "Unit tests for URL normalization edge cases, hash consistency tests across different input formats, integration tests with existing CacheManager.generateKey() method",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2519,7 +2519,7 @@
         "dependencies": [
           47
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2588,7 +2588,7 @@
           47,
           48
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -2659,8 +2659,64 @@
         "dependencies": [
           49
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create core CacheEligibilityService interface and types",
+            "description": "Define the main service interface, eligibility criteria types, and privacy rule configurations",
+            "dependencies": [],
+            "details": "Create src/services/CacheEligibilityService.ts with interface defining checkEligibility(postData: PostData): Promise<EligibilityResult>. Define EligibilityResult type with eligible: boolean, reasons: string[], riskLevel: 'low'|'medium'|'high'. Create PrivacyRule interface with id, name, enabled, conditions. Define PostVisibility, ContentType, and PlatformTerms enums for classification.",
+            "status": "pending",
+            "testStrategy": "Unit tests for interface implementations, type validation tests, enum value tests"
+          },
+          {
+            "id": 2,
+            "title": "Implement post visibility checker for public content only",
+            "description": "Create visibility validation logic that ensures only public posts are eligible for caching",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement checkPostVisibility() method that examines post metadata for public visibility indicators. Parse platform-specific privacy settings from scraped data. Create visibility detection rules for each platform (Facebook: post.privacy === 'public', Instagram: !post.isPrivate, etc.). Add fallback to 'private' classification when visibility is uncertain to err on side of caution.",
+            "status": "pending",
+            "testStrategy": "Test visibility detection for each platform, verify private posts are rejected, test edge cases with unclear visibility"
+          },
+          {
+            "id": 3,
+            "title": "Create platform terms compliance validation engine",
+            "description": "Implement compliance checker that validates posts against each platform's terms of service",
+            "dependencies": [
+              1
+            ],
+            "details": "Create PlatformTermsValidator class with platform-specific rule sets stored as JSON configurations. Implement checkTermsCompliance() with rules for content type restrictions (no copyrighted material indicators), user-generated content guidelines, and API usage terms. Create configurable rule engine that can be updated without code changes. Include platform-specific checks like Facebook's data policy compliance.",
+            "status": "pending",
+            "testStrategy": "Test compliance validation for each platform, verify rule engine configurability, test with known violating content patterns"
+          },
+          {
+            "id": 4,
+            "title": "Build content fingerprinting system for deletion detection",
+            "description": "Implement content fingerprinting to detect when source posts are deleted or modified",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create ContentFingerprinter class using SHA-256 hashing of normalized content (text + media URLs). Implement periodic verification system that checks if original posts still exist. Create deletion detection workflow that marks cached content for removal when source is deleted. Store fingerprints in Cloudflare KV with TTL. Implement content change detection by comparing current vs stored fingerprints.",
+            "status": "pending",
+            "testStrategy": "Test fingerprint generation consistency, verify deletion detection accuracy, test performance with large content sets"
+          },
+          {
+            "id": 5,
+            "title": "Implement user opt-out preferences and consent tracking",
+            "description": "Create privacy-first consent system allowing users to opt out of caching with granular controls",
+            "dependencies": [
+              1,
+              3
+            ],
+            "details": "Create ConsentManager class with user preference storage in Cloudflare KV. Implement opt-out mechanisms: global opt-out, platform-specific opt-out, content-type opt-out. Create consent tracking with explicit opt-in for sensitive content types. Add user preference API endpoints for managing consent settings. Implement respect-for-robots.txt style discovery for user preferences. Include GDPR-compliant consent management with audit trails.",
+            "status": "pending",
+            "testStrategy": "Test opt-out preference enforcement, verify consent tracking accuracy, test GDPR compliance requirements, validate audit trail functionality"
+          }
+        ]
       },
       {
         "id": 51,
@@ -2672,8 +2728,60 @@
         "dependencies": [
           50
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create URL normalization and cache key generation logic",
+            "description": "Implement URL normalization functionality in ArchiveService using existing PlatformDetector canonicalization to generate consistent cache keys",
+            "dependencies": [],
+            "details": "Add private method normalizeUrl() to ArchiveService that leverages PlatformDetector.canonicalizeUrl() for consistent URL normalization. Create generateCacheKey() method that combines normalized URL with archive options (enableAI, deepResearch, downloadMedia) to produce unique cache keys. Use CacheManager.generateKey() approach with sorted options for deterministic key generation.",
+            "status": "pending",
+            "testStrategy": "Unit tests for URL normalization with various platform URLs and tracking parameters. Test cache key generation with different option combinations produces unique keys. Verify identical URLs with same options generate same cache key."
+          },
+          {
+            "id": 2,
+            "title": "Implement cache lookup logic in archivePost method",
+            "description": "Add cache checking logic at the beginning of ArchiveService.archivePost() to retrieve existing cached data before API calls",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify archivePost() method to: 1) Generate cache key using normalized URL and options, 2) Call CacheManager.get() to check for existing entry, 3) Validate cache entry is not expired and meets current options requirements, 4) Return cached PostData if valid hit with appropriate metadata indicating cache source. Preserve existing error handling patterns and progress callback structure.",
+            "status": "pending",
+            "testStrategy": "Integration tests for cache hit scenarios with valid cached data. Test cache miss scenarios continue to API workflow. Verify cache eligibility validation works correctly with different option combinations."
+          },
+          {
+            "id": 3,
+            "title": "Add cache-hit progress reporting and metadata",
+            "description": "Implement instant progress completion (100%) for cache hits and add cache status metadata to PostData response",
+            "dependencies": [
+              2
+            ],
+            "details": "When cache hit occurs: 1) Immediately call onProgress(100) to indicate instant completion, 2) Add cache-related metadata to PostData.metadata including 'fromCache: true', original cache timestamp, and cache hit indicator, 3) Preserve downloadTime from cached entry or set to 0 for instant response, 4) Maintain consistent PostData structure for both cached and fresh API responses.",
+            "status": "pending",
+            "testStrategy": "Test progress callback receives 100% immediately on cache hit. Verify cached PostData contains correct cache metadata. Test that cache metadata doesn't interfere with existing PostData structure and markdown generation."
+          },
+          {
+            "id": 4,
+            "title": "Implement cache storage for fresh API responses",
+            "description": "Add logic to store fresh API responses in cache after successful archiving for future cache hits",
+            "dependencies": [
+              2
+            ],
+            "details": "After successful API response transformation and sanitization: 1) Generate cache key using same logic as lookup, 2) Call CacheManager.set() to store PostData with appropriate TTL based on platform and content type, 3) Include cache options like platform-specific TTL and compression settings, 4) Handle cache storage errors gracefully without affecting main archiving workflow, 5) Add cache write operations to existing statistics tracking.",
+            "status": "pending",
+            "testStrategy": "Test successful API responses are stored in cache with correct TTL. Verify cache storage failures don't interrupt archiving workflow. Test subsequent requests for same URL return cached data from previous API call."
+          },
+          {
+            "id": 5,
+            "title": "Add CacheManager dependency injection to ArchiveService",
+            "description": "Modify ArchiveService constructor and configuration to accept CacheManager instance for dependency injection",
+            "dependencies": [],
+            "details": "Update ArchiveServiceConfig interface to include optional CacheManager instance. Modify ArchiveService constructor to store CacheManager reference. Add null checks throughout cache integration code to handle cases where CacheManager is not provided (graceful degradation). Update service initialization to verify CacheManager is properly initialized if provided. Maintain backward compatibility with existing ArchiveService usage.",
+            "status": "pending",
+            "testStrategy": "Test ArchiveService works with and without CacheManager injection. Verify graceful degradation when cache is unavailable. Integration tests for complete cache workflow with injected CacheManager instance."
+          }
+        ]
       },
       {
         "id": 52,
@@ -2685,8 +2793,62 @@
         "dependencies": [
           51
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement cache eligibility checker for successful API responses",
+            "description": "Create logic to determine if successful BrightData API responses should be cached based on response metadata and platform characteristics",
+            "dependencies": [],
+            "details": "Implement CacheEligibilityChecker class that evaluates successful PostData responses. Check response size limits, content validity, platform-specific caching rules, and error-free status. Include validation for complete media downloads and proper metadata extraction before marking eligible for caching.",
+            "status": "pending",
+            "testStrategy": "Unit tests for eligibility criteria evaluation, edge case testing for malformed responses, platform-specific eligibility rule validation"
+          },
+          {
+            "id": 2,
+            "title": "Extend ArchiveService with async cache storage integration",
+            "description": "Modify ArchiveService to include fire-and-forget cache population after successful archive operations",
+            "dependencies": [
+              1
+            ],
+            "details": "Add async cachePostData method to ArchiveService that stores PostData in cache without blocking main response. Implement fire-and-forget pattern using Promise.resolve().then() for cache writes. Include error handling with comprehensive logging but no user-facing errors for cache failures.",
+            "status": "pending",
+            "testStrategy": "Integration tests for async cache writes, error resilience testing, performance impact measurement on main archive flow"
+          },
+          {
+            "id": 3,
+            "title": "Implement cache metadata generation with hit count and timestamps",
+            "description": "Create cache metadata structure including initial hit count and generation timestamp for newly cached posts",
+            "dependencies": [
+              2
+            ],
+            "details": "Design CacheMetadata interface with hitCount (initialized to 1), cacheGeneratedAt timestamp, platform identifier, and original response size. Implement metadata serialization/deserialization. Store metadata alongside PostData in cache entries for tracking and analytics purposes.",
+            "status": "pending",
+            "testStrategy": "Metadata structure validation tests, serialization accuracy tests, timestamp precision verification"
+          },
+          {
+            "id": 4,
+            "title": "Add compression handling for large response caching",
+            "description": "Implement response compression logic before storing large PostData objects in cache to optimize storage usage",
+            "dependencies": [
+              3
+            ],
+            "details": "Add compression middleware using gzip for PostData responses exceeding 50KB threshold. Implement compression detection and decompression logic in cache retrieval. Include compression ratio tracking in cache metadata. Handle compression failures gracefully by storing uncompressed data.",
+            "status": "pending",
+            "testStrategy": "Compression effectiveness tests, decompression accuracy validation, threshold behavior testing, compression failure handling tests"
+          },
+          {
+            "id": 5,
+            "title": "Integrate platform-specific TTL system with cache population",
+            "description": "Connect the cache population logic with the platform-specific TTL configuration system for proper expiration management",
+            "dependencies": [
+              4
+            ],
+            "details": "Integrate with Task 48's PlatformTTLConfig to apply correct TTL values during cache population. Use TTLResolver to determine appropriate expiration times based on platform and content type. Ensure cache entries are stored with proper expiration metadata and automatic cleanup scheduling.",
+            "status": "pending",
+            "testStrategy": "TTL integration verification tests, expiration behavior validation, platform-specific TTL application tests, cache cleanup scheduling tests"
+          }
+        ]
       },
       {
         "id": 53,
@@ -2698,8 +2860,62 @@
         "dependencies": [
           52
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add cache_hit field to CreditTransaction interface",
+            "description": "Extend the CreditTransaction interface to include a cache_hit boolean field for tracking whether the transaction originated from a cache hit",
+            "dependencies": [],
+            "details": "Modify the CreditTransaction interface in src/types/credit.ts to add a new optional field cache_hit?: boolean. This field will track whether the credit deduction was associated with a cache hit (false) or cache miss (true). Update all existing CreditTransaction creation points to include this field. This field will be used for analytics and credit exemption logic.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify CreditTransaction interface accepts cache_hit field, test transaction creation with and without cache_hit value"
+          },
+          {
+            "id": 2,
+            "title": "Implement cache hit detection in CreditManager.deductCredits",
+            "description": "Modify the deductCredits method to accept cache hit information and skip credit deduction for cache hits",
+            "dependencies": [
+              1
+            ],
+            "details": "Update CreditManager.deductCredits() method signature to accept an optional cacheHit parameter. When cacheHit=true, skip the actual credit deduction from the server (this.api.useCredits) but still record the transaction with success=true and cache_hit=true. Maintain all existing validation, logging, and event emission logic. Preserve balance tracking - for cache hits, balanceAfter should equal balanceBefore since no credits are consumed.",
+            "status": "pending",
+            "testStrategy": "Test credit deduction with cacheHit=true skips API call, verify balance remains unchanged, test transaction recording includes cache_hit field"
+          },
+          {
+            "id": 3,
+            "title": "Add cache analytics tracking to transaction recording",
+            "description": "Enhance transaction recording to include cache hit analytics and maintain detailed logging of cache vs fresh requests",
+            "dependencies": [
+              2
+            ],
+            "details": "Update CostTracker.recordTransaction() to track cache hit statistics including cache hit rate calculation, daily cache hit counts, and cache efficiency metrics. Add method getCacheAnalytics() to return cache hit rate percentage, total cache hits vs misses, and credit savings from cache usage. Integrate with existing transaction storage and analytics. Add cache hit information to transaction metadata for reporting purposes.",
+            "status": "pending",
+            "testStrategy": "Test cache analytics calculation accuracy, verify cache hit rate tracking, validate transaction metadata includes cache information"
+          },
+          {
+            "id": 4,
+            "title": "Implement credit refund mechanism for immediate cache hits",
+            "description": "Add logic to handle credit refunds for edge cases where credits were deducted but cache hit was discovered immediately after",
+            "dependencies": [
+              3
+            ],
+            "details": "Create refundForCacheHit() method in CreditManager to handle scenarios where credits were initially deducted but a cache hit is discovered immediately after (e.g., race conditions, late cache discovery). This method should create a REFUND transaction with cache_hit=true, restore the balance, and emit appropriate events. Include validation to prevent duplicate refunds and maintain transaction audit trail. Add automatic refund triggering when commitReservation is called with cacheHit=true.",
+            "status": "pending",
+            "testStrategy": "Test credit refund for immediate cache hits, verify balance restoration, test duplicate refund prevention, validate audit trail integrity"
+          },
+          {
+            "id": 5,
+            "title": "Update license validation to account for cache benefits",
+            "description": "Modify license validation logic to consider cache hit benefits in credit consumption calculations and user experience",
+            "dependencies": [
+              4
+            ],
+            "details": "Update license validation and credit availability checks to factor in cache hit benefits. Modify canAffordOperation() to consider cache probability when determining if user can afford operations. Add cache efficiency metrics to license information for users to understand their cache benefits. Update monthly credit reset logic to include cache hit statistics in reset event data. Ensure cache benefits are properly communicated in credit threshold alerts and usage projections.",
+            "status": "pending",
+            "testStrategy": "Test license validation with cache benefits factored in, verify credit availability calculations include cache probability, validate user experience improvements from cache awareness"
+          }
+        ]
       },
       {
         "id": 54,
@@ -2711,8 +2927,62 @@
         "dependencies": [
           53
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create CacheStatusIndicator Component Structure",
+            "description": "Create the base CacheStatusIndicator.svelte component file with proper TypeScript interface definitions and Svelte 5 runes setup",
+            "dependencies": [],
+            "details": "Create src/components/ui/CacheStatusIndicator.svelte with TypeScript script setup. Define CacheStatus type ('cached' | 'fresh' | 'force'), CacheInfo interface with status, age, creditCost properties. Initialize component with $state() runes for reactive cache status management. Setup proper TypeScript generics and export component props interface.",
+            "status": "pending",
+            "testStrategy": "Component instantiation tests, TypeScript interface validation, Svelte 5 runes reactive state tests"
+          },
+          {
+            "id": 2,
+            "title": "Implement Cache Status Display Logic",
+            "description": "Build the visual cache status indicator with emoji icons and status text rendering based on cache state",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement cache status display using conditional rendering with Svelte {#if} blocks. Show appropriate emoji icons: 📦 for cached, 🔍 for fresh, 🔄 for force refresh. Add status text with proper styling using Tailwind CSS classes. Implement cache age display logic with human-readable format ('cached 2 hours ago', 'cached 5 minutes ago'). Use Obsidian CSS variables for consistent theming.",
+            "status": "pending",
+            "testStrategy": "Visual rendering tests for each cache state, emoji display validation, cache age formatting accuracy tests"
+          },
+          {
+            "id": 3,
+            "title": "Add Credit Cost Indication Feature",
+            "description": "Implement credit cost display that shows 0 credits for cached content and 1+ credits for fresh requests",
+            "dependencies": [
+              2
+            ],
+            "details": "Create credit cost display component using Tailwind utility classes. Show '0 credits' for cached content with green styling, '1 credit' for fresh requests with neutral styling. Implement dynamic credit calculation based on cache status and archive options (basic=1, with AI=3, deep research=5). Add visual indicators using Obsidian's accent color variables. Include hover tooltips explaining credit usage.",
+            "status": "pending",
+            "testStrategy": "Credit calculation accuracy tests, visual styling validation, tooltip functionality tests, dynamic cost update tests"
+          },
+          {
+            "id": 4,
+            "title": "Build Force Refresh Toggle Control",
+            "description": "Create interactive toggle component for force refresh option with proper state management and user feedback",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement toggle switch component using Svelte 5 $state() for force refresh option. Style with Tailwind CSS toggle classes and Obsidian CSS variables for consistency. Add click handler to update parent component state through event dispatch. Include visual feedback on toggle state change. Ensure 44px minimum touch target for mobile compliance. Add accessibility attributes (aria-label, role) for screen readers.",
+            "status": "pending",
+            "testStrategy": "Toggle interaction tests, state synchronization validation, mobile touch target compliance tests, accessibility compliance verification"
+          },
+          {
+            "id": 5,
+            "title": "Implement Responsive Design and Integration",
+            "description": "Apply responsive design patterns and integrate the cache status component into the archive modal workflow",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement mobile-first responsive design using Tailwind CSS breakpoints (sm:, md:, lg:). Ensure component adapts to different modal sizes and screen orientations. Add proper spacing and layout using Tailwind grid/flexbox utilities. Integrate with existing ArchiveModal component, ensuring proper prop passing and event handling. Test integration with cache pre-check API calls and real-time status updates. Apply Obsidian's modal styling conventions.",
+            "status": "pending",
+            "testStrategy": "Responsive layout tests across different screen sizes, modal integration validation, API integration tests, real-time update functionality verification"
+          }
+        ]
       },
       {
         "id": 55,
@@ -2724,8 +2994,62 @@
         "dependencies": [
           54
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create cache check endpoint route structure",
+            "description": "Set up the basic Hono router structure for the /api/cache/check endpoint with proper CORS configuration and middleware setup",
+            "dependencies": [],
+            "details": "Create new route handler in workers/src/routes/cache.ts with Hono framework. Configure CORS headers for cross-origin requests from the Obsidian plugin. Set up basic route structure with GET method for /api/cache/check endpoint. Include error handling middleware and response formatting utilities.",
+            "status": "pending",
+            "testStrategy": "Unit tests for route registration, CORS header validation, basic endpoint accessibility tests"
+          },
+          {
+            "id": 2,
+            "title": "Implement URL normalization and cache key generation",
+            "description": "Create utility functions to normalize social media URLs and generate consistent cache keys for KV store lookups",
+            "dependencies": [
+              1
+            ],
+            "details": "Develop URL normalization function that handles platform-specific URL variations (removing tracking parameters, standardizing format). Create cache key generation using consistent hashing algorithm. Handle different URL formats for each platform (Facebook, Instagram, X, LinkedIn, TikTok, Threads). Ensure cache keys are deterministic and collision-resistant.",
+            "status": "pending",
+            "testStrategy": "Unit tests for URL normalization across all platforms, cache key collision tests, consistency validation tests"
+          },
+          {
+            "id": 3,
+            "title": "Implement KV store cache status checking",
+            "description": "Create functions to check cache entry existence, retrieve cache metadata, and calculate cache age from KV store",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement KV store lookup using generated cache keys. Retrieve cache metadata including timestamp, content size, and platform info. Calculate cache age from stored timestamp. Handle cache miss scenarios gracefully. Implement efficient batch checking for multiple cache keys if needed.",
+            "status": "pending",
+            "testStrategy": "Integration tests with Cloudflare KV, cache age calculation accuracy tests, cache miss handling validation"
+          },
+          {
+            "id": 4,
+            "title": "Create credit estimation and response formatting",
+            "description": "Implement logic to estimate required credits based on cache status and format standardized API responses",
+            "dependencies": [
+              3
+            ],
+            "details": "Calculate estimated credits based on cache hit/miss status, content type, and whether AI analysis is requested. Format response with cache status (hit/miss), cache age, estimated credits, and force refresh handling. Include proper HTTP status codes and error messages. Ensure sub-100ms response time requirement is met.",
+            "status": "pending",
+            "testStrategy": "Credit estimation accuracy tests, response format validation, performance benchmarking for sub-100ms requirement"
+          },
+          {
+            "id": 5,
+            "title": "Add rate limiting and production optimizations",
+            "description": "Implement rate limiting for the cache check endpoint and optimize for production deployment with monitoring",
+            "dependencies": [
+              4
+            ],
+            "details": "Add rate limiting using Cloudflare's rate limiting or custom KV-based solution (100 requests per IP per hour). Implement request validation and suspicious pattern detection. Add performance monitoring and logging for cache check operations. Optimize for sub-100ms response time with minimal KV store reads. Include proper error handling for rate limit exceeded scenarios.",
+            "status": "pending",
+            "testStrategy": "Rate limiting enforcement tests, performance benchmarking, abuse prevention validation, monitoring accuracy tests"
+          }
+        ]
       },
       {
         "id": 56,
@@ -2737,8 +3061,63 @@
         "dependencies": [
           55
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement cache metrics collection system",
+            "description": "Create a comprehensive cache metrics tracking system that monitors hit rates, cost savings, and storage utilization across different platforms",
+            "dependencies": [],
+            "details": "Implement CacheMetricsCollector class with methods to track cache hits/misses by platform, calculate cost savings based on BrightData API usage avoided, monitor cache storage utilization in Cloudflare KV, and record popular content with high hit counts. Integrate with existing cache implementation to automatically collect metrics on each cache operation. Store metrics data in Cloudflare Analytics Engine for aggregation and analysis.",
+            "status": "pending",
+            "testStrategy": "Unit tests for metrics calculation accuracy, integration tests with cache operations, validation of Analytics Engine data ingestion"
+          },
+          {
+            "id": 2,
+            "title": "Create cache effectiveness reporting engine",
+            "description": "Build a reporting system that generates comprehensive cache performance reports with ROI calculations and optimization recommendations",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement CacheReportGenerator class that analyzes collected metrics to produce effectiveness reports including cache hit rate trends, cost savings calculations, storage efficiency metrics, and popular content identification. Generate optimization recommendations based on cache patterns. Create scheduled report generation for daily/weekly/monthly intervals using Cloudflare Cron Triggers.",
+            "status": "pending",
+            "testStrategy": "Test report accuracy against known metrics, validate optimization recommendation logic, test scheduled report generation"
+          },
+          {
+            "id": 3,
+            "title": "Build admin dashboard UI component",
+            "description": "Create a comprehensive admin dashboard component using Svelte 5 to visualize cache metrics and analytics data",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement AdminDashboard Svelte component with sections for cache performance overview, platform-specific analytics, cost savings visualization, and storage utilization charts. Use Chart.js for data visualization including line charts for hit rates over time, pie charts for platform distribution, and bar charts for cost savings. Implement real-time data updates using $state runes and reactive data fetching.",
+            "status": "pending",
+            "testStrategy": "Component rendering tests, chart data visualization tests, responsive design tests, real-time update functionality tests"
+          },
+          {
+            "id": 4,
+            "title": "Integrate Cloudflare Analytics Engine",
+            "description": "Set up Cloudflare Analytics Engine integration for storing and querying cache metrics data at scale",
+            "dependencies": [
+              1
+            ],
+            "details": "Configure Cloudflare Analytics Engine dataset for cache metrics storage with appropriate schema for tracking cache events, hit rates, cost data, and performance metrics. Implement AnalyticsEngine client in the Cloudflare Worker to write metrics data and query aggregated statistics. Set up data retention policies and configure indexes for efficient querying of time-series cache data.",
+            "status": "pending",
+            "testStrategy": "Test Analytics Engine data ingestion, validate query performance, test data retention policies, verify metric aggregation accuracy"
+          },
+          {
+            "id": 5,
+            "title": "Add cache optimization recommendations system",
+            "description": "Implement an intelligent system that analyzes cache patterns and provides actionable optimization recommendations",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create CacheOptimizer class that analyzes cache metrics to identify optimization opportunities such as cache key patterns that should be restructured, underutilized cache entries that can be purged, and popular content that should have longer TTL. Implement recommendation scoring and prioritization. Generate actionable recommendations with estimated impact on performance and cost savings.",
+            "status": "pending",
+            "testStrategy": "Test recommendation accuracy against historical data, validate optimization impact predictions, test recommendation prioritization logic"
+          }
+        ]
       },
       {
         "id": 57,
@@ -2750,8 +3129,62 @@
         "dependencies": [
           56
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create cache invalidation API endpoint with pattern matching",
+            "description": "Implement /api/cache/invalidate endpoint that supports different invalidation patterns including regex, prefix, and exact match",
+            "dependencies": [],
+            "details": "Create new handler file handlers/cache-invalidation.ts with POST /api/cache/invalidate endpoint. Support invalidation patterns: regex, prefix, suffix, exact match. Implement admin authentication using license key validation. Add request validation for pattern type and pattern string. Return count of invalidated entries and processing time. Include error handling for invalid patterns and authentication failures.",
+            "status": "pending",
+            "testStrategy": "Unit tests for pattern matching logic, integration tests with KV store operations, authentication validation tests, invalid pattern error handling tests"
+          },
+          {
+            "id": 2,
+            "title": "Implement platform deletion webhook receivers",
+            "description": "Create webhook handlers for receiving deletion notifications from social media platforms",
+            "dependencies": [
+              1
+            ],
+            "details": "Extend existing webhook.ts handler to add platform-specific deletion webhook endpoints (/webhook/facebook/deletion, /webhook/instagram/deletion, etc.). Implement webhook signature verification for each platform using their respective authentication methods. Parse platform deletion payloads and extract post IDs/URLs for cache invalidation. Queue deletion requests for processing and integrate with cache invalidation API. Add webhook event logging and retry mechanisms for failed processing.",
+            "status": "pending",
+            "testStrategy": "Webhook signature verification tests, platform payload parsing tests, integration tests with cache invalidation, error handling and retry logic tests"
+          },
+          {
+            "id": 3,
+            "title": "Develop DMCA takedown request handling system",
+            "description": "Create system for processing DMCA takedown requests and automatically invalidating related cache entries",
+            "dependencies": [
+              1
+            ],
+            "details": "Create handlers/dmca.ts with POST /api/dmca/takedown endpoint for receiving DMCA requests. Implement request validation including required fields (URL, copyright holder info, sworn statement). Add automatic cache invalidation for requested URLs and related content. Create DMCA request logging and audit trail storage in KV. Implement email notification system for request confirmation. Add rate limiting specifically for DMCA endpoints to prevent abuse.",
+            "status": "pending",
+            "testStrategy": "DMCA request validation tests, cache invalidation integration tests, audit logging verification, email notification tests, rate limiting enforcement tests"
+          },
+          {
+            "id": 4,
+            "title": "Implement bulk cache invalidation for user opt-outs",
+            "description": "Create system for bulk cache invalidation when users request complete data removal",
+            "dependencies": [
+              1
+            ],
+            "details": "Add POST /api/cache/bulk-invalidate endpoint with user identification methods (email, social media profile, license key). Implement user verification process before bulk deletion. Create pattern generation for user-specific cache entries across all platforms. Add progress tracking for large bulk operations using job queue system. Implement confirmation emails and audit logging for all bulk deletions. Include rollback mechanism for accidental deletions within 24-hour window.",
+            "status": "pending",
+            "testStrategy": "User verification process tests, bulk operation performance tests, progress tracking validation, audit logging verification, rollback mechanism tests"
+          },
+          {
+            "id": 5,
+            "title": "Add cache version bumping for schema changes",
+            "description": "Implement automatic cache invalidation when cache schema versions change to prevent compatibility issues",
+            "dependencies": [
+              1
+            ],
+            "details": "Extend CacheManager to detect schema version mismatches during cache operations. Implement version-based cache invalidation when new schema versions are deployed. Add migration system for backwards-compatible schema changes. Create /api/cache/version endpoint for manual version bumping with admin authentication. Implement gradual rollout mechanism for version changes to minimize service disruption. Add monitoring and alerting for cache invalidation events during version transitions.",
+            "status": "pending",
+            "testStrategy": "Schema version detection tests, migration system validation, version compatibility tests, gradual rollout mechanism tests, monitoring and alerting verification"
+          }
+        ]
       },
       {
         "id": 58,
@@ -2763,8 +3196,64 @@
         "dependencies": [
           57
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Cache Monitoring Durable Object",
+            "description": "Implement a Cloudflare Durable Object to persistently track cache metrics and storage quota usage",
+            "dependencies": [],
+            "details": "Create a CacheMonitoringDO class extending DurableObject to maintain persistent state for monitoring KV storage quota usage, hit rates, and performance metrics. Include methods for recordCacheHit(), recordCacheMiss(), updateStorageQuota(), and getMetrics(). Store aggregated metrics with hourly and daily rollups. Implement proper error handling and state persistence across object restarts.",
+            "status": "pending",
+            "testStrategy": "Unit tests for Durable Object methods, test state persistence across object restarts, verify metrics accuracy, test concurrent access handling"
+          },
+          {
+            "id": 2,
+            "title": "Implement Cache Hit Rate Tracking Service",
+            "description": "Build service to monitor cache performance metrics and identify trends in hit rates",
+            "dependencies": [
+              1
+            ],
+            "details": "Create CacheMetricsService that integrates with existing KVStorageAdapter to track hit/miss ratios for each KV namespace (ARCHIVE_CACHE, LICENSE_KEYS, SHARE_LINKS). Calculate rolling averages for 1-hour, 24-hour, and 7-day windows. Identify performance degradation patterns when hit rates drop below configurable thresholds (default: 80% for archive cache, 95% for license keys). Store metrics in the CacheMonitoringDO for persistence.",
+            "status": "pending",
+            "testStrategy": "Test hit rate calculation accuracy, verify rolling average computations, test threshold alerting logic, validate integration with KVStorageAdapter"
+          },
+          {
+            "id": 3,
+            "title": "Create Storage Quota Monitoring System",
+            "description": "Implement quota tracking for KV storage limits and cost optimization alerts",
+            "dependencies": [
+              1
+            ],
+            "details": "Build QuotaMonitoringService to track KV storage usage across all namespaces using KV.list() with metadata analysis. Calculate storage consumption trends and predict when limits will be reached. Monitor key count and data size per namespace. Implement alerts when usage exceeds 80% of quota limits. Generate cost optimization recommendations based on usage patterns, identifying unused or rarely accessed keys for cleanup.",
+            "status": "pending",
+            "testStrategy": "Test quota calculation accuracy, verify trend prediction algorithms, test alert threshold logic, validate cost calculation formulas"
+          },
+          {
+            "id": 4,
+            "title": "Build SendGrid Email Alerting System",
+            "description": "Implement email notification system for critical cache issues and weekly reports",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create EmailAlertingService using SendGrid API for sending alerts. Configure email templates for critical alerts (quota exceeded, performance degradation) and weekly summary reports. Implement rate limiting to prevent spam (max 1 critical alert per hour, 1 weekly report). Include alert severities: CRITICAL (immediate action required), WARNING (attention needed), INFO (status updates). Add email preferences management and unsubscribe functionality.",
+            "status": "pending",
+            "testStrategy": "Test email template rendering, verify rate limiting logic, test SendGrid API integration, validate alert severity classification"
+          },
+          {
+            "id": 5,
+            "title": "Implement Automated Cache Cleanup System",
+            "description": "Build automated cleanup for expired entries and optimization recommendations",
+            "dependencies": [
+              1,
+              3
+            ],
+            "details": "Extend existing KVStorageAdapter.cleanupExpiredShares() method to create comprehensive CacheCleanupService. Implement scheduled cleanup using Cloudflare Cron Triggers for expired shares, stale cache entries, and unused license keys. Add intelligent cleanup policies based on access patterns (remove entries not accessed in 90 days). Generate cleanup reports with space reclaimed and cost savings. Integrate with quota monitoring to trigger emergency cleanup when quotas approach limits.",
+            "status": "pending",
+            "testStrategy": "Test cleanup algorithm accuracy, verify cron trigger scheduling, test emergency cleanup triggers, validate cleanup reporting metrics"
+          }
+        ]
       },
       {
         "id": 59,
@@ -2776,8 +3265,63 @@
         "dependencies": [
           58
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Trending Content API Integration Service",
+            "description": "Develop service to fetch trending content from multiple social media platforms using Twitter Trends API and Facebook Graph API",
+            "dependencies": [],
+            "details": "Create TrendingContentService.ts class that integrates with Twitter Trends API and Facebook Graph API to fetch trending topics, hashtags, and viral content. Implement platform-specific parsers for trending content metadata (engagement rates, trend velocity, geographic data). Include rate limiting and error handling for API calls. Store trending content data with timestamps and trend scores for cache warming prioritization decisions.",
+            "status": "pending",
+            "testStrategy": "Unit tests for API integration methods, mock API responses testing, trending content parsing validation tests, rate limiting behavior verification"
+          },
+          {
+            "id": 2,
+            "title": "Implement Cloudflare Cron Trigger Configuration",
+            "description": "Set up scheduled Workers using Cloudflare Cron Triggers for automated cache warming jobs",
+            "dependencies": [
+              1
+            ],
+            "details": "Configure wrangler.toml with cron triggers for scheduled cache warming (every 15 minutes for trending, hourly for general warming). Create scheduled handler function in workers/src/handlers/scheduled.ts that processes trending content and triggers cache warming jobs. Implement job queuing system using KV store to track warming tasks and prevent duplicate warming attempts. Add monitoring and logging for scheduled job execution.",
+            "status": "pending",
+            "testStrategy": "Cron trigger scheduling tests, job queue management tests, duplicate prevention validation, scheduled handler execution verification"
+          },
+          {
+            "id": 3,
+            "title": "Develop Cache Warming Decision Engine",
+            "description": "Create intelligent system for deciding which content to cache based on cost-benefit analysis and trend prediction",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement CacheWarmingDecisionEngine.ts that analyzes trending content engagement metrics, trend velocity, and user demographics to predict cache hit probability. Create scoring algorithm based on likes/shares rate, comment engagement, hashtag virality, and geographic relevance. Implement cost-benefit calculation considering BrightData API costs vs expected cache hits. Include configurable warming thresholds per platform and content type with A/B testing capabilities.",
+            "status": "pending",
+            "testStrategy": "Decision algorithm accuracy tests, cost-benefit calculation validation, threshold configuration tests, A/B testing framework verification"
+          },
+          {
+            "id": 4,
+            "title": "Implement Rate Limited Cache Warming Executor",
+            "description": "Create service to execute cache warming requests while respecting BrightData API rate limits and cost constraints",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create CacheWarmingExecutor.ts that processes warming jobs from the decision engine with strict rate limiting. Implement exponential backoff for BrightData API calls, respect rate limits (max 100 requests/hour), and manage concurrent warming requests. Add warming job prioritization based on trend urgency and cache expiry times. Include warming status tracking in KV store with success/failure metrics and cost monitoring.",
+            "status": "pending",
+            "testStrategy": "Rate limiting enforcement tests, concurrent request management tests, warming job prioritization validation, cost tracking accuracy verification"
+          },
+          {
+            "id": 5,
+            "title": "Create Platform-Specific Warming Rules Configuration",
+            "description": "Implement configurable warming rules system allowing different warming strategies per social media platform",
+            "dependencies": [
+              3
+            ],
+            "details": "Create WarmingRulesConfig.ts interface and storage system in KV for platform-specific warming configurations. Define rules for Twitter (high frequency, short TTL), Facebook (medium frequency, longer TTL), Instagram (visual content priority), TikTok (viral detection), LinkedIn (professional content), and Threads (real-time trends). Implement dynamic rule updates through admin API endpoints and warming rule validation. Add rule effectiveness tracking and automatic optimization based on cache hit rates.",
+            "status": "pending",
+            "testStrategy": "Warming rules configuration tests, platform-specific rule validation, dynamic rule update tests, effectiveness tracking accuracy verification"
+          }
+        ]
       },
       {
         "id": 60,
@@ -2789,8 +3333,63 @@
         "dependencies": [
           59
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Cache Export Service with JSON Serialization",
+            "description": "Create a service to export cache entries to JSON format with support for selective filtering by platform and date range",
+            "dependencies": [],
+            "details": "Develop CacheExportService that reads from Cloudflare KV store and serializes cache entries to JSON. Implement filtering options by platform (facebook, instagram, x, linkedin, tiktok, threads) and date ranges. Handle large datasets with streaming export and memory optimization. Include metadata like export timestamp, version, and entry counts.",
+            "status": "pending",
+            "testStrategy": "Unit tests for JSON serialization, filtering logic tests, memory usage tests with large datasets, export completeness validation"
+          },
+          {
+            "id": 2,
+            "title": "Build Cache Import Service with Data Validation",
+            "description": "Create service to import cache data from JSON backup files with schema validation and integrity checks",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement CacheImportService that validates JSON schema, verifies data integrity using checksums, and imports cache entries to KV store. Handle version compatibility, duplicate detection, and conflict resolution. Support both full and incremental imports with rollback capability on failures.",
+            "status": "pending",
+            "testStrategy": "Schema validation tests, checksum verification tests, duplicate handling tests, rollback functionality tests, import data integrity verification"
+          },
+          {
+            "id": 3,
+            "title": "Add Compression Support for Large Cache Exports",
+            "description": "Implement compression utilities for cache export files to reduce storage and transfer overhead",
+            "dependencies": [
+              1
+            ],
+            "details": "Add gzip compression to CacheExportService for large export files. Implement automatic compression threshold detection based on file size. Support both compressed and uncompressed formats with proper headers and metadata. Ensure compatibility with import service for decompression.",
+            "status": "pending",
+            "testStrategy": "Compression ratio tests, decompression accuracy tests, file size threshold tests, compression performance benchmarks"
+          },
+          {
+            "id": 4,
+            "title": "Create CLI Utilities for Cache Management Operations",
+            "description": "Build Node.js CLI tools for administrators to perform cache backup and migration operations",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Develop CLI interface using Node.js with commands for export (cache-export), import (cache-import), and migration operations. Include progress indicators, verbose logging, and configuration file support. Implement environment-specific configurations for development, staging, and production cache stores.",
+            "status": "pending",
+            "testStrategy": "CLI command execution tests, progress indicator functionality tests, configuration file parsing tests, cross-environment operation tests"
+          },
+          {
+            "id": 5,
+            "title": "Implement Cross-Environment Migration Support",
+            "description": "Add functionality to migrate cache data between different environments with environment-specific adaptations",
+            "dependencies": [
+              4
+            ],
+            "details": "Extend import/export services to support cross-environment migrations (dev to staging, staging to production). Implement environment-specific key transformations, TTL adjustments, and configuration mappings. Add migration validation and verification steps to ensure data consistency across environments.",
+            "status": "pending",
+            "testStrategy": "Cross-environment migration tests, key transformation validation tests, TTL adjustment accuracy tests, migration verification tests"
+          }
+        ]
       },
       {
         "id": 61,
@@ -2802,8 +3401,65 @@
         "dependencies": [
           60
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create LRU Cache Eviction Engine",
+            "description": "Implement Least Recently Used (LRU) eviction algorithm for managing cache storage limits in the CacheManager service",
+            "dependencies": [],
+            "details": "Extend the existing CacheManager.ts to add LRU eviction functionality. Implement a doubly-linked list or use Map-based LRU tracking to maintain access order. Add maxSize and maxEntries configuration to CacheConfig interface. Implement eviction logic in the set() method when storage limits are exceeded. Track access patterns by updating lastAccessTime in metadata and reorder entries accordingly. Add eviction statistics to CacheStats interface.",
+            "status": "pending",
+            "testStrategy": "Unit tests for LRU ordering, eviction when size/count limits exceeded, access pattern tracking accuracy, eviction statistics correctness, integration tests with existing CacheManager functionality"
+          },
+          {
+            "id": 2,
+            "title": "Build Intelligent TTL Adjustment System",
+            "description": "Create an adaptive TTL system that adjusts cache expiration times based on access patterns and content freshness",
+            "dependencies": [
+              1
+            ],
+            "details": "Create TTLOptimizer class that analyzes cache hit patterns, access frequency, and content staleness to dynamically adjust TTL values. Implement machine learning-inspired algorithms using moving averages and trend analysis to predict optimal TTL values. Add accessPattern tracking to CacheMetadata including lastAccessed, accessCount, and accessFrequency. Create adaptive TTL calculation based on content type, platform, and historical access patterns. Integrate with CacheManager to automatically apply optimized TTL values.",
+            "status": "pending",
+            "testStrategy": "Test TTL adjustment algorithms with various access patterns, verify TTL optimization improves hit rates, test adaptive calculation accuracy, measure performance impact of TTL optimization, validate integration with existing cache operations"
+          },
+          {
+            "id": 3,
+            "title": "Implement Content-Based Compression Optimization",
+            "description": "Develop intelligent compression algorithms that optimize compression strategies based on content type and characteristics",
+            "dependencies": [],
+            "details": "Create CompressionOptimizer class that analyzes content characteristics (text vs binary, size, entropy) to select optimal compression algorithms. Implement multiple compression strategies: gzip for text content, brotli for HTML/CSS, and smart detection for media content. Add compression effectiveness tracking to CacheMetadata including originalSize, compressedSize, and compressionAlgorithm. Create content-type specific compression thresholds and strategies. Integrate with CacheManager's existing compression logic to automatically select best compression method.",
+            "status": "pending",
+            "testStrategy": "Test compression algorithm selection accuracy, verify compression ratio improvements, benchmark compression/decompression performance, test content type detection reliability, validate compression effectiveness tracking"
+          },
+          {
+            "id": 4,
+            "title": "Create A/B Testing Framework for Cache Strategies",
+            "description": "Build an A/B testing system to experiment with different cache strategies and measure their effectiveness",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create ABTestFramework class that can split cache traffic between different strategies (TTL values, compression methods, eviction policies). Implement experiment configuration with test groups, success metrics (hit rate, latency, storage efficiency), and statistical significance testing. Add experiment tracking to cache events and statistics collection. Create ABTestConfig interface for defining experiments with strategy variations, traffic allocation, and success criteria. Implement gradual rollout mechanism for successful optimizations.",
+            "status": "pending",
+            "testStrategy": "Test A/B experiment setup and traffic splitting, verify statistical significance calculations, test gradual rollout mechanisms, validate experiment result tracking accuracy, ensure no impact on cache performance during testing"
+          },
+          {
+            "id": 5,
+            "title": "Build Cache Performance Monitoring Dashboard",
+            "description": "Create a comprehensive monitoring and reporting system for cache performance optimization results",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Create CacheOptimizationReporter class that aggregates performance metrics from all optimization engines. Implement real-time performance monitoring with metrics like hit rate trends, compression efficiency, TTL effectiveness, and A/B test results. Create optimization recommendations engine that suggests improvements based on collected data. Add performance alerting for cache degradation or optimization opportunities. Integrate with existing CacheStats to provide comprehensive optimization insights and actionable recommendations.",
+            "status": "pending",
+            "testStrategy": "Test metrics aggregation accuracy, verify performance trend analysis, test recommendation engine effectiveness, validate alerting thresholds, ensure monitoring has minimal performance impact on cache operations"
+          }
+        ]
       },
       {
         "id": 62,
@@ -2815,13 +3471,67 @@
         "dependencies": [
           61
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "deferred",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create content fingerprinting system for cross-platform detection",
+            "description": "Implement content fingerprinting using SHA-256 hashing of normalized text and media content to identify identical content across different social media platforms",
+            "dependencies": [],
+            "details": "Create a ContentFingerprint service that normalizes post content (text, media URLs, metadata) and generates SHA-256 hash signatures. Implement normalization rules to handle platform-specific formatting differences while preserving content identity. Include text normalization (whitespace, encoding), media fingerprinting (URL normalization, content hashing), and metadata normalization (timestamp formatting, engagement metrics). Build fingerprint comparison utilities to detect cross-platform duplicates with configurable similarity thresholds.",
+            "status": "pending",
+            "testStrategy": "Unit tests for text normalization accuracy, hash consistency tests across identical content, cross-platform fingerprint matching tests, performance benchmarks for large content sets"
+          },
+          {
+            "id": 2,
+            "title": "Implement unified cache key generation for identical content",
+            "description": "Extend the existing CacheManager to generate unified cache keys that can be shared across platforms when content fingerprints match",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify the CacheManager.generateKey() method to support cross-platform cache keys based on content fingerprints. Create a UnifiedCacheKeyGenerator that uses content fingerprints as primary keys with platform-specific metadata as secondary keys. Implement cache key resolution logic that checks for existing cross-platform entries before creating new ones. Add fallback mechanisms for platform-specific keys when content can't be unified. Ensure backward compatibility with existing cache keys.",
+            "status": "pending",
+            "testStrategy": "Cache key uniqueness tests, cross-platform key resolution tests, backward compatibility verification, collision detection tests"
+          },
+          {
+            "id": 3,
+            "title": "Develop platform-specific metadata preservation system",
+            "description": "Create a metadata preservation system that maintains platform-specific data while enabling cross-platform cache sharing",
+            "dependencies": [
+              2
+            ],
+            "details": "Design a PlatformMetadataManager that stores platform-specific metadata separately from shared content data. Implement metadata layering where common content is cached once with platform-specific overlays stored as separate entries. Create metadata merge/resolve utilities that combine shared content with platform-specific metadata on retrieval. Handle platform-specific fields like engagement metrics, timestamps, author information, and media formats. Ensure metadata integrity and prevent cross-platform data leakage.",
+            "status": "pending",
+            "testStrategy": "Metadata preservation accuracy tests, platform isolation tests, merge/resolve logic verification, data integrity validation tests"
+          },
+          {
+            "id": 4,
+            "title": "Implement cache linkage and reference counting system",
+            "description": "Build a reference counting system to track cross-platform cache relationships and manage shared cache entry lifecycles",
+            "dependencies": [
+              3
+            ],
+            "details": "Create a CacheReferenceManager that maintains reference counts for shared cache entries across platforms. Implement cache linkage tables that map platform-specific keys to shared content keys. Build reference increment/decrement logic for cache operations (set, get, delete). Implement garbage collection for shared entries when all platform references are removed. Add cache entry relationship tracking and orphan detection. Ensure atomic reference counting operations to prevent race conditions.",
+            "status": "pending",
+            "testStrategy": "Reference counting accuracy tests, garbage collection verification, race condition prevention tests, orphan detection validation, atomic operation tests"
+          },
+          {
+            "id": 5,
+            "title": "Create conflict resolution system for platform differences",
+            "description": "Implement conflict resolution logic to handle platform-specific differences in content representation and TTL management",
+            "dependencies": [
+              4
+            ],
+            "details": "Build a ConflictResolver that handles platform-specific content variations and caching policies. Implement TTL conflict resolution using platform-specific TTL configurations from task 48, with rules for minimum TTL preservation and platform priority. Create content conflict detection for cases where same content has different representations across platforms. Implement resolution strategies: content versioning, platform priority rules, and user-configurable preferences. Add validation logic to ensure cross-platform cache consistency and handle edge cases like platform-specific content modifications.",
+            "status": "pending",
+            "testStrategy": "TTL conflict resolution tests, content variation handling tests, platform priority validation, consistency verification tests, edge case scenario testing"
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T05:11:42.850Z",
+      "updated": "2025-10-31T05:22:27.366Z",
       "description": "Tasks for master context"
     }
   }
