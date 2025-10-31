@@ -137,6 +137,18 @@ export interface PostResponse {
 }
 
 /**
+ * Link preview metadata
+ */
+export interface LinkPreview {
+	url: string;
+	title: string;
+	description?: string;
+	image?: string;
+	siteName?: string;
+	favicon?: string;
+}
+
+/**
  * API Error response structure
  */
 export interface ApiErrorResponse {

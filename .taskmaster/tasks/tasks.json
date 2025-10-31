@@ -2124,7 +2124,7 @@
         "testStrategy": "Component unit tests with @testing-library/svelte, visual regression tests for different screen sizes, test error handling for broken images, verify accessibility with screen readers",
         "priority": "medium",
         "dependencies": [],
-        "status": "deferred",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -2132,7 +2132,7 @@
             "description": "Implement the basic LinkPreviewCard.svelte component using Svelte 5 Runes API with proper props interface",
             "dependencies": [],
             "details": "Create src/components/LinkPreviewCard.svelte with Svelte 5 Runes implementation. Define props interface for preview metadata: title, description, image, siteName, favicon, url. Use $props() rune for reactive props. Set up component structure with proper TypeScript typing. Follow existing component patterns from PostCard.svelte for consistency.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests with @testing-library/svelte to verify props are correctly received and rendered"
           },
           {
@@ -2143,7 +2143,7 @@
               1
             ],
             "details": "Style the component with Tailwind CSS following existing design patterns. Implement card layout with image preview, title, description, and domain display. Ensure mobile-responsive design with minimum 44px touch targets. Use existing Tailwind utilities and follow the design system used in other components. Include hover states and proper spacing.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Visual regression tests for different screen sizes and manual testing for mobile responsiveness"
           },
           {
@@ -2154,7 +2154,7 @@
               2
             ],
             "details": "Add onerror handler for image loading failures with appropriate fallback display. Implement loading states and error states for preview images. Add accessibility features like alt text and screen reader support. Include proper error boundaries and graceful degradation when preview data is incomplete or invalid.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test error handling for broken images, verify accessibility with screen readers, test component behavior with missing or invalid data"
           }
         ]
@@ -3531,7 +3531,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T06:27:29.682Z",
+      "updated": "2025-10-31T06:37:58.036Z",
       "description": "Tasks for master context"
     }
   }
