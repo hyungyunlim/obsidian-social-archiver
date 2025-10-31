@@ -17,7 +17,8 @@ shareRouter.post('/', async (c) => {
     const body = await c.req.json();
     const request = CreateShareRequestSchema.parse(body);
 
-    const shareId = generateShareId();
+    // Use provided shareId (for updates) or generate new one
+    const shareId = (request.options as any)?.shareId || generateShareId();
 
     // Use postData if provided (new format), otherwise use legacy format
     let shareData: any;

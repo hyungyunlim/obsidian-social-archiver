@@ -2443,11 +2443,385 @@
             "testStrategy": "Test dashboard data accuracy, verify real-time updates, validate chart rendering and export functionality"
           }
         ]
+      },
+      {
+        "id": 47,
+        "title": "Implement URL Normalization and Hashing for Cache Keys",
+        "description": "Create a robust URL normalization service that generates consistent cache keys across different URL formats for the same content",
+        "details": "Develop a URLNormalizer service that handles various URL formats (facebook.com/post/123, facebook.com/post/123/, facebook.com/post/123?utm_source=, etc.) and generates consistent SHA-256 hashes for cache keys. Include platform-specific normalization rules (removing tracking parameters, standardizing URL structure). Use crypto.createHash() with deterministic parameter sorting. Include comprehensive test coverage for edge cases like redirects, mobile URLs, and international domains.",
+        "testStrategy": "Unit tests for URL normalization edge cases, hash consistency tests across different input formats, integration tests with existing CacheManager.generateKey() method",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create URLNormalizer service with platform detection",
+            "description": "Implement URLNormalizer class that detects social media platforms and applies standardization rules",
+            "dependencies": [],
+            "details": "Create src/lib/services/URLNormalizer.ts with detectPlatform() method that identifies Facebook, Instagram, X/Twitter, LinkedIn, TikTok, and Threads URLs using regex patterns. Implement normalize() method that strips tracking parameters (utm_*, fbclid, etc.), removes trailing slashes, converts mobile URLs to desktop format, and standardizes protocol to https. Include comprehensive platform-specific URL patterns and validation logic.",
+            "status": "pending",
+            "testStrategy": "Unit tests for platform detection accuracy, URL standardization correctness across different input formats, mobile-to-desktop URL conversion validation"
+          },
+          {
+            "id": 2,
+            "title": "Implement platform-specific parameter filtering",
+            "description": "Create filtering logic to remove platform-specific tracking and irrelevant URL parameters",
+            "dependencies": [
+              1
+            ],
+            "details": "Extend URLNormalizer with platform-specific parameter filtering: Facebook (fbclid, ref, source), Instagram (igshid, hl), X/Twitter (s, t, ref_src), LinkedIn (trackingId, lipi), TikTok (is_copy_url, is_from_webapp), general tracking (utm_*, gclid). Implement deterministic parameter sorting for remaining valid parameters to ensure consistent URL ordering. Handle encoded parameters and special characters properly.",
+            "status": "pending",
+            "testStrategy": "Parameter filtering accuracy tests for each platform, deterministic sorting validation, encoded parameter handling tests"
+          },
+          {
+            "id": 3,
+            "title": "Implement SHA-256 hash generation for cache keys",
+            "description": "Create consistent hash generation system using crypto.createHash() for normalized URLs",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement generateCacheKey() method in URLNormalizer that creates SHA-256 hashes of normalized URLs. Use Node.js crypto.createHash('sha256') with UTF-8 encoding. Include platform prefix in hash input (e.g., 'facebook:normalized_url') to prevent cross-platform collisions. Implement deterministic JSON.stringify for complex objects and ensure consistent hash output for identical content across different input formats.",
+            "status": "pending",
+            "testStrategy": "Hash consistency tests across different URL formats, collision resistance validation, deterministic output verification for identical content"
+          },
+          {
+            "id": 4,
+            "title": "Handle edge cases for redirects and international domains",
+            "description": "Implement robust handling of URL redirects, international domains, and mobile variations",
+            "dependencies": [
+              3
+            ],
+            "details": "Extend URLNormalizer to handle redirect chains (follow up to 3 redirects), international domain variations (facebook.com vs m.facebook.com vs mobile.facebook.com), punycode domains for international characters, and special URL formats like shortened links. Implement timeout handling for redirect resolution and fallback strategies for unreachable URLs. Add support for locale-specific URL patterns (e.g., facebook.com/username vs facebook.com/profile.php?id=).",
+            "status": "pending",
+            "testStrategy": "Redirect chain handling tests, international domain normalization validation, mobile URL conversion accuracy tests, timeout and error handling verification"
+          },
+          {
+            "id": 5,
+            "title": "Integrate URLNormalizer with existing CacheManager",
+            "description": "Replace current cache key generation in CacheManager with URLNormalizer service",
+            "dependencies": [
+              4
+            ],
+            "details": "Refactor existing CacheManager.generateKey() method to use URLNormalizer service. Update Worker API endpoints to utilize normalized URLs for cache operations. Ensure backward compatibility with existing cache entries during transition. Add configuration options for enabling/disabling URL normalization. Update cache invalidation logic to work with normalized keys and implement cache key migration strategy for existing entries.",
+            "status": "pending",
+            "testStrategy": "Integration tests with CacheManager.set() and get() methods, backward compatibility validation, cache key migration verification, Worker API endpoint testing with normalized URLs"
+          }
+        ]
+      },
+      {
+        "id": 48,
+        "title": "Implement Platform-Specific TTL Configuration System",
+        "description": "Create a configurable TTL system that applies different cache durations based on social media platform characteristics",
+        "details": "Extend the existing CacheManager with platform-specific TTL configuration. Create PlatformTTLConfig interface with mappings: Facebook (24h), Instagram (12h), X/Twitter (6h), LinkedIn (48h), TikTok (24h), Threads (12h). Implement TTLResolver service that determines appropriate TTL based on platform and content type. Store configuration in Cloudflare KV for dynamic updates. Use CacheTTL enum as base values with platform multipliers.",
+        "testStrategy": "Unit tests for TTL calculation logic, integration tests with CacheManager.set(), configuration persistence tests in KV store",
+        "priority": "high",
+        "dependencies": [
+          47
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create PlatformTTLConfig interface and platform mapping types",
+            "description": "Define TypeScript interfaces for platform-specific TTL configuration with proper type safety",
+            "dependencies": [],
+            "details": "Create src/types/platform-ttl.ts with PlatformTTLConfig interface containing platform to TTL mappings (Facebook: 24h, Instagram: 12h, X: 6h, LinkedIn: 48h, TikTok: 24h, Threads: 12h). Define Platform enum and TTLMultiplier type. Include content type modifiers for posts vs media vs metadata.",
+            "status": "pending",
+            "testStrategy": "Unit tests for interface validation, type safety verification, and platform enum completeness"
+          },
+          {
+            "id": 2,
+            "title": "Implement TTLResolver service for platform-based cache duration calculation",
+            "description": "Create service class that calculates appropriate TTL values based on platform and content characteristics",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement src/services/TTLResolver.ts that extends base CacheTTL enum values with platform-specific multipliers. Include methods: calculateTTL(platform, contentType), getPlatformMultiplier(platform), and validateTTL(value). Handle edge cases for unknown platforms and invalid content types with fallback to default TTL.",
+            "status": "pending",
+            "testStrategy": "Unit tests for TTL calculation accuracy, edge case handling, and platform-specific multiplier application"
+          },
+          {
+            "id": 3,
+            "title": "Extend CacheManager with platform-aware TTL functionality",
+            "description": "Modify existing CacheManager to integrate TTLResolver and support platform-specific cache durations",
+            "dependencies": [
+              2
+            ],
+            "details": "Update src/services/CacheManager.ts to accept platform parameter in set() method. Integrate TTLResolver service for automatic TTL calculation. Maintain backward compatibility with existing TTL parameters. Add platform metadata to cache entries for debugging and monitoring.",
+            "status": "pending",
+            "testStrategy": "Integration tests with existing cache operations, backward compatibility verification, and platform metadata storage validation"
+          },
+          {
+            "id": 4,
+            "title": "Implement Cloudflare KV configuration storage for dynamic TTL updates",
+            "description": "Create system to store and retrieve platform TTL configuration from Cloudflare KV for runtime updates",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement src/services/TTLConfigStore.ts for KV-based configuration management. Include methods: loadConfig(), saveConfig(), and updatePlatformTTL(). Add configuration validation and fallback to default values when KV is unavailable. Implement cache invalidation when configuration changes.",
+            "status": "pending",
+            "testStrategy": "KV store persistence tests, configuration validation tests, fallback mechanism verification, and cache invalidation testing"
+          },
+          {
+            "id": 5,
+            "title": "Update Worker API endpoints to use platform-specific TTL system",
+            "description": "Integrate the new TTL system into Worker API cache operations for all supported platforms",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Update src/worker/handlers/*.ts to pass platform information to CacheManager.set() calls. Modify cache key generation to include platform context. Update error handling for TTL calculation failures. Add monitoring and logging for TTL effectiveness and cache hit rates per platform.",
+            "status": "pending",
+            "testStrategy": "End-to-end API testing with different platforms, cache effectiveness monitoring, error handling verification, and performance impact assessment"
+          }
+        ]
+      },
+      {
+        "id": 49,
+        "title": "Extend CachedArchiveData Interface for Post-Specific Metadata",
+        "description": "Enhance the cache data structure to include post-specific metadata required for the cache-based archiving feature",
+        "details": "Create CachedArchiveData interface extending existing CacheEntry<PostData> with additional fields: hitCount (number), isPublic (boolean), sourceUrl (string), platformSpecificTTL (number), originalCreditsUsed (number), cacheGeneration (string). Update serialization/deserialization in CacheManager to handle the extended interface. Ensure backward compatibility with existing cache entries through versioned schema migration.",
+        "testStrategy": "Schema validation tests, backward compatibility tests with existing cache entries, serialization roundtrip tests",
+        "priority": "medium",
+        "dependencies": [
+          47,
+          48
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create CachedArchiveData interface extending CacheEntry<PostData>",
+            "description": "Define a new TypeScript interface that extends the existing CacheEntry<PostData> with post-specific metadata fields required for cache-based archiving",
+            "dependencies": [],
+            "details": "Create CachedArchiveData interface in src/types/cache.ts that extends CacheEntry<PostData> with these additional fields: hitCount (number) for tracking cache access frequency, isPublic (boolean) for public sharing eligibility, sourceUrl (string) for original post URL, platformSpecificTTL (number) for platform-specific cache duration, originalCreditsUsed (number) for tracking archiving cost, and cacheGeneration (string) for versioning cache entries. Ensure type safety and proper inheritance from existing CacheEntry interface.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify interface compilation, type checking tests to ensure proper inheritance, and schema validation tests to confirm all required fields are present"
+          },
+          {
+            "id": 2,
+            "title": "Update CacheManager serialization for CachedArchiveData",
+            "description": "Modify the CacheManager's serialization methods to handle the extended CachedArchiveData interface fields",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the serializeEntry and deserializeEntry methods in src/services/CacheManager.ts to properly handle the new fields in CachedArchiveData. Modify the set() method to accept and store the additional metadata fields. Update the SerializedCacheEntry interface if needed to accommodate the new fields. Ensure the JSON serialization/deserialization handles all new fields correctly including proper type conversion for numbers, booleans, and strings.",
+            "status": "pending",
+            "testStrategy": "Serialization roundtrip tests to verify data integrity, unit tests for each new field type, and integration tests with KV store operations"
+          },
+          {
+            "id": 3,
+            "title": "Implement cache schema versioning system",
+            "description": "Create a versioning system to handle backward compatibility between old CacheEntry and new CachedArchiveData formats",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement a cache schema migration system in CacheManager that can detect legacy cache entries (version 1.0.0) and migrate them to the new CachedArchiveData format (version 2.0.0). Add a migration function that sets default values for new fields: hitCount=0, isPublic=false, sourceUrl from cache key, platformSpecificTTL from current TTL, originalCreditsUsed=1, cacheGeneration=Date.now().toString(). Update the deserializeEntry method to check schema version and apply migrations automatically.",
+            "status": "pending",
+            "testStrategy": "Backward compatibility tests with existing cache entries, migration validation tests, and version detection accuracy tests"
+          },
+          {
+            "id": 4,
+            "title": "Add CachedArchiveData factory methods",
+            "description": "Create utility methods for creating and updating CachedArchiveData instances with proper defaults and validation",
+            "dependencies": [
+              1
+            ],
+            "details": "Add static factory methods to CacheManager class: createCachedArchiveData() to create new instances with proper defaults, updateCachedArchiveData() to safely update existing instances, and validateCachedArchiveData() to ensure data integrity. Include methods like incrementHitCount(), setPublicStatus(), updateTTL(), and generateCacheGeneration(). Ensure all methods maintain type safety and include proper error handling for invalid inputs.",
+            "status": "pending",
+            "testStrategy": "Factory method validation tests, default value verification tests, and error handling tests for invalid inputs"
+          },
+          {
+            "id": 5,
+            "title": "Update CacheManager API methods for CachedArchiveData",
+            "description": "Modify existing CacheManager public methods to work with CachedArchiveData and provide new methods for post-specific operations",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Update the get(), set(), and has() methods to work with CachedArchiveData interface. Add new methods: getCachedPost() that returns CachedArchiveData, setCachedPost() that accepts PostData and metadata options, incrementPostHitCount() for usage tracking, setPostPublicStatus() for sharing control, and getPostCacheStats() for analytics. Update method signatures to include options for the new metadata fields and ensure all methods maintain backward compatibility with existing cache entries.",
+            "status": "pending",
+            "testStrategy": "API method integration tests, backward compatibility verification, and post-specific operation validation tests"
+          }
+        ]
+      },
+      {
+        "id": 50,
+        "title": "Create Cache Eligibility Service for Privacy Rules",
+        "description": "Implement a service that determines which posts can be cached based on privacy and legal considerations",
+        "details": "Develop CacheEligibilityService that checks: 1) Post visibility (public only), 2) Platform terms compliance, 3) Content type restrictions, 4) User opt-out preferences. Create rules engine with configurable policies stored in Cloudflare KV. Include content fingerprinting to detect deletion at source. Implement privacy-first approach with explicit consent tracking. Use platform-specific privacy APIs where available.",
+        "testStrategy": "Privacy rule validation tests, opt-out mechanism tests, content fingerprinting accuracy tests, compliance verification tests",
+        "priority": "high",
+        "dependencies": [
+          49
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 51,
+        "title": "Integrate Cache Check into ArchiveService Workflow",
+        "description": "Modify the existing ArchiveService to check cache before making BrightData API calls",
+        "details": "Update ArchiveService.archivePost() method to: 1) Generate cache key using URLNormalizer, 2) Check CacheManager for existing entry, 3) Validate cache eligibility and TTL, 4) Return cached data if valid, 5) Fall back to BrightData API if cache miss. Implement cache-hit progress reporting (instant 100% completion). Add cache status metadata to PostData response. Maintain existing error handling and progress callback patterns.",
+        "testStrategy": "Integration tests for cache hit/miss scenarios, progress callback validation tests, error handling preservation tests, performance benchmark tests",
+        "priority": "high",
+        "dependencies": [
+          50
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 52,
+        "title": "Implement Cache Population After Successful Archive",
+        "description": "Add cache storage logic after successful BrightData API responses",
+        "details": "Extend ArchiveService to populate cache after successful API calls: 1) Check cache eligibility post-response, 2) Store PostData in cache with platform-specific TTL, 3) Include metadata (hit count = 1, cache generation timestamp), 4) Handle compression for large responses, 5) Implement async cache writes to avoid blocking user response. Use fire-and-forget pattern for cache writes with error logging.",
+        "testStrategy": "Cache population verification tests, async write completion tests, error resilience tests, compression effectiveness tests",
+        "priority": "medium",
+        "dependencies": [
+          51
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 53,
+        "title": "Create Credit Consumption Logic for Cache Hits",
+        "description": "Implement zero-credit consumption for cache hits while maintaining credit tracking for fresh requests",
+        "details": "Modify CreditManager to handle cache-based scenarios: 1) Skip credit deduction for cache hits, 2) Maintain detailed logging of cache vs fresh requests, 3) Add cache_hit field to credit usage analytics, 4) Implement credit refund mechanism for immediate cache hits (edge case), 5) Update license validation to account for cache benefits. Preserve existing credit validation and enforcement logic.",
+        "testStrategy": "Credit consumption accuracy tests, cache hit credit exemption tests, analytics tracking validation, license compliance tests",
+        "priority": "medium",
+        "dependencies": [
+          52
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 54,
+        "title": "Design Cache Status UI Components",
+        "description": "Create Svelte 5 components to display cache status and options in the archive modal",
+        "details": "Develop CacheStatusIndicator.svelte component using Svelte 5 runes API: 1) Display cache status (📦 Cached, 🔍 Fresh, 🔄 Force Refresh), 2) Show cache age ('cached 2 hours ago'), 3) Credit cost indication (0 credits vs 1 credit), 4) Force refresh toggle option, 5) Responsive design with Tailwind CSS using Obsidian CSS variables. Implement state management with $state() runes for reactive updates.",
+        "testStrategy": "Component rendering tests, reactive state update tests, accessibility compliance tests, mobile responsiveness tests",
+        "priority": "medium",
+        "dependencies": [
+          53
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 55,
+        "title": "Implement Cache Pre-Check API Endpoint",
+        "description": "Create Cloudflare Workers endpoint to check cache status before initiating archive process",
+        "details": "Add /api/cache/check endpoint in workers: 1) Accept URL parameter, 2) Normalize URL and generate cache key, 3) Check KV store for cache entry, 4) Return cache status (hit/miss), cache age, and estimated credits, 5) Include force refresh option handling. Use Hono router with proper error handling, rate limiting, and CORS. Implement sub-100ms response time for optimal UX.",
+        "testStrategy": "API response time tests, cache status accuracy tests, edge case handling tests, rate limiting validation tests",
+        "priority": "medium",
+        "dependencies": [
+          54
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 56,
+        "title": "Add Cache Metrics and Analytics Dashboard",
+        "description": "Implement comprehensive cache performance tracking and admin analytics",
+        "details": "Create cache analytics system: 1) Track hit rates by platform, 2) Monitor cost savings calculations, 3) Measure cache storage utilization, 4) Record popular content (high hit count), 5) Generate cache effectiveness reports. Store metrics in Cloudflare Analytics Engine. Create admin dashboard component showing cache ROI, storage efficiency, and optimization recommendations using Chart.js or similar.",
+        "testStrategy": "Metrics accuracy validation tests, dashboard component tests, data visualization tests, performance impact assessment tests",
+        "priority": "low",
+        "dependencies": [
+          55
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 57,
+        "title": "Implement Cache Invalidation API and Webhook Support",
+        "description": "Create cache invalidation system for handling content deletion and copyright claims",
+        "details": "Develop cache invalidation infrastructure: 1) /api/cache/invalidate endpoint with pattern matching, 2) Webhook receivers for platform deletion notifications, 3) DMCA takedown request handling, 4) Bulk invalidation for user opt-outs, 5) Cache version bumping for schema changes. Implement authentication for admin operations using license key validation. Support regex, prefix, and exact match invalidation patterns.",
+        "testStrategy": "Invalidation pattern matching tests, webhook authentication tests, bulk operation performance tests, audit logging verification tests",
+        "priority": "medium",
+        "dependencies": [
+          56
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 58,
+        "title": "Create Cache Health Monitoring and Alerting System",
+        "description": "Implement proactive monitoring for cache performance and storage limits",
+        "details": "Build cache health monitoring: 1) Track KV storage quota usage, 2) Monitor cache hit rates and trends, 3) Alert on performance degradation, 4) Automated cache cleanup for expired entries, 5) Cost optimization recommendations. Use Cloudflare Workers Durable Objects for persistent monitoring state. Implement email alerts via SendGrid API for critical issues and weekly reports.",
+        "testStrategy": "Monitoring accuracy tests, alert triggering threshold tests, cleanup automation tests, cost calculation validation tests",
+        "priority": "low",
+        "dependencies": [
+          57
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 59,
+        "title": "Implement Cache Warming for Trending Content",
+        "description": "Create predictive cache warming system for viral and trending content",
+        "details": "Develop intelligent cache warming: 1) API integration with trending content APIs (Twitter Trends, Facebook Graph), 2) Scheduled Workers for proactive caching, 3) Machine learning model for trend prediction (optional), 4) Cost-benefit analysis for warming decisions, 5) Configurable warming rules per platform. Use Cloudflare Cron Triggers for scheduled warming jobs. Implement rate limiting to avoid overwhelming BrightData API.",
+        "testStrategy": "Trending content detection accuracy tests, warming job scheduling tests, cost-benefit calculation tests, rate limiting compliance tests",
+        "priority": "low",
+        "dependencies": [
+          58
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 60,
+        "title": "Add Cache Export/Import for Backup and Migration",
+        "description": "Implement cache backup and migration utilities for data preservation",
+        "details": "Create cache backup system: 1) Export cache entries to JSON format, 2) Import from backup files, 3) Cross-environment migration support, 4) Selective export by platform or date range, 5) Compression for large exports. Build CLI utilities using Node.js for admin operations. Include data integrity verification with checksums and schema validation during import/export operations.",
+        "testStrategy": "Export completeness tests, import data integrity tests, compression efficiency tests, schema migration validation tests",
+        "priority": "low",
+        "dependencies": [
+          59
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 61,
+        "title": "Create Cache Performance Optimization Engine",
+        "description": "Implement advanced cache optimization algorithms for maximum efficiency",
+        "details": "Build cache optimization engine: 1) LRU eviction for storage limit management, 2) Intelligent TTL adjustment based on access patterns, 3) Content-based compression optimization, 4) Geographic cache distribution (if using multiple KV stores), 5) A/B testing framework for cache strategies. Use machine learning algorithms for pattern recognition and optimization recommendations. Implement gradual rollout mechanisms for optimization changes.",
+        "testStrategy": "Optimization algorithm effectiveness tests, A/B testing framework validation, ML model accuracy tests, performance improvement measurement tests",
+        "priority": "low",
+        "dependencies": [
+          60
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 62,
+        "title": "Implement Cross-Platform Cache Sharing",
+        "description": "Create system for sharing cache across platforms when same content appears on multiple networks",
+        "details": "Develop cross-platform cache sharing: 1) Content fingerprinting for cross-platform detection, 2) Unified cache keys for identical content, 3) Platform-specific metadata preservation, 4) Cache linkage and reference counting, 5) Conflict resolution for platform differences. Use content hashing (SHA-256) of normalized text and media for fingerprinting. Implement careful platform-specific TTL management and eligibility rules.",
+        "testStrategy": "Content fingerprinting accuracy tests, cross-platform cache linkage tests, conflict resolution logic tests, TTL management validation tests",
+        "priority": "low",
+        "dependencies": [
+          61
+        ],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T05:01:45.699Z",
+      "updated": "2025-10-31T05:11:42.850Z",
       "description": "Tasks for master context"
     }
   }

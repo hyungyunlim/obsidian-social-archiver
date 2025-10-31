@@ -697,10 +697,10 @@ export class PostCardRenderer {
         .replace(/[^a-z0-9-]/g, '')  // Remove special characters
         .substring(0, 30);  // Limit length
 
-      // Upload local media files to R2 and get remote URLs
-      const remoteMedia = await this.uploadMediaFilesToR2(post.media, shareId, workerUrl);
+      // PHASE 1: Create share WITHOUT media first (for instant link)
+      const hasMedia = post.media && post.media.length > 0;
 
-      // Prepare full PostData for sharing
+      // Prepare PostData WITHOUT media for instant share creation
       const postData = {
         platform: post.platform,
         id: post.id,
@@ -718,7 +718,7 @@ export class PostCardRenderer {
           html: post.content.html,
           hashtags: post.content.hashtags
         },
-        media: remoteMedia, // Use uploaded remote media URLs
+        media: [], // Empty array for instant share creation - will update with media later
         metadata: {
           likes: post.metadata.likes,
           comments: post.metadata.comments,
@@ -796,9 +796,18 @@ export class PostCardRenderer {
 
       // Copy to clipboard
       await navigator.clipboard.writeText(shareUrl);
-      new Notice('✅ Published! Share link copied to clipboard.');
+      const mediaMessage = hasMedia ? ' (uploading images...)' : '';
+      new Notice(`✅ Published! Share link copied to clipboard.${mediaMessage}`);
 
       console.log('[PostCardRenderer] Share created:', { shareUrl, expiresAt: shareData.expiresAt });
+
+      // PHASE 2: Upload media in background and update share
+      if (hasMedia) {
+        this.uploadMediaAndUpdateShare(post, shareId, username, workerUrl, shareUrl).catch(err => {
+          console.error('[PostCardRenderer] Background media upload failed:', err);
+          new Notice('⚠️ Some images failed to upload');
+        });
+      }
 
     } catch (err) {
       console.error('[PostCardRenderer] Failed to create share:', err);
@@ -809,6 +818,85 @@ export class PostCardRenderer {
       shareBtn.style.cursor = 'pointer';
       shareBtn.style.color = 'var(--text-muted)';
     }
+  }
+
+  /**
+   * Upload media in background and update share
+   */
+  private async uploadMediaAndUpdateShare(
+    post: PostData,
+    shareId: string,
+    username: string,
+    workerUrl: string,
+    shareUrl: string
+  ): Promise<void> {
+    console.log('[PostCardRenderer] Starting background media upload for share:', shareId);
+
+    // Upload media files to R2
+    const remoteMedia = await this.uploadMediaFilesToR2(post.media, shareId, workerUrl);
+
+    // Prepare updated PostData with media
+    const postDataWithMedia = {
+      platform: post.platform,
+      id: post.id,
+      url: post.url,
+      videoId: post.videoId,
+      author: {
+        name: post.author.name,
+        url: post.author.url,
+        avatar: post.author.avatar,
+        handle: post.author.handle,
+        verified: post.author.verified
+      },
+      content: {
+        text: post.content.text,
+        html: post.content.html,
+        hashtags: post.content.hashtags
+      },
+      media: remoteMedia, // Now with uploaded media URLs
+      metadata: {
+        likes: post.metadata.likes,
+        comments: post.metadata.comments,
+        shares: post.metadata.shares,
+        views: post.metadata.views,
+        bookmarks: post.metadata.bookmarks,
+        timestamp: typeof post.metadata.timestamp === 'string'
+          ? post.metadata.timestamp
+          : post.metadata.timestamp.toISOString()
+      },
+      comments: post.comments || [],
+      title: post.title,
+      thumbnail: post.thumbnail,
+      archivedDate: post.archivedDate,
+      comment: post.comment,
+      like: post.like,
+      archive: post.archive
+    };
+
+    // Update share with media (same shareId will overwrite in KV)
+    const updateRequest = {
+      postData: postDataWithMedia,
+      options: {
+        expiry: Date.now() + (30 * 24 * 60 * 60 * 1000),
+        username: username,
+        shareId: shareId // Include shareId to overwrite existing share
+      }
+    };
+
+    const response = await fetch(`${workerUrl}/api/share`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateRequest),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Media update failed: ${response.statusText}`);
+    }
+
+    console.log('[PostCardRenderer] Media uploaded and share updated:', shareId);
+    new Notice('✅ Images uploaded successfully!');
   }
 
   /**
