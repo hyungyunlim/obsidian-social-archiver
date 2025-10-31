@@ -63,6 +63,7 @@ export class FilterPanel {
     this.renderDivider(this.panelEl);
     this.renderLikeFilter(this.panelEl, filterState, updateFilterButton);
     this.renderCommentFilter(this.panelEl, filterState, updateFilterButton);
+    this.renderSharedFilter(this.panelEl, filterState, updateFilterButton);
     this.renderArchiveFilter(this.panelEl, filterState, updateFilterButton);
 
     this.attachOutsideClickHandler();
@@ -278,6 +279,47 @@ export class FilterPanel {
       commentCheckIcon.style.display = newCommentedOnly ? 'block' : 'none';
 
       this.onFilterChangeCallback?.({ commentedOnly: newCommentedOnly });
+      this.onRerenderCallback?.();
+      updateFilterButton();
+    });
+  }
+
+  /**
+   * Render shared filter
+   */
+  private renderSharedFilter(panel: HTMLElement, filterState: FilterState, updateFilterButton: () => void): void {
+    const sharedOption = panel.createDiv();
+    sharedOption.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+      background: ${filterState.sharedOnly ? 'var(--background-modifier-hover)' : 'transparent'};
+    `;
+
+    const sharedIcon = sharedOption.createDiv();
+    sharedIcon.style.cssText = 'width: 16px; height: 16px; color: var(--text-accent);';
+    setIcon(sharedIcon, 'share-2');
+
+    const sharedLabel = sharedOption.createSpan({ text: 'Shared posts only' });
+    sharedLabel.style.cssText = 'font-size: 13px; flex: 1;';
+
+    const sharedCheckIcon = sharedOption.createDiv();
+    sharedCheckIcon.style.cssText = `width: 16px; height: 16px; display: ${filterState.sharedOnly ? 'block' : 'none'};`;
+    setIcon(sharedCheckIcon, 'check');
+
+    sharedOption.addEventListener('click', () => {
+      // Get latest filter state
+      const currentState = this.getFilterStateCallback?.() || filterState;
+      const newSharedOnly = !currentState.sharedOnly;
+      sharedOption.style.background = newSharedOnly ? 'var(--background-modifier-hover)' : 'transparent';
+      sharedCheckIcon.style.display = newSharedOnly ? 'block' : 'none';
+
+      this.onFilterChangeCallback?.({ sharedOnly: newSharedOnly });
       this.onRerenderCallback?.();
       updateFilterButton();
     });

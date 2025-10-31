@@ -7,6 +7,7 @@ export interface FilterState {
   platforms: Set<string>;
   likedOnly: boolean;
   commentedOnly: boolean;
+  sharedOnly: boolean;
   includeArchived: boolean;
   dateRange: { start: Date | null; end: Date | null };
 }
@@ -36,6 +37,7 @@ export class FilterSortManager {
       platforms: new Set<string>(['facebook', 'linkedin', 'instagram', 'tiktok', 'x', 'threads', 'youtube', 'reddit']),
       likedOnly: false,
       commentedOnly: false,
+      sharedOnly: false,
       includeArchived: false,
       dateRange: { start: null, end: null },
       ...initialFilterState
@@ -75,6 +77,11 @@ export class FilterSortManager {
     // Filter by commented only
     if (this.filterState.commentedOnly) {
       filtered = filtered.filter(post => post.comment && post.comment.trim().length > 0);
+    }
+
+    // Filter by shared only
+    if (this.filterState.sharedOnly) {
+      filtered = filtered.filter(post => post.shareUrl && post.shareUrl.trim().length > 0);
     }
 
     // Filter by archive status
