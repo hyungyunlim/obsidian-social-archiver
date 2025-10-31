@@ -2,6 +2,7 @@ export { ArchiveService } from './ArchiveService';
 export { MarkdownConverter } from './MarkdownConverter';
 export { MediaHandler } from './MediaHandler';
 export { VaultManager } from './VaultManager';
+export { VaultStorageService } from './VaultStorageService';
 export { ApiClient } from './ApiClient';
 export { ArchiveOrchestrator } from './ArchiveOrchestrator';
 export { ErrorHandler } from './ErrorHandler';
@@ -35,6 +36,12 @@ export type {
   VaultManagerConfig,
   SaveResult,
 } from './VaultManager';
+
+export type {
+  VaultStorageServiceConfig,
+  MediaSaveResult,
+  PostSaveResult,
+} from './VaultStorageService';
 
 export type {
   MediaHandlerConfig,
