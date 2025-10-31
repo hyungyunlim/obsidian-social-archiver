@@ -18,11 +18,29 @@ shareRouter.post('/', async (c) => {
     const request = CreateShareRequestSchema.parse(body);
 
     const shareId = generateShareId();
-    const shareData = {
-      ...request,
-      createdAt: Date.now(),
-      viewCount: 0
-    };
+
+    // Use postData if provided (new format), otherwise use legacy format
+    let shareData: any;
+    if (request.postData) {
+      // New format: Full PostData object
+      shareData = {
+        ...request.postData,
+        shareId,
+        createdAt: Date.now(),
+        viewCount: 0,
+        options: request.options
+      };
+    } else {
+      // Legacy format: content + metadata
+      shareData = {
+        content: request.content,
+        metadata: request.metadata,
+        shareId,
+        createdAt: Date.now(),
+        viewCount: 0,
+        options: request.options
+      };
+    }
 
     // Calculate expiration
     const ttl = request.options?.expiry
@@ -57,13 +75,13 @@ shareRouter.post('/', async (c) => {
       }
     }
 
-    // Generate share URL using current host
-    const host = new URL(c.req.url).origin;
+    // Generate share URL using share-web domain (not API domain)
+    const SHARE_WEB_URL = 'https://social-archive.junlim.org';
 
-    // Build share URL with username if provided
+    // Build share URL with username if provided (no /share/ prefix)
     const shareUrl = username
-      ? `${host}/share/${username}/${shareId}`
-      : `${host}/share/${shareId}`;
+      ? `${SHARE_WEB_URL}/${username}/${shareId}`
+      : `${SHARE_WEB_URL}/${shareId}`;
 
     const response: ShareResponse = {
       shareId,
@@ -126,15 +144,11 @@ shareRouter.get('/:shareId', async (c) => {
     `share:${shareId}`,
     JSON.stringify(shareData)
   );
-  
+
+  // Return full shareData (contains full PostData if available, or legacy content+metadata)
   return c.json({
     success: true,
-    data: {
-      content: shareData.content,
-      metadata: shareData.metadata,
-      createdAt: shareData.createdAt,
-      viewCount: shareData.viewCount
-    }
+    data: shareData
   });
 });
 

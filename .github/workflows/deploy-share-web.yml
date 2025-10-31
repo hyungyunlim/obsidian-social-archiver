@@ -1,0 +1,55 @@
+name: Deploy Share Web to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'share-web/**'
+      - '.github/workflows/deploy-share-web.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'share-web/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: share-web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: share-web
+        run: npm ci
+
+      - name: Run type check
+        working-directory: share-web
+        run: npm run check
+
+      - name: Build application
+        working-directory: share-web
+        run: npm run build
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: social-archiver-share
+          directory: share-web/build
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+          wranglerVersion: '3'

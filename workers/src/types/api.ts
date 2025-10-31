@@ -25,7 +25,11 @@ export interface ArchiveResponse {
 
 // Share API types
 export const CreateShareRequestSchema = z.object({
-  content: z.string(),
+  // Full post data (new format - preferred)
+  postData: z.any().optional(), // Full PostData object from plugin
+
+  // Legacy format (deprecated but still supported)
+  content: z.string().optional(),
   metadata: z.object({
     title: z.string(),
     platform: z.string(),
@@ -33,7 +37,8 @@ export const CreateShareRequestSchema = z.object({
     originalUrl: z.string(),
     tags: z.array(z.string()).optional(),
     thumbnail: z.string().optional()
-  }),
+  }).optional(),
+
   options: z.object({
     expiry: z.number().optional(), // Unix timestamp
     password: z.string().optional(),

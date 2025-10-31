@@ -46,6 +46,10 @@ export class FrontmatterGenerator {
       hasFormattedTranscript: postData.transcript?.formatted && postData.transcript.formatted.length > 0 ? true : undefined,
       videoId: postData.videoId,
       duration: postData.metadata.duration,
+      likes: postData.metadata.likes, // Engagement metrics
+      comments: postData.metadata.comments,
+      shares: postData.metadata.shares,
+      views: postData.metadata.views,
       tags: [
         `social/${postData.platform}`,
         ...(postData.ai?.topics || []).map(topic => `topic/${topic}`),

@@ -18,21 +18,11 @@ const QueryParamsSchema = z.object({
 	limit: z.coerce.number().int().positive().max(50).default(20)
 });
 
-interface UserPostMetadata {
-	shareId: string;
-	title: string;
-	platform: string;
-	author: string;
-	createdAt: number;
-	previewText?: string;
-	thumbnail?: string;
-}
-
 interface UserPostsResponse {
 	success: true;
 	data: {
 		username: string;
-		posts: UserPostMetadata[];
+		posts: any[]; // Full post data including all PostData fields
 		pagination: {
 			page: number;
 			limit: number;
@@ -76,8 +66,8 @@ userPostsRouter.get('/:username/posts', async (c) => {
 		const endIndex = startIndex + queryParams.limit;
 		const paginatedShareIds = shareIds.slice(startIndex, endIndex);
 
-		// Fetch metadata for each share ID (in parallel)
-		const postMetadataPromises = paginatedShareIds.map(async (shareId) => {
+		// Fetch full post data for each share ID (in parallel)
+		const postDataPromises = paginatedShareIds.map(async (shareId) => {
 			try {
 				const shareKey = `share:${shareId}`;
 				const shareData = await c.env.SHARE_LINKS.get(shareKey);
@@ -89,33 +79,24 @@ userPostsRouter.get('/:username/posts', async (c) => {
 
 				const share = JSON.parse(shareData);
 
-				// Extract metadata for timeline display
-				const metadata: UserPostMetadata = {
-					shareId,
-					title: share.metadata?.title || 'Untitled',
-					platform: share.metadata?.platform || 'unknown',
-					author: share.metadata?.author || username,
-					createdAt: share.createdAt || Date.now(),
-					previewText: share.content
-						? share.content.substring(0, 200).replace(/\s+/g, ' ').trim()
-						: undefined,
-					thumbnail: share.metadata?.thumbnail || undefined
+				// Return full share data (which contains full PostData if using new format)
+				return {
+					...share,
+					shareId // Ensure shareId is included
 				};
-
-				return metadata;
 			} catch (error) {
 				logger.error(`Error fetching share ${shareId}`, { error, shareId });
 				return null;
 			}
 		});
 
-		const postMetadataResults = await Promise.all(postMetadataPromises);
+		const postDataResults = await Promise.all(postDataPromises);
 
 		// Filter out null results (failed fetches)
-		const posts = postMetadataResults.filter((post): post is UserPostMetadata => post !== null);
+		const posts = postDataResults.filter((post): post is any => post !== null);
 
 		// Sort by creation date (newest first)
-		posts.sort((a, b) => b.createdAt - a.createdAt);
+		posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
 		const response: UserPostsResponse = {
 			success: true,

@@ -23,12 +23,15 @@ export class SocialArchiverSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Display name')
-      .setDesc('Your name for comments (shown as "Name commented on this post")')
+      .setDesc('Your name for comments and sharing posts')
       .addText(text => text
         .setPlaceholder('You')
         .setValue(this.plugin.settings.userName)
         .onChange(async (value) => {
           this.plugin.settings.userName = value || 'You';
+          // Auto-generate username from display name (temporary until proper signup)
+          const cleanUsername = (value || 'You').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+          this.plugin.settings.username = cleanUsername;
           await this.plugin.saveSettings();
         }));
 

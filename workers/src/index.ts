@@ -26,7 +26,7 @@ app.use('*', requestIdMiddleware);
 app.use('*', timing());
 app.use('*', loggingMiddleware);
 
-// CORS configuration for Obsidian
+// CORS configuration for Obsidian and Share Web
 app.use('*', cors({
   origin: [
     'app://obsidian.md',
@@ -35,7 +35,9 @@ app.use('*', cors({
     'http://localhost',
     'http://localhost:*',
     'https://localhost',
-    'https://localhost:*'
+    'https://localhost:*',
+    'https://social-archive.junlim.org',  // Share Web frontend
+    'https://obsidian-social-archiver.pages.dev'  // Cloudflare Pages preview
   ],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-License-Key'],

@@ -37,6 +37,10 @@ export interface YamlFrontmatter {
   hasFormattedTranscript?: boolean; // YouTube: has formatted transcript with timestamps
   videoId?: string; // YouTube video ID
   duration?: number; // YouTube video duration in seconds
+  likes?: number; // Engagement metrics
+  comments?: number;
+  shares?: number;
+  views?: number;
   tags: string[];
   ai_summary?: string;
   sentiment?: string;

@@ -60,6 +60,18 @@ export interface PostContent {
 }
 
 /**
+ * Comment structure
+ */
+export interface Comment {
+	id: string;
+	author: Author;
+	content: string;
+	timestamp?: string;
+	likes?: number;
+	replies?: Comment[];
+}
+
+/**
  * Post data (compatible with Workers API)
  */
 export interface Post {
@@ -77,6 +89,7 @@ export interface Post {
 	content: PostContent;
 	media: Media[];
 	metadata: PostMetadata;
+	comments?: Comment[]; // Post comments
 
 	// Legacy/compatibility fields
 	title?: string; // Derived from content or author

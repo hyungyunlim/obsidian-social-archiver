@@ -50,7 +50,7 @@ export function generatePostMetaTags(
 		post.media.find(m => m.type === 'image')?.url;
 
 	// Construct URLs
-	const postUrl = `${baseUrl}/share/${username}/${post.shareId}`;
+	const postUrl = `${baseUrl}/${username}/${post.shareId}`;
 
 	return {
 		title: `${title} - Social Archiver`,
@@ -87,7 +87,7 @@ export function generateTimelineMetaTags(
 		? `View ${postCount} archived posts from @${username} on Social Archiver`
 		: `View @${username}'s archived social media posts on Social Archiver`;
 
-	const timelineUrl = `${baseUrl}/share/${username}`;
+	const timelineUrl = `${baseUrl}/${username}`;
 
 	return {
 		title: `${title} - Social Archiver`,
@@ -117,7 +117,7 @@ export function generatePostStructuredData(
 	username: string,
 	baseUrl: string = 'https://share.social-archiver.com'
 ): Record<string, any> {
-	const postUrl = `${baseUrl}/share/${username}/${post.shareId}`;
+	const postUrl = `${baseUrl}/${username}/${post.shareId}`;
 
 	return {
 		'@context': 'https://schema.org',

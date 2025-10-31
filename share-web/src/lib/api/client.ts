@@ -5,7 +5,7 @@
  * Includes error handling, retry logic, and timeout management
  */
 
-import type { UserPostsResponse, PostResponse } from '$lib/types';
+import type { UserPostsResponse, PostResponse, Post } from '$lib/types';
 
 /**
  * API Client configuration
@@ -167,23 +167,32 @@ function transformPostData(apiData: any): Post {
     platform: apiData.platform || apiData.metadata?.platform || 'x',
     id: apiData.id || apiData.shareId || '',
     url: apiData.url || apiData.metadata?.originalUrl || '',
+    videoId: apiData.videoId,
     author: {
       name: apiData.author?.name || apiData.metadata?.author || 'Unknown',
-      url: apiData.author?.url || ''
+      url: apiData.author?.url || '',
+      avatar: apiData.author?.avatar,
+      handle: apiData.author?.handle,
+      verified: apiData.author?.verified
     },
     content: {
       text: typeof apiData.content === 'string' ? apiData.content : apiData.content?.text || apiData.previewText || '',
-      html: apiData.content?.html
+      html: apiData.content?.html,
+      hashtags: apiData.content?.hashtags
     },
     media: apiData.media || [],
     metadata: {
       timestamp: apiData.metadata?.timestamp || apiData.createdAt || new Date().toISOString(),
       likes: apiData.metadata?.likes,
       comments: apiData.metadata?.comments,
-      shares: apiData.metadata?.shares
+      shares: apiData.metadata?.shares,
+      views: apiData.metadata?.views,
+      bookmarks: apiData.metadata?.bookmarks
     },
+    comments: apiData.comments || [], // IMPORTANT: Include comments array
     title: apiData.title || apiData.metadata?.title,
     previewText: apiData.previewText,
+    thumbnail: apiData.thumbnail,
     createdAt: apiData.createdAt
   };
 

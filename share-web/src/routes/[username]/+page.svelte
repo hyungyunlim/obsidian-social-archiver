@@ -56,6 +56,8 @@
 			emptyMessage="No posts have been shared yet."
 			gridLayout="single"
 			showShareButtons={false}
+			username={data.username}
+			enableNavigation={true}
 		/>
 	</main>
 </div>
@@ -95,7 +97,7 @@
 	/* Dark mode */
 	@media (prefers-color-scheme: dark) {
 		.page-container {
-			background-color: #111827;
+			background-color: var(--background-primary);
 		}
 
 		.page-header {

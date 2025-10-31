@@ -56,7 +56,7 @@
 <div class="page-container">
 	<div class="content-wrapper">
 		<header class="breadcrumb">
-			<a href="/share/{data.username}" class="back-link">
+			<a href="/{data.username}" class="back-link">
 				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M15 18l-6-6 6-6" />
 				</svg>
@@ -74,7 +74,7 @@
 					<p>Post not found</p>
 				</div>
 			{:else}
-				<PostCard post={data.post} showShareButton={false} />
+				<PostCard post={data.post} showShareButton={false} username={data.username} />
 			{/if}
 		</main>
 	</div>
@@ -137,20 +137,20 @@
 	/* Dark mode */
 	@media (prefers-color-scheme: dark) {
 		.page-container {
-			background-color: #111827;
+			background-color: var(--background-primary);
 		}
 
 		.empty-state {
-			background-color: #1f2937;
-			color: #9ca3af;
+			background-color: var(--background-secondary);
+			color: var(--text-muted);
 		}
 
 		.back-link {
-			color: #9ca3af;
+			color: var(--text-muted);
 		}
 
 		.back-link:hover {
-			color: #60a5fa;
+			color: var(--interactive-accent);
 		}
 	}
 

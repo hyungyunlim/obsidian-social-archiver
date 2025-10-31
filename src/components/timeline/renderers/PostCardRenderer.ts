@@ -1,5 +1,5 @@
 import { setIcon, Notice, Scope, type TFile, type Vault, type App } from 'obsidian';
-import type { PostData } from '../../../types/post';
+import type { PostData, Media } from '../../../types/post';
 import type SocialArchiverPlugin from '../../../main';
 import {
   siFacebook,
@@ -620,36 +620,41 @@ export class PostCardRenderer {
 
     // Check if already shared
     const isShared = !!(post as any).shareUrl;
-    shareBtn.setAttribute('title', isShared ? 'Already published' : 'Publish to web');
+    const shareUrl = (post as any).shareUrl;
+
+    // Set tooltip
+    shareBtn.setAttribute('title', isShared ? 'Shared - Click to unshare' : 'Share this post to the web');
 
     const shareIcon = shareBtn.createDiv();
     shareIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
-    setIcon(shareIcon, 'share-2');
 
-    // Set initial state
+    // Use different icons for shared vs unshared state
     if (isShared) {
+      setIcon(shareIcon, 'link');
       shareBtn.style.color = 'var(--interactive-accent)';
     } else {
-      shareBtn.addEventListener('mouseenter', () => {
-        shareBtn.style.color = 'var(--interactive-accent)';
-      });
-      shareBtn.addEventListener('mouseleave', () => {
-        shareBtn.style.color = 'var(--text-muted)';
-      });
+      setIcon(shareIcon, 'share-2');
+      shareBtn.style.color = 'var(--text-muted)';
     }
+
+    // Hover effects
+    shareBtn.addEventListener('mouseenter', () => {
+      shareBtn.style.color = 'var(--interactive-accent)';
+    });
+    shareBtn.addEventListener('mouseleave', () => {
+      shareBtn.style.color = isShared ? 'var(--interactive-accent)' : 'var(--text-muted)';
+    });
 
     // Share button click handler
     shareBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
 
-      if (isShared) {
-        // Copy share URL to clipboard
-        const shareUrl = (post as any).shareUrl;
-        await navigator.clipboard.writeText(shareUrl);
-        new Notice('Share link copied to clipboard!');
-      } else {
+      if (isShared && shareUrl) {
+        // Click to unshare
+        await this.unsharePost(post, shareBtn, shareIcon);
+      } else if (!isShared) {
         // Create new share
-        await this.createShare(post, shareBtn);
+        await this.createShare(post, shareBtn, shareIcon);
       }
     });
   }
@@ -657,7 +662,7 @@ export class PostCardRenderer {
   /**
    * Create share link for post
    */
-  private async createShare(post: PostData, shareBtn: HTMLElement): Promise<void> {
+  private async createShare(post: PostData, shareBtn: HTMLElement, shareIcon: HTMLElement): Promise<void> {
     try {
       const filePath = (post as any).filePath;
       if (!filePath) {
@@ -683,32 +688,58 @@ export class PostCardRenderer {
 
       // Generate share ID first
       const shareId = this.generateShareId();
-      const workerUrl = 'https://social-archiver-api.junlim.org';
+      const workerUrl = this.plugin.settings.workerUrl || 'https://social-archiver-api.junlim.org';
 
-      // Prepare content for sharing (remove YAML and H1)
-      let shareContent = this.removeYamlFrontmatter(originalContent);
-      shareContent = this.removeFirstH1(shareContent);
+      // Generate username from display name (temporary until proper signup)
+      const displayName = this.plugin.settings.userName || 'anonymous';
+      const username = displayName.toLowerCase()
+        .replace(/\s+/g, '-')  // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, '')  // Remove special characters
+        .substring(0, 30);  // Limit length
 
-      // Upload local images to R2 and replace paths
-      if (post.media && post.media.length > 0) {
-        shareContent = await this.uploadLocalImagesAndReplaceUrls(shareContent, shareId, workerUrl);
-      }
+      // Upload local media files to R2 and get remote URLs
+      const remoteMedia = await this.uploadMediaFilesToR2(post.media, shareId, workerUrl);
 
-      // Extract username from plugin settings for user timeline indexing
-      const username = this.plugin.settings.userName || 'anonymous';
-
-      // Create share request in Worker-expected format
-      const shareRequest = {
-        content: shareContent,
-        metadata: {
-          title: tfile.basename,
-          platform: post.platform,
-          author: post.author.name,
-          originalUrl: post.url,
-          username: username  // Add username for user timeline indexing
+      // Prepare full PostData for sharing
+      const postData = {
+        platform: post.platform,
+        id: post.id,
+        url: post.url,
+        videoId: post.videoId,
+        author: {
+          name: post.author.name,
+          url: post.author.url,
+          avatar: post.author.avatar,
+          handle: post.author.handle,
+          verified: post.author.verified
         },
+        content: {
+          text: post.content.text,
+          html: post.content.html,
+          hashtags: post.content.hashtags
+        },
+        media: remoteMedia, // Use uploaded remote media URLs
+        metadata: {
+          likes: post.metadata.likes,
+          comments: post.metadata.comments,
+          shares: post.metadata.shares,
+          views: post.metadata.views,
+          bookmarks: post.metadata.bookmarks,
+          timestamp: typeof post.metadata.timestamp === 'string'
+            ? post.metadata.timestamp
+            : post.metadata.timestamp.toISOString()
+        },
+        comments: post.comments || [],
+        title: post.title,
+        thumbnail: post.thumbnail
+      };
+
+      // Create share request with full post data
+      const shareRequest = {
+        postData,
         options: {
-          expiry: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days for free tier
+          expiry: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days for free tier
+          username: username  // Username for URL generation
         }
       };
 
@@ -733,6 +764,7 @@ export class PostCardRenderer {
       }
 
       const shareData = result.data;
+      // Use shareUrl from Worker API response (already points to share-web)
       const shareUrl = shareData.shareUrl;
 
       // Update YAML frontmatter in ORIGINAL content (preserves all existing fields)
@@ -746,15 +778,21 @@ export class PostCardRenderer {
       // Update post object
       (post as any).shareUrl = shareUrl;
 
-      // Update UI
+      // Update UI to show shared state
       shareBtn.style.opacity = '1';
       shareBtn.style.cursor = 'pointer';
       shareBtn.style.color = 'var(--interactive-accent)';
-      shareBtn.setAttribute('title', 'Already published');
+      shareBtn.setAttribute('title', 'Shared - Click to copy link');
+
+      // Update icon to link icon
+      const shareIcon = shareBtn.querySelector('div');
+      if (shareIcon) {
+        setIcon(shareIcon as HTMLElement, 'link');
+      }
 
       // Copy to clipboard
       await navigator.clipboard.writeText(shareUrl);
-      new Notice('Published! Share link copied to clipboard.');
+      new Notice('✅ Published! Share link copied to clipboard.');
 
       console.log('[PostCardRenderer] Share created:', { shareUrl, expiresAt: shareData.expiresAt });
 
@@ -766,6 +804,94 @@ export class PostCardRenderer {
       shareBtn.style.opacity = '1';
       shareBtn.style.cursor = 'pointer';
       shareBtn.style.color = 'var(--text-muted)';
+    }
+  }
+
+  /**
+   * Unshare post - delete from Worker API and remove from YAML
+   */
+  private async unsharePost(post: PostData, shareBtn: HTMLElement, shareIcon: HTMLElement): Promise<void> {
+    try {
+      const filePath = (post as any).filePath;
+      if (!filePath) {
+        new Notice('Cannot unshare: file path not found');
+        return;
+      }
+
+      const file = this.vault.getAbstractFileByPath(filePath);
+      if (!file || !('extension' in file)) {
+        new Notice('Cannot unshare: file not found');
+        return;
+      }
+
+      const tfile = file as TFile;
+      const shareUrl = (post as any).shareUrl;
+
+      if (!shareUrl) {
+        new Notice('Post is not shared');
+        return;
+      }
+
+      // Extract shareId from URL
+      // URL format: https://social-archive.junlim.org/username/shareId
+      const shareId = shareUrl.split('/').pop();
+      if (!shareId) {
+        new Notice('Invalid share URL');
+        return;
+      }
+
+      // Show loading state
+      shareBtn.style.opacity = '0.5';
+      shareBtn.style.cursor = 'wait';
+
+      // Delete from Worker API
+      const workerUrl = this.plugin.settings.workerUrl || 'https://social-archiver-api.junlim.org';
+      const licenseKey = this.plugin.settings.licenseKey || '';
+
+      const response = await fetch(`${workerUrl}/api/share/${shareId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-License-Key': licenseKey
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[PostCardRenderer] Unshare API error:', errorData);
+        throw new Error(`Unshare failed: ${response.statusText}`);
+      }
+
+      // Read file content
+      const content = await this.vault.read(tfile);
+
+      // Remove share-related fields from YAML frontmatter
+      const updatedContent = this.removeShareFromYaml(content);
+      await this.vault.modify(tfile, updatedContent);
+
+      // Update post object
+      delete (post as any).shareUrl;
+
+      // Update UI to show unshared state
+      shareBtn.style.opacity = '1';
+      shareBtn.style.cursor = 'pointer';
+      shareBtn.style.color = 'var(--text-muted)';
+      shareBtn.setAttribute('title', 'Share this post to the web');
+
+      // Update icon to share icon
+      setIcon(shareIcon, 'share-2');
+
+      new Notice('✅ Post unshared successfully');
+
+      console.log('[PostCardRenderer] Post unshared:', shareId);
+
+    } catch (err) {
+      console.error('[PostCardRenderer] Failed to unshare:', err);
+      new Notice('Failed to unshare post');
+
+      // Reset button state
+      shareBtn.style.opacity = '1';
+      shareBtn.style.cursor = 'pointer';
     }
   }
 
@@ -1332,6 +1458,35 @@ export class PostCardRenderer {
   }
 
   /**
+   * Remove share-related fields from YAML frontmatter
+   */
+  private removeShareFromYaml(content: string): string {
+    const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
+    const match = content.match(frontmatterRegex);
+
+    if (!match || !match[1]) {
+      // No frontmatter, nothing to remove
+      return content;
+    }
+
+    const frontmatterContent = match[1];
+    const restContent = content.slice(match[0].length);
+
+    // Parse existing frontmatter and remove share-related keys
+    const lines = frontmatterContent.split('\n');
+    const shareKeys = ['share', 'shareUrl', 'shareExpiry'];
+    const filteredLines = lines.filter(line => {
+      const keyMatch = line.match(/^(\w+):/);
+      if (keyMatch && keyMatch[1]) {
+        return !shareKeys.includes(keyMatch[1]);
+      }
+      return true;
+    });
+
+    return `---\n${filteredLines.join('\n')}\n---\n${restContent}`;
+  }
+
+  /**
    * Get platform-specific Simple Icon
    * Returns null for LinkedIn (not available in simple-icons)
    */
@@ -1720,6 +1875,92 @@ export class PostCardRenderer {
       binary += String.fromCharCode(bytes[i] as number);
     }
     return btoa(binary);
+  }
+
+  /**
+   * Upload local media files to R2 and return updated media array with remote URLs
+   */
+  private async uploadMediaFilesToR2(media: Media[], shareId: string, workerUrl: string): Promise<Media[]> {
+    const updatedMedia: Media[] = [];
+
+    for (const mediaItem of media) {
+      // Skip if URL is already remote (http/https)
+      if (mediaItem.url.startsWith('http://') || mediaItem.url.startsWith('https://')) {
+        updatedMedia.push(mediaItem);
+        continue;
+      }
+
+      try {
+        // Get the file from vault
+        const mediaFile = this.vault.getAbstractFileByPath(mediaItem.url);
+        if (!mediaFile || !('extension' in mediaFile)) {
+          console.warn('[PostCardRenderer] Media file not found:', mediaItem.url);
+          // Keep original media item even if file not found
+          updatedMedia.push(mediaItem);
+          continue;
+        }
+
+        // Read media as binary
+        const mediaBuffer = await this.vault.readBinary(mediaFile as TFile);
+
+        // Convert to base64
+        const base64 = this.arrayBufferToBase64(mediaBuffer);
+
+        // Extract filename
+        const filename = mediaItem.url.split('/').pop() || 'media';
+
+        // Determine content type from extension
+        const ext = filename.split('.').pop()?.toLowerCase();
+        const contentType = ext === 'png' ? 'image/png' :
+                           ext === 'gif' ? 'image/gif' :
+                           ext === 'webp' ? 'image/webp' :
+                           ext === 'mp4' ? 'video/mp4' :
+                           ext === 'webm' ? 'video/webm' :
+                           ext === 'mov' ? 'video/quicktime' : 'image/jpeg';
+
+        // Upload to Worker
+        const uploadResponse = await fetch(`${workerUrl}/api/upload-share-media`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            shareId,
+            filename,
+            contentType,
+            data: base64
+          })
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('[PostCardRenderer] Media upload failed:', errorData);
+          // Keep original media item on upload failure
+          updatedMedia.push(mediaItem);
+          continue;
+        }
+
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.success && uploadResult.data?.url) {
+          // Update media item with remote URL
+          updatedMedia.push({
+            ...mediaItem,
+            url: uploadResult.data.url,
+            thumbnail: uploadResult.data.url // Use same URL for thumbnail
+          });
+        } else {
+          console.error('[PostCardRenderer] Invalid upload response:', uploadResult);
+          // Keep original media item
+          updatedMedia.push(mediaItem);
+        }
+      } catch (err) {
+        console.error('[PostCardRenderer] Error uploading media:', mediaItem.url, err);
+        // Keep original media item on error
+        updatedMedia.push(mediaItem);
+      }
+    }
+
+    return updatedMedia;
   }
 
   /**

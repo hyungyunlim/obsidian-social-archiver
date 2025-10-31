@@ -89,10 +89,11 @@ export class PostDataParser {
         media: mediaUrls.map(url => ({ type: 'image' as const, url })),
         metadata: {
           timestamp: new Date(frontmatter.published || frontmatter.archived || file.stat.ctime),
-          likes: metadata.likes,
-          comments: metadata.comments,
-          shares: metadata.shares,
-          views: metadata.views,
+          // Prefer YAML frontmatter values, fallback to markdown footer parsing
+          likes: (frontmatter as any).likes ?? metadata.likes,
+          comments: (frontmatter as any).comments ?? metadata.comments,
+          shares: (frontmatter as any).shares ?? metadata.shares,
+          views: (frontmatter as any).views ?? metadata.views,
         },
         comments: comments.length > 0 ? comments : undefined,
       };
@@ -158,7 +159,8 @@ export class PostDataParser {
     const metadata: { likes?: number; comments?: number; shares?: number; views?: number } = {};
 
     // Find metadata footer: **Likes:** 6 | **Comments:** 3 | **Shares:** 1
-    const metadataRegex = /\*\*Likes:\*\*\s*(\d+)|\*\*Comments:\*\*\s*(\d+)|\*\*Shares:\*\*\s*(\d+)|\*\*Views:\*\*\s*(\d+)/g;
+    // Also support LinkedIn format: **Reactions:** 163
+    const metadataRegex = /\*\*(?:Likes|Reactions):\*\*\s*(\d+)|\*\*Comments:\*\*\s*(\d+)|\*\*Shares:\*\*\s*(\d+)|\*\*Views:\*\*\s*(\d+)/g;
 
     let match;
     while ((match = metadataRegex.exec(markdown)) !== null) {

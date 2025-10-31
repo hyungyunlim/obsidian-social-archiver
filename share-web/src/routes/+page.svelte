@@ -22,7 +22,7 @@
 		<div class="info-box">
 			<p>Welcome to Social Archiver Share!</p>
 			<p class="muted">To view someone's timeline, visit:</p>
-			<code class="url-example">/share/[username]</code>
+			<code class="url-example">/[username]</code>
 		</div>
 
 		<div class="features">

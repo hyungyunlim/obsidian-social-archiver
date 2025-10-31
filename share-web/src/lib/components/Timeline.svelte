@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Post } from '$lib/types';
 	import PostCard from './PostCard.svelte';
+	import { goto } from '$app/navigation';
 
 	interface Props {
 		posts: Post[];
@@ -8,6 +9,8 @@
 		emptyMessage?: string;
 		gridLayout?: 'single' | 'masonry' | 'grid';
 		showShareButtons?: boolean;
+		username?: string;
+		enableNavigation?: boolean;
 	}
 
 	let {
@@ -15,7 +18,9 @@
 		loading = false,
 		emptyMessage = 'No posts to display',
 		gridLayout = 'single',
-		showShareButtons = true
+		showShareButtons = true,
+		username,
+		enableNavigation = false
 	}: Props = $props();
 
 	// Filter and sort posts
@@ -26,6 +31,18 @@
 			return dateB.getTime() - dateA.getTime(); // Newest first
 		})
 	);
+
+	// Handle card click navigation
+	function handleCardClick(post: Post) {
+		if (!enableNavigation || !post.shareId) return;
+
+		// Navigate to post detail page
+		if (username) {
+			goto(`/${username}/${post.shareId}`);
+		} else {
+			goto(`/${post.shareId}`);
+		}
+	}
 </script>
 
 <div class="timeline-container" data-layout={gridLayout}>
@@ -55,7 +72,12 @@
 		<div class="posts-grid">
 			{#each sortedPosts as post (post.shareId)}
 				<div class="post-wrapper">
-					<PostCard {post} showShareButton={showShareButtons} />
+					<PostCard
+						{post}
+						showShareButton={showShareButtons}
+						{username}
+						onCardClick={enableNavigation ? handleCardClick : undefined}
+					/>
 				</div>
 			{/each}
 		</div>

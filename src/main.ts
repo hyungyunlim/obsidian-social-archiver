@@ -108,6 +108,16 @@ export default class SocialArchiverPlugin extends Plugin {
 
   async loadSettings(): Promise<void> {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+    // Auto-generate username from userName if not set or is default
+    if (!this.settings.username || this.settings.username === 'you') {
+      const displayName = this.settings.userName || 'You';
+      this.settings.username = displayName.toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .substring(0, 30);
+      await this.saveData(this.settings);
+    }
   }
 
   async saveSettings(): Promise<void> {
