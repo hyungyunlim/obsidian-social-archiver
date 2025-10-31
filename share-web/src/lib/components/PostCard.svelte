@@ -529,7 +529,7 @@
 	}
 
 	.card-content {
-		padding: 0.875rem 1.25rem; /* Reduced top/bottom padding from 1rem */
+		padding: 0.75rem 1.25rem; /* Further reduced top/bottom padding */
 	}
 
 	.card-content.clickable {
@@ -567,7 +567,7 @@
 
 	/* Header */
 	.post-header {
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.25rem; /* Reduced from 0.5rem */
 	}
 
 	.author-link {
@@ -583,7 +583,7 @@
 	.author-name {
 		color: var(--text-normal);
 		display: inline-block;
-		margin-bottom: 0.125rem;
+		margin-bottom: 0; /* Removed margin */
 		font-size: var(--font-size-md);
 		font-weight: 600;
 		max-width: calc(100% - 3rem);
@@ -596,12 +596,12 @@
 		font-size: var(--font-size-sm);
 		color: var(--text-muted);
 		display: block;
-		margin-top: 0.125rem;
+		margin-top: 0.0625rem; /* Reduced from 0.125rem */
 	}
 
 	/* Content */
 	.post-content {
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.5rem; /* Reduced from 0.75rem */
 	}
 
 	.content-text {
@@ -615,7 +615,7 @@
 	.see-more-btn {
 		font-size: var(--font-size-sm);
 		color: var(--text-muted);
-		margin-top: 0.375rem;
+		margin-top: 0.25rem; /* Reduced from 0.375rem */
 		display: inline-block;
 		padding: 0;
 		background: transparent;
@@ -816,8 +816,8 @@
 		display: flex;
 		align-items: center;
 		gap: 1.25rem;
-		margin-top: 0.75rem;
-		padding-top: 0.75rem;
+		margin-top: 0.5rem; /* Reduced from 0.75rem */
+		padding-top: 0.5rem; /* Reduced from 0.75rem */
 		border-top: 1px solid var(--background-modifier-border);
 		color: var(--text-muted);
 		flex-wrap: wrap;
@@ -921,7 +921,7 @@
 	/* Mobile optimizations */
 	@media (max-width: 640px) {
 		.card-content {
-			padding: 0.75rem 1rem; /* Reduced for mobile */
+			padding: 0.625rem 1rem; /* Further reduced for mobile */
 		}
 
 		.nested-header {
@@ -956,8 +956,8 @@
 		.interactions {
 			gap: 1rem;
 			font-size: var(--font-size-sm);
-			padding-top: 0.625rem;
-			margin-top: 0.625rem;
+			padding-top: 0.375rem; /* Further reduced for mobile */
+			margin-top: 0.375rem; /* Further reduced for mobile */
 		}
 
 		.author-name {
