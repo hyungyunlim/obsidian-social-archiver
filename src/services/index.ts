@@ -67,10 +67,12 @@ export type {
 } from './URLExpander';
 
 export type {
-  LinkPreview,
   ExtractionOptions,
   ExtractionResult,
 } from './LinkPreviewExtractor';
+
+// LinkPreview is defined in types/post.ts
+export type { LinkPreview } from '../types/post';
 
 export type {
   GumroadClientConfig,
