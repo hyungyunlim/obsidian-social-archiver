@@ -3931,7 +3931,7 @@
         "dependencies": [
           69
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -3939,7 +3939,7 @@
             "description": "Create the main VaultStorageService class with methods for generating proper file paths for posts and media files according to the specified folder structure.",
             "dependencies": [],
             "details": "Create src/services/VaultStorageService.ts with generateFilePath() method that implements 'Social Archives/Posts/{YYYY}/{MM}/{YYYY-MM-DD-HHMMSS}.md' structure for posts and 'attachments/social-archives/post/{YYYY-MM-DD}/' for images. Include proper date formatting using moment.js or native Date methods, and ensure path sanitization for cross-platform compatibility.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for path generation with various date inputs, verify folder structure creation logic, test path sanitization for special characters"
           },
           {
@@ -3950,7 +3950,7 @@
               1
             ],
             "details": "Implement savePost(postData: PostData) method that uses Vault.createFolder() to ensure directory structure exists, then Vault.create() to save the markdown file. Handle existing folder scenarios gracefully, implement proper error handling for permission issues, and ensure atomic operations to prevent partial file creation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test folder creation when directories don't exist, verify file saving with various post data, test error handling for permission failures and disk space issues"
           },
           {
@@ -3961,7 +3961,7 @@
               1
             ],
             "details": "Create saveMedia(mediaUrl: string, postId: string, mediaType: string) method that downloads media files using fetch/axios, saves them to 'attachments/social-archives/post/{YYYY-MM-DD}/' with sanitized filenames, and returns the local file path. Implement file type validation, size limits, and progress tracking for large files.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test media download and storage, verify file naming conventions, test handling of large files and unsupported formats, validate size limit enforcement"
           },
           {
@@ -3973,7 +3973,7 @@
               3
             ],
             "details": "Create generateYamlFrontmatter(postData: PostData) method that generates proper YAML with platform, archived date, share settings, and metadata. Implement comprehensive error handling for VaultError, TFile creation failures, quota exceeded scenarios, and permission issues. Add user-friendly error messages and retry mechanisms where appropriate.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test YAML frontmatter generation with various post data, verify error handling for different Vault API failure scenarios, test retry mechanisms and user feedback"
           }
         ]
@@ -4370,7 +4370,7 @@
         "description": "Resolve TypeError in hot-update.js:56 that prevents all vitest tests from running by fixing the @sveltejs/vite-plugin-svelte configuration or downgrading from v6.2.1.",
         "details": "Investigate the root cause of the TypeError: Cannot convert undefined or null to object in hot-update.js:56 that occurs when running vitest tests. First, attempt to fix the vitest.config.ts configuration by: 1) Adding proper environment configuration (environment: 'jsdom' or 'happy-dom'), 2) Configuring globals: true for vitest, 3) Adding proper test file patterns, 4) Ensuring @sveltejs/vite-plugin-svelte is configured correctly with hot module replacement disabled for test environment. If configuration fixes don't work, downgrade @sveltejs/vite-plugin-svelte from v6.2.1 to a stable version (try v4.x or v5.x range). Update package.json dependencies and run npm install. Ensure the downgrade doesn't break other functionality in the SvelteKit application. Document the specific version compatibility issue for future reference.",
         "testStrategy": "Run 'npm run test' or 'vitest' command to verify all tests execute without the TypeError. Test the new MarkdownEditor component tests specifically to ensure they run successfully. Verify that the SvelteKit development server still works correctly after any version changes. Run the build process to ensure no regression in production builds. Test hot module replacement in development mode to confirm it works properly.",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           2,
           28
@@ -4381,7 +4381,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T09:20:41.599Z",
+      "updated": "2025-10-31T12:24:41.095Z",
       "description": "Tasks for master context"
     }
   }

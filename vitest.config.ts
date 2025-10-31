@@ -4,11 +4,17 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [
-    svelte({
-      compilerOptions: {
-        runes: true
-      }
-    })
+    {
+      ...svelte({
+        hot: false,
+        emitCss: false,
+        compilerOptions: {
+          runes: true
+        }
+      }),
+      // Override configureServer to prevent the hot-update error
+      configureServer: undefined
+    }
   ],
   test: {
     globals: true,
