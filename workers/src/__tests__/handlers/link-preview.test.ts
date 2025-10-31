@@ -711,3 +711,248 @@ describe('extractMetadata', () => {
     expect(metadata.title).toBe('example.com');
   });
 });
+
+describe('Error Handling and Response Formatting', () => {
+  let app: Hono;
+  let mockEnv: Partial<Bindings>;
+
+  beforeEach(() => {
+    app = new Hono();
+
+    // Mock logger middleware
+    app.use('*', async (c, next) => {
+      c.set('logger', mockLogger);
+      await next();
+    });
+
+    app.route('/api/link-preview', linkPreviewRouter);
+
+    // Add error handler
+    app.onError(errorHandler);
+
+    mockEnv = {};
+
+    mockFetch.mockReset();
+    vi.useRealTimers();
+  });
+
+  describe('POST /api/link-preview error scenarios', () => {
+    it('should return 400 for private IP URL', async () => {
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'http://192.168.1.1/test' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      expect(res.status).toBe(400);
+
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error).toBeDefined();
+      expect(json.error.message).toContain('private IP');
+    });
+
+    it('should return 400 for invalid URL scheme', async () => {
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'ftp://example.com' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      expect(res.status).toBe(400);
+
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error.message).toContain('scheme');
+    });
+
+    it('should return 400 when HTML fetch times out', async () => {
+      // Mock AbortError immediately to simulate timeout
+      const abortError = new Error('Request timeout after 5000ms');
+      abortError.name = 'AbortError';
+      mockFetch.mockRejectedValueOnce(abortError);
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://slow-site.com' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      expect(res.status).toBe(400);
+
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error).toBeDefined();
+    });
+
+    it('should return 400 for non-HTML content type', async () => {
+      const headers = new Headers();
+      headers.set('content-type', 'application/pdf');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers,
+        text: async () => 'PDF content',
+      });
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com/document.pdf' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      expect(res.status).toBe(400);
+
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error.message).toContain('content type');
+    });
+
+    it('should return 400 for 404 pages', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        headers: new Headers(),
+      });
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com/not-found' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      expect(res.status).toBe(400);
+
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error.message).toContain('404');
+    });
+
+    it('should return 400 for network errors', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://unreachable-site.com' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      expect(res.status).toBe(400);
+
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error).toBeDefined();
+    });
+  });
+
+  describe('Successful response formatting', () => {
+    it('should return standardized success response with all metadata fields', async () => {
+      const mockHtml = `
+        <html>
+          <head>
+            <meta property="og:title" content="Test Article" />
+            <meta property="og:description" content="A great article" />
+            <meta property="og:image" content="https://example.com/image.jpg" />
+            <meta property="og:site_name" content="Example" />
+            <link rel="icon" href="/favicon.ico" />
+            <title>Test</title>
+          </head>
+        </html>
+      `;
+
+      const headers = new Headers();
+      headers.set('content-type', 'text/html');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers,
+        text: async () => mockHtml,
+      });
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com/article' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      expect(res.status).toBe(200);
+
+      const json = await res.json();
+      expect(json).toMatchObject({
+        success: true,
+        data: {
+          url: 'https://example.com/article',
+          title: 'Test Article',
+          description: 'A great article',
+          image: 'https://example.com/image.jpg',
+          siteName: 'Example',
+          favicon: 'https://example.com/favicon.ico'
+        }
+      });
+    });
+
+    it('should return success response with fallback values for missing metadata', async () => {
+      const mockHtml = '<html><head><title>Simple Page</title></head><body></body></html>';
+
+      const headers = new Headers();
+      headers.set('content-type', 'text/html');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers,
+        text: async () => mockHtml,
+      });
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com' })
+      });
+
+      const res = await app.request(req, mockEnv);
+      expect(res.status).toBe(200);
+
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.title).toBe('Simple Page');
+      expect(json.data.siteName).toBe('example.com');
+      expect(json.data.favicon).toBe('https://example.com/favicon.ico');
+      expect(json.data.description).toBeUndefined();
+      expect(json.data.image).toBeUndefined();
+    });
+
+    it('should include Content-Type header in response', async () => {
+      const mockHtml = '<html><head><title>Test</title></head></html>';
+      const headers = new Headers();
+      headers.set('content-type', 'text/html');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers,
+        text: async () => mockHtml,
+      });
+
+      const req = new Request('http://localhost/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com' })
+      });
+
+      const res = await app.request(req, mockEnv);
+
+      const contentType = res.headers.get('content-type');
+      expect(contentType).toContain('application/json');
+    });
+  });
+});
