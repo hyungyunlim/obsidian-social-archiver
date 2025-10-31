@@ -586,6 +586,7 @@
 		margin-bottom: 0; /* Removed margin */
 		font-size: var(--font-size-md);
 		font-weight: 600;
+		line-height: 1.2; /* Reduced line-height for tighter spacing */
 		max-width: calc(100% - 3rem);
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -596,7 +597,8 @@
 		font-size: var(--font-size-sm);
 		color: var(--text-muted);
 		display: block;
-		margin-top: 0.0625rem; /* Reduced from 0.125rem */
+		margin-top: 0; /* Removed margin for tighter spacing */
+		line-height: 1.2; /* Reduced line-height */
 	}
 
 	/* Content */
