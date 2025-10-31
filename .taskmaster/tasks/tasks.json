@@ -2290,7 +2290,7 @@
           41,
           42
         ],
-        "status": "deferred",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -2300,7 +2300,7 @@
               41
             ],
             "details": "Create SkeletonCard.svelte component with animated placeholder blocks for image, title, description, and domain. Use CSS animations with shimmer effect. Implement progressive enhancement where basic URL text is shown immediately, then skeleton appears during loading, finally replaced with full metadata. Add skeleton variants for different card layouts (with/without image). Follow existing loading patterns from share-web components and maintain mobile-responsive design.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Visual regression tests for skeleton states, test progressive enhancement flow from URL to skeleton to loaded state, verify animations work smoothly across devices"
           },
           {
@@ -2311,7 +2311,7 @@
               1
             ],
             "details": "Implement CSS transitions for smooth state changes between URL display, skeleton loading, and full preview card. Add timeout handling (5-10 seconds) for metadata fetching with graceful fallback to basic URL display. Create loading state management using Svelte 5 stores with states: 'initial', 'loading', 'loaded', 'error', 'timeout'. Add fade-in animations using CSS transitions when metadata loads successfully. Ensure loading indicators don't block user interaction and provide clear visual feedback.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test transition smoothness across different devices, verify timeout behavior with slow network conditions, test error state handling, validate accessibility of loading states"
           }
         ]
@@ -3531,7 +3531,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T07:08:05.022Z",
+      "updated": "2025-10-31T07:32:52.830Z",
       "description": "Tasks for master context"
     }
   }

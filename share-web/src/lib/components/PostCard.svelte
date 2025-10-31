@@ -2,6 +2,7 @@
 	import type { Post, LinkPreview } from '$lib/types';
 	import PlatformIcon from './PlatformIcon.svelte';
 	import LinkPreviewCard from './LinkPreviewCard.svelte';
+	import SkeletonCard from './SkeletonCard.svelte';
 	import { fetchLinkPreviewsMetadata } from '$lib/api/client';
 	import { marked } from 'marked';
 
@@ -179,8 +180,18 @@
 
 			const urls = post.linkPreviews.map(lp => lp.url);
 
+			// Set timeout for metadata fetching (10 seconds)
+			const timeoutId = setTimeout(() => {
+				if (loadingPreviews) {
+					console.warn('[PostCard] Link preview metadata fetch timeout');
+					loadingPreviews = false;
+					previewError = true;
+				}
+			}, 10000);
+
 			fetchLinkPreviewsMetadata(urls)
 				.then(metadata => {
+					clearTimeout(timeoutId);
 					linkPreviewsMetadata = metadata;
 					loadingPreviews = false;
 
@@ -189,10 +200,14 @@
 					}
 				})
 				.catch(error => {
+					clearTimeout(timeoutId);
 					console.error('[PostCard] Failed to fetch link previews:', error);
 					previewError = true;
 					loadingPreviews = false;
 				});
+
+			// Cleanup function to clear timeout on component unmount
+			return () => clearTimeout(timeoutId);
 		}
 	});
 
@@ -437,11 +452,21 @@
 		{/if}
 
 		<!-- Link Previews (only when no images) -->
-		{#if shouldShowLinkPreviews}
+		{#if visibleImages.length === 0 && post.linkPreviews && post.linkPreviews.length > 0}
 			<div class="link-previews-section">
-				{#each linkPreviewsMetadata as preview (preview.url)}
-					<LinkPreviewCard {preview} mode="card" />
-				{/each}
+				{#if loadingPreviews}
+					<!-- Show skeleton while loading -->
+					{#each post.linkPreviews as _ (Math.random())}
+						<SkeletonCard mode="card" />
+					{/each}
+				{:else if shouldShowLinkPreviews}
+					<!-- Show actual preview cards with fade-in -->
+					{#each linkPreviewsMetadata as preview (preview.url)}
+						<div class="preview-card-wrapper">
+							<LinkPreviewCard {preview} mode="card" />
+						</div>
+					{/each}
+				{/if}
 			</div>
 		{/if}
 
@@ -904,6 +929,29 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+	}
+
+	/* Preview card wrapper with fade-in animation */
+	.preview-card-wrapper {
+		animation: preview-fade-in 0.3s ease-in;
+	}
+
+	@keyframes preview-fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Accessibility - Reduce motion */
+	@media (prefers-reduced-motion: reduce) {
+		.preview-card-wrapper {
+			animation: none;
+		}
 	}
 
 	.media-container {
