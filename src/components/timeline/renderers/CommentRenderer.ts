@@ -1,13 +1,28 @@
 import type { Comment } from '../../../types/post';
 
+import type { Platform } from '../../../types/post';
+
 /**
  * CommentRenderer - Renders Instagram-style comments section
  * Single Responsibility: Comments rendering with replies
  */
 export class CommentRenderer {
+  private platform?: Platform;
+
   constructor(
     private getRelativeTimeCallback?: (date: Date) => string
   ) {}
+
+  /**
+   * Fix Reddit comment author URL if empty
+   */
+  private fixRedditAuthorUrl(comment: Comment): string {
+    if (this.platform === 'reddit' && (!comment.author.url || comment.author.url === '')) {
+      const username = comment.author.username || comment.author.name;
+      return `https://www.reddit.com/user/${username}`;
+    }
+    return comment.author.url;
+  }
 
   /**
    * Format relative time (e.g., "2h ago", "Yesterday", "Mar 15")
@@ -48,7 +63,8 @@ export class CommentRenderer {
   /**
    * Render comments section (Instagram style)
    */
-  render(container: HTMLElement, comments: Comment[]): void {
+  render(container: HTMLElement, comments: Comment[], platform?: Platform): void {
+    this.platform = platform; // Store platform for URL generation
     const commentsContainer = container.createDiv();
     commentsContainer.style.cssText = 'margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--background-modifier-border);';
 
@@ -115,10 +131,13 @@ export class CommentRenderer {
     // Use author.name for display (e.g., "Charlie Moon" for LinkedIn)
     usernameSpan.setText(comment.author.name);
 
-    if (comment.author.url) {
+    // Fix Reddit author URL if empty
+    const authorUrl = this.fixRedditAuthorUrl(comment);
+
+    if (authorUrl) {
       usernameSpan.addEventListener('click', (e) => {
         e.stopPropagation();
-        window.open(comment.author.url, '_blank');
+        window.open(authorUrl, '_blank');
       });
       usernameSpan.addEventListener('mouseenter', () => {
         usernameSpan.style.textDecoration = 'underline';

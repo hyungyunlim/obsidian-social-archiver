@@ -240,7 +240,7 @@ export class PostCardRenderer {
 
     // Comments section (Instagram style)
     if (post.comments && post.comments.length > 0) {
-      this.commentRenderer.render(contentArea, post.comments);
+      this.commentRenderer.render(contentArea, post.comments, post.platform);
     }
 
     return rootElement;
