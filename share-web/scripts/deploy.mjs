@@ -41,12 +41,13 @@ const log = {
 
 function exec(command, options = {}) {
   try {
-    return execSync(command, {
+    execSync(command, {
       stdio: 'inherit',
       ...options
     });
+    return true; // Return true on success
   } catch (error) {
-    return null;
+    return false; // Return false on failure
   }
 }
 
@@ -159,13 +160,23 @@ async function deploySvelteKit(force = false) {
   // Deploy to Cloudflare Pages
   log.info('Deploying to Cloudflare Pages...');
   const deployDate = new Date().toISOString().replace('T', ' ').split('.')[0];
+
+  // Ensure we're in the correct directory
+  const currentDir = process.cwd();
+  if (!currentDir.endsWith('share-web')) {
+    process.chdir(CONFIG.shareWebPath);
+  }
+
   const deployCommand = `npx wrangler pages deploy .svelte-kit/cloudflare --project-name="${CONFIG.projectName}" --commit-dirty=true --commit-message="Deploy: ${deployDate}"`;
 
   if (exec(deployCommand)) {
     log.success('SvelteKit app deployed successfully');
     return true;
   } else {
-    log.error('Deployment failed');
+    log.error('Deployment to Cloudflare Pages failed');
+    log.warning('You can try deploying manually with:');
+    console.log(`  cd ${CONFIG.shareWebPath}`);
+    console.log(`  ${deployCommand}`);
     return false;
   }
 }
@@ -254,6 +265,10 @@ async function main() {
   }
 
   log.success('\n✨ Deployment complete!');
+
+  // Return success status
+  const success = workerDeployed || svelteKitDeployed || (!workerOnly && !pagesOnly);
+  process.exit(success ? 0 : 1);
 }
 
 // Run the script

@@ -104,6 +104,8 @@ if has_changes "$SHARE_WEB_PATH/src" || has_changes "$SHARE_WEB_PATH/package.jso
 
         # Deploy to Cloudflare Pages
         echo "Deploying to Cloudflare Pages..."
+        # Ensure we're in the share-web directory
+        cd "$SHARE_WEB_PATH"
         npx wrangler pages deploy .svelte-kit/cloudflare \
             --project-name="$PROJECT_NAME" \
             --commit-dirty=true \
