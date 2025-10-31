@@ -12,6 +12,16 @@
 
 	let { post, showShareButton = true, username, onCardClick }: Props = $props();
 
+	// Debug logging to check if comment is received
+	$effect(() => {
+		console.log('[PostCard] Received post data:', {
+			username,
+			comment: post.comment,
+			like: post.like,
+			archive: post.archive
+		});
+	});
+
 	// Get archive time (when user originally archived this post)
 	const archiveTime = $derived(
 		!post.archivedDate ? '' : getRelativeTime(
@@ -37,8 +47,39 @@
 		return text.replace(/!\[.*?\]\(.*?\)/g, '').trim();
 	}
 
+	// Process hashtags in text - convert to clickable links
+	function processHashtags(text: string, platform: string): string {
+		const hashtagPattern = /(#[\w\u0080-\uFFFF]+)/g;
+
+		// Get platform-specific hashtag URL
+		const getHashtagUrl = (hashtag: string): string => {
+			const tag = hashtag.replace('#', '');
+			const urlMap: Record<string, string> = {
+				instagram: `https://www.instagram.com/explore/tags/${tag}/`,
+				x: `https://twitter.com/hashtag/${tag}`,
+				twitter: `https://twitter.com/hashtag/${tag}`,
+				facebook: `https://www.facebook.com/hashtag/${tag}`,
+				linkedin: `https://www.linkedin.com/feed/hashtag/${tag}/`,
+				tiktok: `https://www.tiktok.com/tag/${tag}`,
+				threads: `https://www.threads.net/tag/${tag}`,
+				youtube: `https://www.youtube.com/hashtag/${tag}`,
+				reddit: `https://www.reddit.com/search/?q=${encodeURIComponent(hashtag)}`
+			};
+			return urlMap[platform.toLowerCase()] || `https://www.google.com/search?q=${encodeURIComponent(hashtag)}`;
+		};
+
+		return text.replace(hashtagPattern, (match) => {
+			const url = getHashtagUrl(match);
+			// Return markdown link with hashtag class for styling
+			return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="hashtag-link" onclick="event.stopPropagation()">${match}</a>`;
+		});
+	}
+
 	// Get clean content without image markdown
 	const cleanContent = $derived(removeImageMarkdown(post.content.text || ''));
+
+	// Process hashtags in content
+	const contentWithHashtags = $derived(processHashtags(cleanContent, post.platform));
 
 	// Content truncation logic (500 chars like timeline)
 	const previewLength = 500;
@@ -46,7 +87,7 @@
 
 	// Smart preview truncation - don't cut markdown links in half
 	const truncatedContent = $derived.by(() => {
-		if (!needsTruncation) return cleanContent;
+		if (!needsTruncation) return contentWithHashtags;
 
 		let preview = cleanContent.substring(0, previewLength);
 
@@ -59,12 +100,13 @@
 			preview = cleanContent.substring(0, lastOpenBracket);
 		}
 
-		return preview + '...';
+		// Process hashtags after truncation
+		return processHashtags(preview + '...', post.platform);
 	});
 
 	// Parse markdown content
 	const displayContent = $derived(
-		marked.parse(expanded ? cleanContent : truncatedContent) as string
+		marked.parse(expanded ? contentWithHashtags : truncatedContent) as string
 	);
 
 	// Get image media only
@@ -429,12 +471,19 @@
 		<!-- Nested header outside the card -->
 		<div class="nested-header">
 			<span class="nested-text">
-				<strong>{username}</strong> saved this post
+				<strong>{username}</strong> {post.comment ? 'commented on' : 'saved'} this post
 				{#if archiveTime}
-					<span class="nested-time"> · Archived {archiveTime}</span>
+					<span class="nested-time"> · {archiveTime}</span>
 				{/if}
 			</span>
 		</div>
+
+		<!-- User's comment (if exists) -->
+		{#if post.comment}
+			<div class="user-comment">
+				{post.comment}
+			</div>
+		{/if}
 
 		<!-- The actual post card -->
 		<article
@@ -484,6 +533,17 @@
 	.nested-time {
 		color: var(--text-faint);
 		font-size: var(--font-size-sm);
+	}
+
+	/* User's personal comment */
+	.user-comment {
+		font-size: var(--font-size-base);
+		line-height: 1.5;
+		color: var(--text-normal);
+		margin-bottom: 0.75rem;
+		padding: 0;
+		word-break: break-word;
+		white-space: pre-wrap;
 	}
 
 	/* Card Container - Only bottom border between posts */
@@ -856,6 +916,19 @@
 
 	.share-button:hover {
 		color: var(--interactive-accent);
+	}
+
+	/* Inline hashtag links */
+	:global(.hashtag-link) {
+		color: var(--interactive-accent);
+		font-weight: 500;
+		text-decoration: none;
+		transition: all 0.2s;
+	}
+
+	:global(.hashtag-link:hover) {
+		text-decoration: underline;
+		opacity: 0.8;
 	}
 
 	/* Comments Section */

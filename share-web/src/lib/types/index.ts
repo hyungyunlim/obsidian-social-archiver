@@ -91,6 +91,11 @@ export interface Post {
 	metadata: PostMetadata;
 	comments?: Comment[]; // Post comments
 
+	// User's personal data
+	comment?: string; // User's personal comment/note
+	like?: boolean; // User's personal like status
+	archive?: boolean; // Archive status
+
 	// Archive timestamps
 	archivedDate?: Date; // When user archived this post
 	publishedDate?: Date; // When post was originally published

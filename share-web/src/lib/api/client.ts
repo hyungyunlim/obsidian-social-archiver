@@ -190,6 +190,9 @@ function transformPostData(apiData: any): Post {
       bookmarks: apiData.metadata?.bookmarks
     },
     comments: apiData.comments || [], // IMPORTANT: Include comments array
+    comment: apiData.comment, // User's personal comment/note
+    like: apiData.like, // User's personal like status
+    archive: apiData.archive, // Archive status
     title: apiData.title || apiData.metadata?.title,
     previewText: apiData.previewText,
     thumbnail: apiData.thumbnail,

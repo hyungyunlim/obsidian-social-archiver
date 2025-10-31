@@ -2932,6 +2932,19 @@
         "complexity": 8,
         "recommendedSubtasks": 8,
         "expansionPrompt": "Organize into optimization and testing categories: bundle size optimization and lazy loading implementation, Lighthouse performance audit and improvements, comprehensive test suite setup (unit, integration, E2E), accessibility compliance verification, SEO optimization with sitemap generation, error boundary implementation, cross-browser testing, and performance monitoring setup."
+      },
+      {
+        "id": 36,
+        "title": "Implement Secure Share Deletion with Delete Tokens",
+        "description": "Replace insecure license key-based share deletion with proper token-based authentication using unique delete tokens stored in YAML frontmatter.",
+        "details": "Generate unique delete tokens (UUID v4) when creating shares and store them in YAML frontmatter alongside shareUrl. Update ShareService.createShare() to generate deleteToken field and include it in frontmatter. Modify Worker API DELETE /api/share/:shareId endpoint to authenticate using delete token from request headers (X-Delete-Token) instead of license key validation. Update PostCardRenderer.unsharePost() method to extract deleteToken from post frontmatter and include it in API request headers. Implement proper error handling for missing/invalid delete tokens with clear user feedback. Add token validation logic in workers/src/handlers/share.ts with secure comparison (crypto.timingSafeEqual). Update ShareResponse interface to include deleteToken field. Ensure backward compatibility by supporting both old license-based and new token-based deletion during transition period.",
+        "testStrategy": "Unit tests for delete token generation and validation logic. Integration tests for DELETE endpoint with valid/invalid tokens. Test PostCardRenderer unshare functionality with new token authentication. Verify tokens are properly stored in and retrieved from YAML frontmatter. Test error handling for missing delete tokens. Security testing to ensure tokens cannot be guessed or brute-forced. Test backward compatibility with existing shares.",
+        "status": "pending",
+        "dependencies": [
+          23
+        ],
+        "priority": "high",
+        "subtasks": []
       }
     ],
     "metadata": {
@@ -2944,7 +2957,7 @@
       ],
       "created": "2025-10-30T15:03:00.327Z",
       "description": "Tasks for master context",
-      "updated": "2025-10-30T15:20:15.400Z"
+      "updated": "2025-10-31T02:52:32.136Z"
     }
   }
 }

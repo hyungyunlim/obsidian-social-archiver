@@ -732,7 +732,10 @@ export class PostCardRenderer {
         comments: post.comments || [],
         title: post.title,
         thumbnail: post.thumbnail,
-        archivedDate: post.archivedDate // Include archive timestamp
+        archivedDate: post.archivedDate, // Include archive timestamp
+        comment: post.comment, // Include user's personal comment/note
+        like: post.like, // Include user's personal like status
+        archive: post.archive // Include archive status
       };
 
       // Create share request with full post data
@@ -847,7 +850,11 @@ export class PostCardRenderer {
 
       // Delete from Worker API
       const workerUrl = this.plugin.settings.workerUrl || 'https://social-archiver-api.junlim.org';
-      const licenseKey = this.plugin.settings.licenseKey || '';
+      // TODO: Implement proper authentication for delete operations
+      // Current implementation just checks if any license key exists, not validating it
+      // Proper solution: Generate a delete token when creating shares and use that for auth
+      // Use a dummy license key if none is configured (temporary fix)
+      const licenseKey = this.plugin.settings.licenseKey || 'free-user';
 
       const response = await fetch(`${workerUrl}/api/share/${shareId}`, {
         method: 'DELETE',
