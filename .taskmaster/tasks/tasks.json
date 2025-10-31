@@ -3671,7 +3671,7 @@
         "dependencies": [
           65
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -3679,7 +3679,7 @@
             "description": "Create the base MarkdownEditor component file with Tiptap editor initialization and basic structure",
             "dependencies": [],
             "details": "Create src/components/editor/MarkdownEditor.svelte following korean-grammar-svelte patterns. Initialize Tiptap Editor instance with basic configuration, set up component props for content and onChange handlers, implement proper Svelte 5 runes for state management, and establish the component's basic HTML structure with proper editor container.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Test component initialization, verify Tiptap editor renders correctly, validate props are handled properly"
           },
           {
@@ -3690,7 +3690,7 @@
               1
             ],
             "details": "Install and configure @tiptap/starter-kit and @tiptap/extension-markdown extensions. Set up tiptap-markdown for proper Markdown serialization and deserialization. Configure extension options for proper HTML to Markdown conversion, ensure proper heading, list, and formatting support, and implement bidirectional content transformation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test Markdown serialization/deserialization accuracy, verify all StarterKit features work correctly, validate round-trip conversion"
           },
           {
@@ -3701,7 +3701,7 @@
               2
             ],
             "details": "Configure @tiptap/extension-link for auto-link detection with proper URL validation. Implement character counting with CharacterCount extension, set up 10,000 character limit enforcement, add visual feedback for approaching limit, and prevent input when limit is reached. Include proper error handling for invalid URLs.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test auto-link detection for various URL formats, verify character limit enforcement, validate visual feedback for character count"
           },
           {
@@ -3712,7 +3712,7 @@
               3
             ],
             "details": "Override default clipboard behavior to serialize editor content as Markdown when copying. Implement custom paste handling to preserve Markdown formatting, handle rich text paste conversion to Markdown, and ensure proper clipboard integration with the Markdown extension. Add support for copying selected portions as Markdown.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test clipboard copy serialization to Markdown format, verify paste handling preserves formatting, validate partial selection copying"
           },
           {
@@ -3723,7 +3723,7 @@
               4
             ],
             "details": "Configure editor with spellcheck=false to prevent browser spell checking interference. Add content validation for Markdown syntax, implement error highlighting for malformed content, add placeholder text support with @tiptap/extension-placeholder, and integrate proper focus management and accessibility features.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify spellcheck is disabled, test placeholder functionality, validate content validation rules, confirm accessibility features"
           }
         ]
@@ -4367,7 +4367,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T08:59:28.046Z",
+      "updated": "2025-10-31T09:10:01.649Z",
       "description": "Tasks for master context"
     }
   }
