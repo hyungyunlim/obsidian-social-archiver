@@ -4520,7 +4520,7 @@
         "subtasks": []
       },
       {
-        "id": "83",
+        "id": 83,
         "title": "Implement Platform-Specific Media Upload Service",
         "description": "Create media upload service with platform-specific optimizations for Instagram, TikTok, Facebook, LinkedIn, X, Threads, YouTube, and Reddit",
         "status": "pending",
@@ -4662,28 +4662,13 @@
         "subtasks": []
       },
       {
-        "id": 85,
-        "title": "Implement Enhanced Share API Endpoint",
-        "description": "Extend Worker API share endpoint to handle platform-specific media uploads with proper ordering and metadata",
-        "details": "Modify POST /api/share endpoint to accept mediaFiles array with platform, index, and contentType properties. Implement platform-aware media processing and R2 upload logic. Add proper response structure with mediaUrls array maintaining upload order. Include error handling for media upload failures and implement proper HTTP status codes.",
-        "testStrategy": "API integration tests for each platform's media upload. Test media ordering, error responses, and proper R2 integration. Load testing for concurrent uploads. Test malformed request handling.",
-        "priority": "medium",
-        "dependencies": [
-          84
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
         "id": 86,
         "title": "Implement Credit Management and Validation",
         "description": "Add credit checking and consumption logic for archive+share operations with proper UI feedback",
         "details": "Implement credit validation before enabling share toggle. Add credit consumption (1 credit per archive+share). Update credit display in modal with real-time remaining count. Implement credit check API integration and handle insufficient credits gracefully. Add upgrade prompt UI when credits are depleted.",
         "testStrategy": "Unit tests for credit validation logic. Test credit consumption and rollback on failures. Integration tests with credit API. Test UI behavior with different credit levels (0, low, sufficient).",
         "priority": "medium",
-        "dependencies": [
-          85
-        ],
+        "dependencies": [],
         "status": "pending",
         "subtasks": []
       },

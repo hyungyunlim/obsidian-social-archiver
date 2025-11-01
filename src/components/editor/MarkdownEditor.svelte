@@ -16,7 +16,6 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Image from '@tiptap/extension-image';
-import Link from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
 import { Markdown } from 'tiptap-markdown';
 
@@ -30,6 +29,7 @@ interface MarkdownEditorProps {
   readonly?: boolean;
   onUpdate?: (markdown: string) => void;
   onCharacterCount?: (count: number) => void;
+  onBlur?: () => void;
 }
 
 let {
@@ -38,7 +38,8 @@ let {
   maxLength = 10000,
   readonly = false,
   onUpdate,
-  onCharacterCount
+  onCharacterCount,
+  onBlur
 }: MarkdownEditorProps = $props();
 
 /**
@@ -53,8 +54,13 @@ let isLimitReached = $state(false);
  * Initialize Tiptap editor
  */
 function initializeEditor(): void {
-  if (!editorElement) return;
+  console.log('[MarkdownEditor] initializeEditor called');
+  if (!editorElement) {
+    console.error('[MarkdownEditor] editorElement not found!');
+    return;
+  }
 
+  console.log('[MarkdownEditor] Creating TipTap editor');
   editor = new Editor({
     element: editorElement,
     extensions: [
@@ -88,15 +94,6 @@ function initializeEditor(): void {
           class: 'editor-image',
         },
       }),
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-        HTMLAttributes: {
-          class: 'editor-link',
-          rel: 'noopener noreferrer',
-          target: '_blank',
-        },
-      }),
     ],
     content,
     editable: !readonly,
@@ -128,6 +125,16 @@ function initializeEditor(): void {
       // Notify parent
       if (onUpdate) {
         onUpdate(markdown);
+      }
+    },
+    onBlur: () => {
+      // Notify parent when editor loses focus
+      console.log('[MarkdownEditor] onBlur event fired');
+      if (onBlur) {
+        console.log('[MarkdownEditor] Calling parent onBlur callback');
+        onBlur();
+      } else {
+        console.log('[MarkdownEditor] No onBlur callback provided');
       }
     },
   });
@@ -184,6 +191,13 @@ export function focus(): void {
 }
 
 /**
+ * Get editor instance (for toolbar integration)
+ */
+export function getEditor() {
+  return editor;
+}
+
+/**
  * Check if editor is empty
  */
 export function isEmpty(): boolean {
@@ -235,7 +249,7 @@ $effect(() => {
     class="markdown-editor"
     class:readonly
     class:limit-reached={isLimitReached}
-  />
+  ></div>
 
   <div class="character-count" class:limit-warning={isLimitReached}>
     {characterCount} / {maxLength}
@@ -254,20 +268,19 @@ $effect(() => {
   .markdown-editor {
     width: 100%;
     min-height: 150px;
-    padding: 0.75rem;
+    padding: 12px;
     border: 1px solid var(--background-modifier-border);
-    border-radius: 8px;
-    background: var(--background-primary);
+    border-radius: var(--radius-s);
+    background: transparent;
     color: var(--text-normal);
-    font-size: 1rem;
-    line-height: 1.6;
-    transition: border-color 0.2s ease;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: all 0.2s ease;
   }
 
   .markdown-editor:focus-within {
     outline: none;
-    border-color: var(--interactive-accent);
-    box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+    border-color: var(--background-modifier-border-hover);
   }
 
   .markdown-editor.readonly {
@@ -283,10 +296,10 @@ $effect(() => {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-    color: var(--text-muted);
+    margin-top: 8px;
+    padding: 0;
+    font-size: 11px;
+    color: var(--text-faint);
     text-align: right;
     justify-content: flex-end;
   }

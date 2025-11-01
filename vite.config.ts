@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [
     svelte({
       compilerOptions: {
-        // Disable Runes for CJS compatibility
-        runes: false
+        // Enable Svelte 5 Runes API
+        runes: true
       }
     })
   ],
@@ -32,8 +32,18 @@ export default defineConfig({
         }
       }
     },
-    minify: process.env.NODE_ENV === 'production',
-    sourcemap: 'inline',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false, // Keep console for debugging
+        drop_debugger: true,
+        // pure_funcs: ['console.log'] // DISABLED for debugging
+      },
+      mangle: {
+        safari10: true
+      }
+    },
+    sourcemap: false, // Disable inline sourcemap to reduce size
     emptyOutDir: false,
     outDir: '.',
     cssCodeSplit: false

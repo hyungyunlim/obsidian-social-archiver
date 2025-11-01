@@ -20,6 +20,8 @@ import { YouTubeEmbedRenderer } from './renderers/YouTubeEmbedRenderer';
 import { LinkPreviewRenderer } from './renderers/LinkPreviewRenderer';
 import { PostCardRenderer } from './renderers/PostCardRenderer';
 import { YouTubePlayerController } from './controllers/YouTubePlayerController';
+import { mount, unmount } from 'svelte';
+import PostComposer from './PostComposer.svelte';
 
 export interface TimelineContainerProps {
   vault: Vault;
@@ -62,6 +64,10 @@ export class TimelineContainer {
 
   // Store scroll position for restoration after reload
   private savedScrollPosition: number = 0;
+
+  // PostComposer (Svelte component)
+  private composerComponent: any = null;
+  private composerContainer: HTMLElement | null = null;
 
   constructor(target: HTMLElement, props: TimelineContainerProps) {
     this.containerEl = target;
@@ -262,6 +268,41 @@ export class TimelineContainer {
   }
 
   /**
+   * Render PostComposer (Svelte component) at the top
+   */
+  private renderPostComposer(): void {
+    // Unmount previous instance if exists
+    if (this.composerComponent) {
+      unmount(this.composerComponent);
+      this.composerComponent = null;
+    }
+
+    // Create container for PostComposer
+    this.composerContainer = this.containerEl.createDiv({
+      cls: 'max-w-2xl mx-auto mb-6'
+    });
+
+    // Mount Svelte PostComposer
+    this.composerComponent = mount(PostComposer, {
+      target: this.composerContainer,
+      props: {
+        app: this.app,
+        settings: this.plugin.settings,
+        onPostCreated: async (post: PostData) => {
+          // Add new post to the beginning of the list
+          this.posts.unshift(post);
+
+          // Re-apply filters and sorting
+          this.filteredPosts = this.filterSortManager.applyFiltersAndSort(this.posts);
+
+          // Re-render the posts feed (keep composer and header)
+          this.renderPostsFeed();
+        }
+      }
+    });
+  }
+
+  /**
    * Render header with filter, sort, and refresh controls
    */
   private renderHeader(): HTMLElement {
@@ -401,6 +442,9 @@ export class TimelineContainer {
     this.containerEl.empty();
     // Clear previous YouTube controllers when re-rendering
     this.youtubeControllers.clear();
+
+    // Render PostComposer at the top
+    this.renderPostComposer();
 
     // Render header with filter/sort controls
     this.renderHeader();
@@ -551,6 +595,12 @@ export class TimelineContainer {
    */
 
   public destroy(): void {
+    // Unmount PostComposer if exists
+    if (this.composerComponent) {
+      unmount(this.composerComponent);
+      this.composerComponent = null;
+    }
+
     this.containerEl.empty();
     this.youtubeControllers.clear();
   }

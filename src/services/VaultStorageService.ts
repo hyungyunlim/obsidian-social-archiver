@@ -71,7 +71,8 @@ export class VaultStorageService {
 
   /**
    * Generate file path for user-created post
-   * Format: Social Archives/Posts/{YYYY}/{MM}/{YYYY-MM-DD-HHMMSS}.md
+   * Format: Social Archives/post/{YYYY}/{MM}/{YYYY-MM-DD-HHMMSS}.md
+   * (Lowercase 'post' to match platform naming convention)
    */
   generateFilePath(postData: PostData): string {
     const timestamp = postData.metadata.timestamp instanceof Date
@@ -84,7 +85,7 @@ export class VaultStorageService {
     const timeStr = timestamp.toTimeString().split(' ')[0].replace(/:/g, '');
     const fileName = `${date}-${timeStr}.md`;
 
-    return normalizePath(`${this.settings.archivePath}/Posts/${year}/${month}/${fileName}`);
+    return normalizePath(`${this.settings.archivePath}/post/${year}/${month}/${fileName}`);
   }
 
   /**

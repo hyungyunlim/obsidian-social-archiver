@@ -67,22 +67,16 @@ async function loadPosts(refresh = false) {
     error = null;
 
     if (!storageService) {
-      storageService = new VaultStorageService(app.vault, app.metadataCache);
-      await storageService.initialize();
+      storageService = new VaultStorageService({
+        vault: app.vault,
+        settings: settings
+      });
     }
 
-    // Get user posts from storage
-    const userPosts = await storageService.getUserPosts(settings.username || 'default');
-
-    // Sort by timestamp (newest first)
-    posts = userPosts.sort((a, b) => {
-      const timeA = new Date(a.metadata.timestamp).getTime();
-      const timeB = new Date(b.metadata.timestamp).getTime();
-      return timeB - timeA;
-    });
-
-    // Check if there are more posts (for pagination)
-    hasMore = posts.length >= 20 * page;
+    // TODO: Implement loading archived posts from vault
+    // For now, show empty timeline (user can create new posts)
+    posts = [];
+    hasMore = false;
 
   } catch (err) {
     console.error('[Timeline] Failed to load posts:', err);
@@ -118,8 +112,8 @@ async function handlePostCreated(post: PostData) {
 /**
  * Pull to refresh gesture (mobile)
  */
-let startY = 0;
-let pullDistance = 0;
+let startY = $state(0);
+let pullDistance = $state(0);
 let isPulling = $state(false);
 
 function handleTouchStart(e: TouchEvent) {

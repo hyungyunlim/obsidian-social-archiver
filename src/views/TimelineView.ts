@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import type SocialArchiverPlugin from '../main';
-// Use Svelte version of TimelineContainer for better UX
-import { TimelineContainer } from '../components/timeline/TimelineContainerSvelte';
+// Use original TypeScript version of TimelineContainer (fully functional)
+import { TimelineContainer } from '../components/timeline/TimelineContainer';
 
 /**
  * Unique identifier for the Timeline View

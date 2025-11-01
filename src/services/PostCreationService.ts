@@ -60,13 +60,13 @@ export class PostCreationService {
     const timestamp = new Date();
     const id = `post_${timestamp.getTime()}`;
 
-    // Generate vault file path
+    // Generate vault file path (consistent with other platforms)
     const year = timestamp.getFullYear();
     const month = String(timestamp.getMonth() + 1).padStart(2, '0');
     const date = timestamp.toISOString().split('T')[0] || '';
     const timeStr = (timestamp.toTimeString().split(' ')[0] || '00:00:00').replace(/:/g, '');
     const fileName = `${date}-${timeStr}.md`;
-    const url = `${this.settings.archivePath}/Posts/${year}/${month}/${fileName}`;
+    const url = `${this.settings.archivePath}/post/${year}/${month}/${fileName}`;
 
     // Get author info from settings
     const author = {
