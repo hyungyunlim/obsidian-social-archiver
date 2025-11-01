@@ -314,6 +314,16 @@ export class ErrorNotificationService implements IService {
   showWarning(message: string, duration: number = 4000): Notice {
     const notice = new Notice(`⚠️ ${message}`, duration);
     this.styleNotice(notice, ErrorSeverity.WARNING);
+
+    // Track active notice
+    const noticeId = `warning-${Date.now()}`;
+    this.activeNotices.set(noticeId, notice);
+
+    // Remove from tracking when hidden
+    setTimeout(() => {
+      this.activeNotices.delete(noticeId);
+    }, duration);
+
     return notice;
   }
 
@@ -323,6 +333,16 @@ export class ErrorNotificationService implements IService {
   showInfo(message: string, duration: number = 3000): Notice {
     const notice = new Notice(`ℹ️ ${message}`, duration);
     this.styleNotice(notice, ErrorSeverity.INFO);
+
+    // Track active notice
+    const noticeId = `info-${Date.now()}`;
+    this.activeNotices.set(noticeId, notice);
+
+    // Remove from tracking when hidden
+    setTimeout(() => {
+      this.activeNotices.delete(noticeId);
+    }, duration);
+
     return notice;
   }
 
@@ -332,6 +352,16 @@ export class ErrorNotificationService implements IService {
   showSuccess(message: string, duration: number = 3000): Notice {
     const notice = new Notice(`✅ ${message}`, duration);
     this.styleNotice(notice, ErrorSeverity.INFO);
+
+    // Track active notice
+    const noticeId = `success-${Date.now()}`;
+    this.activeNotices.set(noticeId, notice);
+
+    // Remove from tracking when hidden
+    setTimeout(() => {
+      this.activeNotices.delete(noticeId);
+    }, duration);
+
     return notice;
   }
 

@@ -4520,17 +4520,133 @@
         "subtasks": []
       },
       {
-        "id": 83,
+        "id": "83",
         "title": "Implement Platform-Specific Media Upload Service",
-        "description": "Create media upload service with platform-specific optimizations for Instagram, TikTok, Facebook, LinkedIn, X, Threads, and YouTube",
-        "details": "Implement uploadMediaByPlatform() function with switch statement for each platform. Instagram: preserve carousel order and quality. TikTok: upload video + thumbnail. Facebook: handle mixed media, generate video thumbnails. LinkedIn: professional image optimization. X: maintain grid layout. Threads: Instagram-like handling. YouTube: embed info only, no R2 upload. Each platform function should return MediaUrl[] with proper ordering and metadata.",
-        "testStrategy": "Platform-specific unit tests for each upload function. Test media ordering preservation, quality optimization, and proper metadata handling. Integration tests with R2 bucket. Test error handling for unsupported media types.",
-        "priority": "medium",
+        "description": "Create media upload service with platform-specific optimizations for Instagram, TikTok, Facebook, LinkedIn, X, Threads, YouTube, and Reddit",
+        "status": "pending",
         "dependencies": [
           82
         ],
-        "status": "pending",
-        "subtasks": []
+        "priority": "medium",
+        "details": "Implement uploadMediaByPlatform() function with switch statement for each platform. Instagram: preserve carousel order and quality. TikTok: embed only (no R2 upload, use TikTok player). Facebook: handle mixed media, generate video thumbnails. LinkedIn: professional image optimization and document previews. X: maintain grid layout. Threads: Instagram-like handling. YouTube: embed only (no R2 upload, use YouTube player). Reddit: upload images and video thumbnails to R2, preserve external link media as original URLs. TikTok and YouTube use their platform embed players for direct content streaming. Reddit handles image posts with R2 upload, video posts with thumbnail generation only, and external link posts without media upload. Each platform function should return MediaUrl[] with proper ordering and metadata.",
+        "testStrategy": "Platform-specific unit tests for each upload function including Reddit. Test media ordering preservation, quality optimization, and proper metadata handling. Integration tests with R2 bucket for platforms that upload media (Instagram, Facebook, LinkedIn, X, Threads, Reddit images). Test embed handling for TikTok and YouTube. Test Reddit-specific logic: image upload, video thumbnail generation, external link preservation. Test error handling for unsupported media types.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create base uploadMediaByPlatform function structure",
+            "description": "Implement the main function with switch statement for all supported platforms including Reddit",
+            "dependencies": [],
+            "details": "Create uploadMediaByPlatform(platform: Platform, media: Media[]): Promise<MediaUrl[]> function in MediaUploadService. Implement switch statement with cases for 'instagram', 'tiktok', 'facebook', 'linkedin', 'x', 'threads', 'youtube', and 'reddit'. Each case should call platform-specific handler functions.",
+            "status": "pending",
+            "testStrategy": "Unit test for function signature and switch statement routing to correct platform handlers"
+          },
+          {
+            "id": 2,
+            "title": "Implement Instagram media upload handler",
+            "description": "Create Instagram-specific media upload with carousel order preservation and quality optimization",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement uploadInstagramMedia() function that preserves carousel image order, optimizes image quality for Instagram standards, uploads to R2 bucket with proper naming conventions, and returns MediaUrl[] with correct sequence metadata.",
+            "status": "pending",
+            "testStrategy": "Test carousel order preservation, image quality optimization, and R2 upload integration"
+          },
+          {
+            "id": 3,
+            "title": "Implement TikTok embed-only handler",
+            "description": "Create TikTok handler that uses embed player without R2 upload",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement uploadTikTokMedia() function that returns original TikTok URLs for embed player usage. No R2 upload required, just format URLs for TikTok player integration and preserve video metadata.",
+            "status": "pending",
+            "testStrategy": "Test embed URL formatting and metadata preservation without R2 upload"
+          },
+          {
+            "id": 4,
+            "title": "Implement Facebook mixed media handler",
+            "description": "Create Facebook handler for mixed media with image upload and video thumbnail generation",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement uploadFacebookMedia() function that handles mixed media posts, uploads images to R2, generates and uploads video thumbnails, preserves media order, and handles Facebook-specific metadata requirements.",
+            "status": "pending",
+            "testStrategy": "Test mixed media handling, video thumbnail generation, and proper media ordering"
+          },
+          {
+            "id": 5,
+            "title": "Implement LinkedIn professional media handler",
+            "description": "Create LinkedIn handler with professional image optimization and document preview support",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement uploadLinkedInMedia() function that optimizes images for professional context, handles document previews, uploads to R2 with LinkedIn-appropriate compression, and maintains professional metadata standards.",
+            "status": "pending",
+            "testStrategy": "Test professional image optimization, document preview handling, and metadata preservation"
+          },
+          {
+            "id": 6,
+            "title": "Implement X (Twitter) grid layout handler",
+            "description": "Create X handler that maintains grid layout with image upload and video thumbnails",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement uploadXMedia() function that preserves Twitter grid layout, uploads images to R2, generates video thumbnails, maintains proper aspect ratios for grid display, and handles Twitter-specific media constraints.",
+            "status": "pending",
+            "testStrategy": "Test grid layout preservation, aspect ratio handling, and video thumbnail generation"
+          },
+          {
+            "id": 7,
+            "title": "Implement Threads Instagram-like handler",
+            "description": "Create Threads handler with Instagram-similar media processing",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement uploadThreadsMedia() function that processes media similar to Instagram, uploads images to R2, preserves quality and order, and handles Threads-specific metadata requirements.",
+            "status": "pending",
+            "testStrategy": "Test Instagram-like processing, quality preservation, and Threads metadata handling"
+          },
+          {
+            "id": 8,
+            "title": "Implement YouTube embed-only handler",
+            "description": "Create YouTube handler that uses embed player without R2 upload",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement uploadYouTubeMedia() function that returns original YouTube URLs for embed player usage. No R2 upload required, just format URLs for YouTube player integration and preserve video metadata.",
+            "status": "pending",
+            "testStrategy": "Test embed URL formatting and metadata preservation without R2 upload"
+          },
+          {
+            "id": 9,
+            "title": "Implement Reddit media handler with conditional upload logic",
+            "description": "Create Reddit handler that uploads images, generates video thumbnails, and preserves external link media",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement uploadRedditMedia() function that handles three Reddit post types: image posts (upload to R2), video posts (generate and upload thumbnails only), and external link posts (preserve original URLs without upload). Include proper Reddit metadata and post type detection.",
+            "status": "pending",
+            "testStrategy": "Test Reddit post type detection, conditional upload logic, video thumbnail generation, and external link preservation"
+          },
+          {
+            "id": 10,
+            "title": "Add comprehensive error handling and validation",
+            "description": "Implement error handling for all platform handlers with proper fallback mechanisms",
+            "dependencies": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "details": "Add error handling for R2 upload failures, unsupported media types, network errors, and platform-specific constraints. Implement proper error messages, fallback mechanisms, and validation for media types and sizes across all platforms.",
+            "status": "pending",
+            "testStrategy": "Test error scenarios for each platform, validation logic, and fallback mechanisms"
+          }
+        ]
       },
       {
         "id": 84,
