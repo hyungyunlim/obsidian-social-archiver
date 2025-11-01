@@ -262,7 +262,47 @@ export class PostCardRenderer {
   private renderAvatar(card: HTMLElement, post: PostData): void {
     const avatarContainer = card.createDiv();
     avatarContainer.style.cssText = 'position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; opacity: 0.3; cursor: pointer; transition: opacity 0.2s;';
-    avatarContainer.setAttribute('title', `Open on ${post.platform}`);
+
+    // For user posts (platform: 'post'), show user icon instead
+    if (post.platform === 'post') {
+      avatarContainer.setAttribute('title', 'Your post');
+
+      // Use user icon for user-created posts
+      const iconWrapper = avatarContainer.createDiv();
+      iconWrapper.style.cssText = 'width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: var(--text-accent);';
+      const lucideWrapper = iconWrapper.createDiv();
+      lucideWrapper.style.cssText = 'width: 100%; height: 100%;';
+      setIcon(lucideWrapper, 'user');
+    } else {
+      // Original behavior for archived posts
+      avatarContainer.setAttribute('title', `Open on ${post.platform}`);
+
+      avatarContainer.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (post.url) {
+          window.open(post.url, '_blank');
+        }
+      });
+
+      const iconWrapper = avatarContainer.createDiv();
+      iconWrapper.style.cssText = 'width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: var(--text-accent);';
+      const icon = this.getPlatformSimpleIcon(post.platform);
+      if (icon) {
+        // Use Simple Icon with Obsidian theme color
+        iconWrapper.innerHTML = `
+          <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: var(--text-accent); width: 100%; height: 100%;">
+            <title>${icon.title}</title>
+            <path d="${icon.path}"/>
+          </svg>
+        `;
+      } else {
+        // Use Lucide icon for platforms not in simple-icons (e.g., LinkedIn)
+        const lucideIconName = this.getLucideIcon(post.platform);
+        const lucideWrapper = iconWrapper.createDiv();
+        lucideWrapper.style.cssText = 'width: 100%; height: 100%;';
+        setIcon(lucideWrapper, lucideIconName);
+      }
+    }
 
     avatarContainer.addEventListener('mouseenter', () => {
       avatarContainer.style.opacity = '0.6';
@@ -271,32 +311,6 @@ export class PostCardRenderer {
     avatarContainer.addEventListener('mouseleave', () => {
       avatarContainer.style.opacity = '0.3';
     });
-
-    avatarContainer.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (post.url) {
-        window.open(post.url, '_blank');
-      }
-    });
-
-    const iconWrapper = avatarContainer.createDiv();
-    iconWrapper.style.cssText = 'width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: var(--text-accent);';
-    const icon = this.getPlatformSimpleIcon(post.platform);
-    if (icon) {
-      // Use Simple Icon with Obsidian theme color
-      iconWrapper.innerHTML = `
-        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="fill: var(--text-accent); width: 100%; height: 100%;">
-          <title>${icon.title}</title>
-          <path d="${icon.path}"/>
-        </svg>
-      `;
-    } else {
-      // Use Lucide icon for platforms not in simple-icons (e.g., LinkedIn)
-      const lucideIconName = this.getLucideIcon(post.platform);
-      const lucideWrapper = iconWrapper.createDiv();
-      lucideWrapper.style.cssText = 'width: 100%; height: 100%;';
-      setIcon(lucideWrapper, lucideIconName);
-    }
   }
 
   /**
@@ -485,6 +499,11 @@ export class PostCardRenderer {
     // Open Note button (right-aligned)
     this.renderOpenNoteButton(interactions, post);
 
+    // Edit button (right-aligned, only for user posts)
+    if (post.platform === 'post') {
+      this.renderEditButton(interactions, post);
+    }
+
     // Delete button (right-aligned)
     this.renderDeleteButton(interactions, post, rootElement);
   }
@@ -591,6 +610,31 @@ export class PostCardRenderer {
 
     // Open Note button click handler
     openNoteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.openNote(post);
+    });
+  }
+
+  /**
+   * Render edit button (only for user posts)
+   */
+  private renderEditButton(parent: HTMLElement, post: PostData): void {
+    const editBtn = parent.createDiv();
+    editBtn.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; transition: color 0.2s;';
+    editBtn.setAttribute('title', 'Edit this post');
+    editBtn.addEventListener('mouseenter', () => {
+      editBtn.style.color = 'var(--interactive-accent)';
+    });
+    editBtn.addEventListener('mouseleave', () => {
+      editBtn.style.color = 'var(--text-muted)';
+    });
+
+    const editIcon = editBtn.createDiv();
+    editIcon.style.cssText = 'width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;';
+    setIcon(editIcon, 'pencil');
+
+    // Edit button click handler
+    editBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       await this.openNote(post);
     });
@@ -1743,7 +1787,8 @@ export class PostCardRenderer {
    */
   private getLucideIcon(platform: string): string {
     const iconMap: Record<string, string> = {
-      linkedin: 'linkedin'
+      linkedin: 'linkedin',
+      post: 'user' // User icon for user-created posts
     };
     return iconMap[platform.toLowerCase()] || 'share-2';
   }
@@ -2222,4 +2267,5 @@ export class PostCardRenderer {
     // Remove first # Title line
     return content.replace(/^#\s+.+\n/, '');
   }
+
 }

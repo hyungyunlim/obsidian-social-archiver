@@ -7,22 +7,28 @@
  * - Expanded state (full editor with media upload)
  * - Smooth transitions between states
  * - Mobile-responsive design
+ * - Auto-save draft functionality
+ * - Draft recovery on open
  */
 
-import { onMount } from 'svelte';
+import { onMount, onDestroy } from 'svelte';
+import type { App } from 'obsidian';
 import type { PostData } from '@/types/post';
 import type { SocialArchiverSettings } from '@/types/settings';
+import { DraftService } from '@/services/DraftService';
 
 /**
  * Component props
  */
 interface PostComposerProps {
+  app: App;
   settings: SocialArchiverSettings;
   onPostCreated?: (post: PostData) => void;
   onCancel?: () => void;
 }
 
 let {
+  app,
   settings,
   onPostCreated,
   onCancel
@@ -34,13 +40,37 @@ let {
 let isExpanded = $state(false);
 let isSubmitting = $state(false);
 let error = $state<string | null>(null);
+let content = $state('');
+let showDraftRecovery = $state(false);
+let recoveredDraft = $state<string | null>(null);
+
+/**
+ * Draft service
+ */
+let draftService: DraftService;
+const DRAFT_ID = 'post-composer-draft';
 
 /**
  * Expand the composer to show full editor
  */
-function expand(): void {
+async function expand(): Promise<void> {
   isExpanded = true;
   error = null;
+
+  // Try to recover draft
+  try {
+    const recovery = await draftService.recoverDrafts(DRAFT_ID);
+    if (recovery.hasDraft && recovery.draft) {
+      recoveredDraft = recovery.draft.content;
+      showDraftRecovery = true;
+      console.log('[PostComposer] Draft recovered');
+    }
+  } catch (err) {
+    console.error('[PostComposer] Failed to recover draft:', err);
+  }
+
+  // Start auto-save
+  draftService.startAutoSave(DRAFT_ID, () => content);
 }
 
 /**
@@ -49,13 +79,48 @@ function expand(): void {
 function collapse(): void {
   isExpanded = false;
   error = null;
+  showDraftRecovery = false;
+
+  // Stop auto-save
+  draftService.stopAutoSave();
+}
+
+/**
+ * Restore recovered draft
+ */
+function restoreDraft(): void {
+  if (recoveredDraft) {
+    content = recoveredDraft;
+    showDraftRecovery = false;
+    recoveredDraft = null;
+  }
+}
+
+/**
+ * Discard recovered draft
+ */
+function discardDraft(): void {
+  if (recoveredDraft) {
+    draftService.deleteDraft(DRAFT_ID);
+    showDraftRecovery = false;
+    recoveredDraft = null;
+  }
+}
+
+/**
+ * Handle content change with debounced save
+ */
+function handleContentChange(): void {
+  if (content.trim()) {
+    draftService.saveDraft(DRAFT_ID, content, { debounce: true });
+  }
 }
 
 /**
  * Handle post submission
  */
 async function handleSubmit(): Promise<void> {
-  if (isSubmitting) return;
+  if (isSubmitting || !content.trim()) return;
 
   try {
     isSubmitting = true;
@@ -74,7 +139,7 @@ async function handleSubmit(): Promise<void> {
         handle: `@${settings.username}`,
       },
       content: {
-        text: 'Test post content',
+        text: content,
       },
       media: [],
       metadata: {
@@ -87,7 +152,11 @@ async function handleSubmit(): Promise<void> {
       onPostCreated(postData as PostData);
     }
 
-    // Reset and collapse
+    // Delete draft after successful post
+    draftService.deleteDraft(DRAFT_ID);
+
+    // Reset content and collapse
+    content = '';
     collapse();
   } catch (err) {
     console.error('[PostComposer] Failed to create post:', err);
@@ -101,6 +170,11 @@ async function handleSubmit(): Promise<void> {
  * Handle cancel action
  */
 function handleCancel(): void {
+  // Save draft before canceling (user may want to continue later)
+  if (content.trim()) {
+    draftService.saveDraft(DRAFT_ID, content, { immediate: true });
+  }
+
   if (onCancel) {
     onCancel();
   }
@@ -116,13 +190,30 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 }
 
-onMount(() => {
+/**
+ * Reactive effect for content changes
+ */
+$effect(() => {
+  if (content && isExpanded) {
+    handleContentChange();
+  }
+});
+
+onMount(async () => {
+  // Initialize draft service
+  draftService = new DraftService(app);
+  await draftService.initialize();
+
   // Add global keydown listener
   window.addEventListener('keydown', handleKeydown);
+});
 
-  return () => {
-    window.removeEventListener('keydown', handleKeydown);
-  };
+onDestroy(() => {
+  // Cleanup
+  window.removeEventListener('keydown', handleKeydown);
+  if (draftService) {
+    draftService.cleanup();
+  }
 });
 </script>
 
@@ -185,9 +276,46 @@ onMount(() => {
           </div>
         {/if}
 
-        <!-- TODO: Add MarkdownEditor component in subsequent tasks -->
-        <div class="editor-placeholder">
-          <p class="text-muted">Editor will be added in Task 66</p>
+        {#if showDraftRecovery && recoveredDraft}
+          <div class="draft-recovery" role="alert">
+            <div class="recovery-header">
+              <span class="recovery-icon">💾</span>
+              <span class="recovery-text">
+                We found a saved draft from {new Date().toLocaleDateString()}
+              </span>
+            </div>
+            <div class="recovery-actions">
+              <button
+                type="button"
+                class="btn-recovery-restore"
+                onclick={restoreDraft}
+              >
+                Restore
+              </button>
+              <button
+                type="button"
+                class="btn-recovery-discard"
+                onclick={discardDraft}
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Temporary textarea until MarkdownEditor is implemented (Task 66) -->
+        <textarea
+          bind:value={content}
+          class="composer-textarea"
+          placeholder="What's on your mind?"
+          rows="8"
+          aria-label="Post content"
+        ></textarea>
+
+        <div class="editor-note">
+          <p class="text-muted">
+            📝 Rich text editor will be added in Task 66. Using simple textarea for now.
+          </p>
         </div>
       </div>
 
@@ -213,7 +341,7 @@ onMount(() => {
         </div>
 
         <div class="character-count">
-          0 / 10,000
+          {content.length} / 10,000
         </div>
       </div>
     </div>
@@ -378,6 +506,118 @@ onMount(() => {
     padding: 2rem;
     text-align: center;
     color: var(--text-muted);
+  }
+
+  /* Draft recovery */
+  .draft-recovery {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    background: var(--background-secondary);
+    border-left: 3px solid var(--interactive-accent);
+    border-radius: 6px;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .recovery-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .recovery-icon {
+    font-size: 1.25rem;
+  }
+
+  .recovery-text {
+    font-size: 0.875rem;
+    color: var(--text-normal);
+  }
+
+  .recovery-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-recovery-restore,
+  .btn-recovery-discard {
+    padding: 0.375rem 0.875rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.813rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 32px;
+  }
+
+  .btn-recovery-restore {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+  }
+
+  .btn-recovery-restore:hover {
+    background: var(--interactive-accent-hover);
+  }
+
+  .btn-recovery-discard {
+    background: var(--background-modifier-border);
+    color: var(--text-normal);
+  }
+
+  .btn-recovery-discard:hover {
+    background: var(--background-modifier-hover);
+  }
+
+  /* Composer textarea */
+  .composer-textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 0.75rem;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    color: var(--text-normal);
+    font-family: var(--font-interface);
+    font-size: 1rem;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+  }
+
+  .composer-textarea:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+  }
+
+  .composer-textarea::placeholder {
+    color: var(--text-muted);
+  }
+
+  .editor-note {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .editor-note p {
+    margin: 0;
+    font-size: 0.813rem;
   }
 
   .composer-footer {

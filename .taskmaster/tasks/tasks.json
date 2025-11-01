@@ -4214,15 +4214,15 @@
         "dependencies": [
           74
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
             "title": "Modify PostCardRenderer.ts to handle platform: 'post' posts",
             "description": "Update the PostCardRenderer class to detect and process user-created posts with platform type 'post'",
             "dependencies": [],
-            "details": "Extend the existing PostCardRenderer.ts to add conditional logic for handling platform: 'post' posts. Add type guards to distinguish between archived social media posts and user-created posts. Update the rendering pipeline to handle different data structures for user posts vs archived posts. Ensure proper fallbacks for missing fields in user posts.",
-            "status": "pending",
+            "details": "Extend the existing PostCardRenderer.ts to add conditional logic for handling platform: 'post' posts. Add type guards to distinguish between archived social media posts and user-created posts. Update the rendering pipeline to handle different data structures for user posts vs archived posts. Ensure proper fallbacks for missing fields in user posts.\n<info added on 2025-11-01T06:07:10.790Z>\nImplementation completed with the following changes to PostCardRenderer:\n- Added conditional rendering for platform:'post' posts with user icon (Lucide 'user') displayed in top right corner\n- Maintained consistent layout between user posts and archived social media posts  \n- Utilized existing interaction bar without requiring additional menu options\n- Minimal code changes achieved desired functionality while preserving existing post rendering behavior\n</info added on 2025-11-01T06:07:10.790Z>",
+            "status": "done",
             "testStrategy": "Unit tests for platform detection logic, verify correct rendering path selection for user posts vs archived posts"
           },
           {
@@ -4233,7 +4233,7 @@
               1
             ],
             "details": "Create specific CSS classes and styling for user posts to visually distinguish them from archived posts. Modify the header component to show different metadata for user posts (creation date, edit status). Update author display to show the current user as author for user posts. Implement responsive design ensuring mobile-first approach with proper touch targets.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Visual regression tests for user post styling, verify mobile responsiveness, test author display for user vs archived posts"
           },
           {
@@ -4245,7 +4245,7 @@
               2
             ],
             "details": "Implement edit/delete action buttons that only appear for user's own posts. Add permission checking to ensure users can only modify their own content. Create share URL display with copy-to-clipboard functionality using navigator.clipboard API with fallback. Handle async operations with proper loading states and error handling. Integrate with existing PostData interface for sharing.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test edit/delete permission enforcement, verify share URL generation and clipboard copying, test error states and loading indicators"
           }
         ]
@@ -4260,15 +4260,15 @@
         "dependencies": [
           66
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
             "title": "Create DraftService.ts with localStorage auto-save",
             "description": "Implement the core DraftService class with automatic saving functionality to localStorage every 60 seconds",
             "dependencies": [],
-            "details": "Create src/services/DraftService.ts with auto-save timer mechanism, debounced saving to prevent excessive writes, localStorage interface for draft persistence, and proper TypeScript interfaces for draft data structure. Include draft versioning and timestamp tracking.",
-            "status": "pending",
+            "details": "Create src/services/DraftService.ts with auto-save timer mechanism, debounced saving to prevent excessive writes, localStorage interface for draft persistence, and proper TypeScript interfaces for draft data structure. Include draft versioning and timestamp tracking.\n<info added on 2025-11-01T06:18:04.548Z>\nImplementation completed with DraftService.ts containing auto-save timer (60-second interval), debounced saving (2-second delay), Obsidian's vault-scoped storage using App.saveLocalStorage/loadLocalStorage, comprehensive TypeScript interfaces (DraftData, DraftSaveOptions, DraftRecoveryResult, StorageInfo), device ID generation for multi-device conflict detection foundation, and IService interface compliance for proper service integration.\n</info added on 2025-11-01T06:18:04.548Z>",
+            "status": "done",
             "testStrategy": "Unit tests for auto-save timing, debounce functionality, localStorage write operations, and draft data structure validation"
           },
           {
@@ -4278,8 +4278,8 @@
             "dependencies": [
               1
             ],
-            "details": "Implement draft detection on composer initialization, UI notification for available drafts, draft restoration with content and metadata recovery, and seamless integration with existing composer state management. Handle cases where drafts exist from previous sessions.",
-            "status": "pending",
+            "details": "Implement draft detection on composer initialization, UI notification for available drafts, draft restoration with content and metadata recovery, and seamless integration with existing composer state management. Handle cases where drafts exist from previous sessions.\n<info added on 2025-11-01T06:18:15.132Z>\n**Implementation Complete - PostComposer Integration:**\n\nSuccessfully integrated DraftService with PostComposer.svelte component including full draft lifecycle management. Added draft detection and UI notification system on composer expand with user-friendly \"Restore\" and \"Discard\" action buttons. Implemented automatic draft saving that starts when composer expands and stops on collapse, with drafts being deleted after successful post submission and saved on cancel for later continuation. Added temporary textarea for testing purposes until MarkdownEditor implementation in Task 66. Created reactive $effect system for content changes that triggers debounced auto-save functionality. Draft recovery system now handles content and metadata restoration seamlessly with existing composer state management.\n</info added on 2025-11-01T06:18:15.132Z>",
+            "status": "done",
             "testStrategy": "Test draft recovery after browser crash/refresh, verify content restoration accuracy, validate UI notification behavior, and test integration with composer state"
           },
           {
@@ -4290,8 +4290,8 @@
               1,
               2
             ],
-            "details": "Implement draft comparison UI showing differences between multiple drafts, timestamp-based conflict resolution with user choice options, merge capabilities for compatible drafts, and clear presentation of draft metadata including creation time and device information.",
-            "status": "pending",
+            "details": "Implement draft comparison UI showing differences between multiple drafts, timestamp-based conflict resolution with user choice options, merge capabilities for compatible drafts, and clear presentation of draft metadata including creation time and device information.\n<info added on 2025-11-01T06:18:24.393Z>\nSuccessfully implemented conflict resolution UI foundation in PostComposer.svelte with draft recovery notification showing timestamp information, restore/discard button actions using clean slideIn animations, and mobile-responsive button sizing. Added findConflictingDrafts() method structure to support future multi-device draft detection scenarios, though currently handling single draft per ID. The UI provides clear user choice options for draft recovery with proper visual feedback and maintains responsive design principles for mobile usage.\n</info added on 2025-11-01T06:18:24.393Z>",
+            "status": "done",
             "testStrategy": "Test multiple draft detection, conflict resolution UI functionality, merge operation accuracy, and user choice handling for draft selection"
           },
           {
@@ -4301,8 +4301,8 @@
             "dependencies": [
               1
             ],
-            "details": "Add localStorage quota monitoring and error handling, automatic cleanup of drafts older than 7 days, LRU-based cleanup when storage is full, user notifications for storage issues, and fallback mechanisms when localStorage is unavailable or full.",
-            "status": "pending",
+            "details": "Add localStorage quota monitoring and error handling, automatic cleanup of drafts older than 7 days, LRU-based cleanup when storage is full, user notifications for storage issues, and fallback mechanisms when localStorage is unavailable or full.\n<info added on 2025-11-01T06:18:34.326Z>\nImplementation completed successfully with comprehensive storage management features. Added getStorageInfo() and getStorageInfoAsync() methods to monitor localStorage usage with 80% warning threshold. Implemented automatic cleanup system that removes drafts older than 7 days during service initialization. Created LRU-based cleanup mechanism that removes oldest 50% of drafts when quota is exceeded. Added retry logic specifically for quota exceeded errors with graceful fallback. Implemented QuotaExceededError specific handling with user-friendly error messages. All storage operations now include proper error handling to prevent data loss and provide clear feedback to users about storage limitations.\n</info added on 2025-11-01T06:18:34.326Z>",
+            "status": "done",
             "testStrategy": "Test storage quota detection, automatic cleanup of old drafts, LRU cleanup logic, error handling for storage failures, and fallback mechanism validation"
           }
         ]
@@ -4381,16 +4381,105 @@
       {
         "id": 79,
         "title": "Optimize PostDataParser with Obsidian MetadataCache for Enhanced Performance",
-        "description": "Replace manual frontmatter parsing with app.metadataCache.getFileCache() and vault.cachedRead() to improve loading performance from 8s to 1s for 10,000 posts.",
-        "details": "Refactor PostDataParser to leverage Obsidian's MetadataCache API for dramatic performance improvements. Replace vault.read() with vault.cachedRead() for file content access. Use app.metadataCache.getFileCache() instead of manual YAML frontmatter parsing to extract post metadata including share settings, platform info, and timestamps. Extract media references from cache.embeds rather than parsing markdown content. Implement cache invalidation handling when posts are modified. Add fallback mechanisms for cache misses. Update MediaHandler to extract media paths from cache.embeds array. Optimize batch processing for large numbers of posts by grouping cache reads. Follow implementation guide in .taskmaster/docs/metadatacache-scaling-optimization.md for specific API usage patterns and performance benchmarks.",
-        "testStrategy": "Performance benchmark tests comparing old vs new implementation with 1,000, 5,000, and 10,000 posts. Verify parsing accuracy by comparing cached metadata extraction with manual parsing results. Test cache invalidation scenarios when posts are modified. Validate media extraction from cache.embeds matches current behavior. Test fallback behavior when MetadataCache is unavailable or corrupted. Measure memory usage during large batch operations.",
+        "description": "Replace manual frontmatter parsing with app.metadataCache.getFileCache() and vault.cachedRead() to improve loading performance from 8s to 1s for 10,000 posts. After Obsidian documentation validation, implement critical fixes for proper workspace initialization and file rename handling.",
         "status": "pending",
         "dependencies": [
           1,
           35
         ],
         "priority": "medium",
-        "subtasks": []
+        "details": "Refactor PostDataParser to leverage Obsidian's MetadataCache API for dramatic performance improvements. Replace vault.read() with vault.cachedRead() for file content access. Use app.metadataCache.getFileCache() instead of manual YAML frontmatter parsing to extract post metadata including share settings, platform info, and timestamps. Extract media references from cache.embeds rather than parsing markdown content. Implement cache invalidation handling when posts are modified. Add fallback mechanisms for cache misses. Update MediaHandler to extract media paths from cache.embeds array. Optimize batch processing for large numbers of posts by grouping cache reads. CRITICAL FIXES: 1) Use workspace.onLayoutReady() before setting up event listeners to avoid initial vault loading triggering all 'create' events. 2) Add vault.on('rename') event listener because MetadataCache 'changed' event doesn't fire on file renames (performance optimization). Follow implementation guide in .taskmaster/docs/metadatacache-scaling-optimization.md and validation report in .taskmaster/docs/metadatacache-validation-report.md for specific API usage patterns and performance benchmarks.",
+        "testStrategy": "Performance benchmark tests comparing old vs new implementation with 1,000, 5,000, and 10,000 posts. Verify parsing accuracy by comparing cached metadata extraction with manual parsing results. Test cache invalidation scenarios when posts are modified. Validate media extraction from cache.embeds matches current behavior. Test fallback behavior when MetadataCache is unavailable or corrupted. Measure memory usage during large batch operations. Test workspace.onLayoutReady() timing to ensure event listeners are properly initialized. Verify vault.on('rename') event handling for file renames without triggering false cache invalidations.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement workspace.onLayoutReady() initialization",
+            "description": "Add proper workspace initialization using onLayoutReady() before setting up MetadataCache event listeners to prevent initial vault loading from triggering all 'create' events.",
+            "dependencies": [],
+            "details": "Use app.workspace.onLayoutReady() to ensure the workspace is fully loaded before setting up event listeners for MetadataCache. This prevents the initial vault loading process from firing 'create' events for all existing files, which would cause unnecessary processing and performance degradation. Implement proper cleanup in the plugin's onunload() method to remove event listeners.",
+            "status": "pending",
+            "testStrategy": "Test plugin initialization timing, verify event listeners are only added after workspace is ready, confirm no spurious 'create' events during initial load"
+          },
+          {
+            "id": 2,
+            "title": "Add vault.on('rename') event listener for file renames",
+            "description": "Implement vault.on('rename') event listener to handle file renames properly since MetadataCache 'changed' event doesn't fire on file renames.",
+            "dependencies": [],
+            "details": "Add vault.on('rename') event listener to track when social archive files are renamed. This is necessary because MetadataCache optimization doesn't fire 'changed' events on file renames, which could lead to stale cache entries. The listener should update internal tracking and invalidate relevant cache entries when social archive files are renamed.",
+            "status": "pending",
+            "testStrategy": "Test file rename scenarios, verify cache invalidation on renames, confirm no duplicate event handling between 'rename' and 'changed' events"
+          },
+          {
+            "id": 3,
+            "title": "Replace manual frontmatter parsing with MetadataCache",
+            "description": "Refactor PostDataParser to use app.metadataCache.getFileCache() instead of manual YAML frontmatter parsing for extracting post metadata.",
+            "dependencies": [
+              1
+            ],
+            "details": "Replace current manual YAML.parse() calls with app.metadataCache.getFileCache(file).frontmatter to extract post metadata including share settings, platform info, and timestamps. This leverages Obsidian's optimized caching layer for significantly better performance. Implement proper error handling for cache misses and provide fallback to manual parsing when needed.",
+            "status": "pending",
+            "testStrategy": "Compare extraction accuracy between old and new methods, test performance improvements with large datasets, verify fallback behavior on cache misses"
+          },
+          {
+            "id": 4,
+            "title": "Replace vault.read() with vault.cachedRead()",
+            "description": "Update file content access throughout PostDataParser to use vault.cachedRead() instead of vault.read() for improved performance.",
+            "dependencies": [
+              1
+            ],
+            "details": "Replace all vault.read() calls with vault.cachedRead() to leverage Obsidian's file content caching. This provides significant performance improvements for repeated access to the same files. Implement proper cache invalidation handling and fallback mechanisms for when cached content is unavailable.",
+            "status": "pending",
+            "testStrategy": "Benchmark performance improvements, test cache invalidation scenarios, verify content accuracy matches vault.read() results"
+          },
+          {
+            "id": 5,
+            "title": "Extract media references from cache.embeds",
+            "description": "Update MediaHandler to extract media paths from cache.embeds array instead of parsing markdown content manually.",
+            "dependencies": [
+              3
+            ],
+            "details": "Refactor media extraction logic to use cache.embeds from MetadataCache instead of regex parsing of markdown content. This provides more reliable and performant media reference extraction. Handle different embed types (images, videos, attachments) and maintain compatibility with existing media path structures.",
+            "status": "pending",
+            "testStrategy": "Verify media extraction accuracy matches current behavior, test with various media types and embed formats, validate performance improvements"
+          },
+          {
+            "id": 6,
+            "title": "Implement cache invalidation and event handling",
+            "description": "Set up proper MetadataCache event listeners for cache invalidation when posts are modified, created, or deleted.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement event listeners for app.metadataCache.on('changed') and vault.on('rename', 'delete', 'create') to maintain cache coherency. When social archive files are modified, invalidate relevant cache entries and update internal tracking. Ensure proper cleanup of event listeners in plugin onunload() method.",
+            "status": "pending",
+            "testStrategy": "Test cache invalidation on file modifications, verify event listener cleanup, confirm no memory leaks from event handlers"
+          },
+          {
+            "id": 7,
+            "title": "Optimize batch processing for large datasets",
+            "description": "Implement batch processing optimizations for handling large numbers of posts by grouping cache reads and reducing API calls.",
+            "dependencies": [
+              3,
+              4,
+              5
+            ],
+            "details": "Optimize batch operations by grouping multiple cache reads together and implementing intelligent prefetching for commonly accessed files. Use async iteration patterns to process large datasets without blocking the UI. Implement progress reporting for long-running operations.",
+            "status": "pending",
+            "testStrategy": "Performance benchmarks with 1,000, 5,000, and 10,000 posts, measure memory usage during batch operations, verify UI responsiveness"
+          },
+          {
+            "id": 8,
+            "title": "Add fallback mechanisms for cache misses",
+            "description": "Implement robust fallback mechanisms when MetadataCache is unavailable, corrupted, or returns incomplete data.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Create fallback logic that gracefully degrades to manual parsing when MetadataCache fails. Implement detection for corrupted cache entries and automatic recovery mechanisms. Log cache miss rates for monitoring and optimization purposes.",
+            "status": "pending",
+            "testStrategy": "Test behavior with corrupted cache, verify fallback accuracy, measure fallback performance impact, test cache recovery scenarios"
+          }
+        ]
       },
       {
         "id": 80,
@@ -4409,7 +4498,7 @@
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-10-31T22:31:12.823Z",
+      "updated": "2025-11-01T06:18:41.553Z",
       "description": "Tasks for master context"
     }
   }

@@ -249,6 +249,7 @@ onMount(() => {
   {#if showComposer && settings.username}
     <div class="composer-wrapper" key={composerKey}>
       <PostComposer
+        {app}
         {settings}
         onPostCreated={handlePostCreated}
       />

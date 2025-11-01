@@ -293,15 +293,33 @@ export class PostIndexCache {
 
   constructor(app: App) {
     this.app = app;
-    this.setupEventListeners();
+
+    // ✅ onLayoutReady 사용 (필수!)
+    // Vault 초기화 시 모든 파일에 대해 이벤트가 발생하므로
+    // layoutReady 후에만 이벤트 리스너 등록
+    this.app.workspace.onLayoutReady(() => {
+      this.setupEventListeners();
+    });
   }
 
   /**
    * MetadataCache 이벤트로 자동 갱신
+   *
+   * ⚠️ IMPORTANT: layoutReady 후에만 등록해야 함
+   * - Vault 초기화 시 모든 파일에 대해 'create' 이벤트 발생
+   * - onLayoutReady() 내부에서 호출 필요
    */
   private setupEventListeners() {
     // frontmatter 변경 감지
     this.app.metadataCache.on('changed', (file) => {
+      if (!this.app.workspace.layoutReady) return; // 안전 장치
+      this.invalidateCacheForFile(file);
+    });
+
+    // ✅ 파일 리네임 이벤트 추가
+    // 'changed' 이벤트는 리네임 시 호출되지 않음 (성능상 이유)
+    this.app.vault.on('rename', (file, oldPath) => {
+      if (!this.app.workspace.layoutReady) return;
       this.invalidateCacheForFile(file);
     });
 
@@ -526,6 +544,8 @@ Chrome DevTools Memory Profiler로 측정:
 
 2. **MetadataCache 이벤트**
    - `changed` - 파일 인덱싱 완료 (frontmatter 변경)
+     - ⚠️ **리네임 시에는 호출되지 않음** (성능상 이유)
+     - `vault.on('rename')` 별도 등록 필요
    - `resolved` - 모든 파일 인덱싱 완료
    - `deleted` - 파일 삭제
    - 참고: `MetadataCache.md` 문서
