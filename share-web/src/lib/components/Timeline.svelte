@@ -176,7 +176,7 @@
 	/* Dark mode */
 	@media (prefers-color-scheme: dark) {
 		.timeline-container {
-			background-color: #111827;
+			background-color: transparent; /* Use parent background */
 		}
 
 		.loading-container,

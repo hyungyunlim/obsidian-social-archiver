@@ -22,7 +22,7 @@
 <style>
 	/* Markdown content styles */
 	.markdown-content {
-		color: var(--text-normal, #111827);
+		color: var(--text-normal, currentColor);
 		line-height: 1.75;
 		word-wrap: break-word;
 		overflow-wrap: break-word;

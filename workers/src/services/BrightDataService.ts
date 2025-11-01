@@ -50,6 +50,7 @@ const PLATFORM_ENDPOINTS: Record<Platform, string> = {
   threads: 'https://api.brightdata.com/datasets/v3/trigger',
   youtube: 'https://api.brightdata.com/datasets/v3/trigger',
   reddit: 'https://api.brightdata.com/datasets/v3/trigger',
+  post: '', // User-created posts don't use BrightData
 };
 
 /**
@@ -65,6 +66,7 @@ const DATASET_IDS: Record<Platform, string> = {
   threads: 'gd_md75myxy14rihbjksa', // Threads posts dataset (confirmed)
   youtube: 'gd_lk56epmy2i5g7lzu0k', // YouTube videos dataset (confirmed)
   reddit: 'gd_lvz8ah06191smkebj4', // Reddit posts dataset (confirmed)
+  post: '', // User-created posts don't use BrightData datasets
 };
 
 export class BrightDataService {

@@ -46,8 +46,11 @@ uploadMediaRouter.post('/', async (c) => {
       }
     });
 
-    // Generate public URL
-    const publicUrl = `https://social-archiver-api.junlim.org/media/${request.shareId}/${request.filename}`;
+    // Generate public URL based on environment
+    const baseUrl = c.env.ENVIRONMENT === 'development'
+      ? 'http://localhost:8787'
+      : 'https://social-archiver-api.junlim.org';
+    const publicUrl = `${baseUrl}/media/${request.shareId}/${request.filename}`;
 
     Logger.info(c, 'Media uploaded to R2', { shareId: request.shareId, filename: request.filename, r2Key });
 

@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "dev:local": "npm run env:dev && npm run dev",
+    "dev:prod": "npm run env:prod && npm run dev",
     "build": "vite build",
     "preview": "vite preview",
     "build:deploy": "node scripts/deploy.mjs",
@@ -15,6 +17,8 @@
     "deploy:pages": "node scripts/deploy.mjs --pages",
     "deploy:quick": "npm run build && npx wrangler pages deploy .svelte-kit/cloudflare --project-name=obsidian-social-archiver --commit-dirty=true",
     "deploy:sh": "./deploy.sh",
+    "env:dev": "node ../scripts/set-share-web-env.mjs dev",
+    "env:prod": "node ../scripts/set-share-web-env.mjs prod",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest",

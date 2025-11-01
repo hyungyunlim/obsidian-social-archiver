@@ -1,0 +1,39 @@
+name = "social-archiver-api-dev"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Development configuration
+workers_dev = true
+minify = false
+
+# Environment variables
+[vars]
+ENVIRONMENT = "development"
+
+# KV Namespace bindings (local)
+[[kv_namespaces]]
+binding = "ARCHIVE_CACHE"
+id = "local_archive_cache"
+
+[[kv_namespaces]]
+binding = "LICENSE_KEYS"
+id = "local_license_keys"
+
+[[kv_namespaces]]
+binding = "SHARE_LINKS"
+id = "local_share_links"
+
+# R2 Bucket binding for local development
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "social-archiver-shares-dev"
+
+# Local persistence for development
+[miniflare]
+kv_persist = ".wrangler/state/kv"
+r2_persist = ".wrangler/state/r2"
+
+# Build configuration
+[build]
+command = "npm run build"

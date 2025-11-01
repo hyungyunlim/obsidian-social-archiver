@@ -35,6 +35,8 @@ app.use('*', cors({
     'capacitor://localhost',
     'http://localhost',
     'http://localhost:*',
+    'http://localhost:5173',  // Vite dev server (share-web)
+    'http://localhost:5174',  // Alternative Vite port
     'https://localhost',
     'https://localhost:*',
     'https://social-archive.junlim.org',  // Share Web frontend
