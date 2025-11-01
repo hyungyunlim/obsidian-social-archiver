@@ -4318,7 +4318,7 @@
           73,
           76
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -4326,7 +4326,7 @@
             "description": "Implement error boundaries for all React/Svelte components to catch and handle component-level errors gracefully",
             "dependencies": [],
             "details": "Create ErrorBoundary component using Svelte 5 error handling patterns. Add error boundaries to ArchiveModal, PostCard, MediaGallery, and all other UI components. Implement fallback UI for error states. Ensure errors don't crash the entire plugin interface and provide graceful degradation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test error boundaries by intentionally throwing errors in components, verify fallback UI renders correctly, ensure error boundaries don't interfere with normal operation"
           },
           {
@@ -4337,7 +4337,7 @@
               1
             ],
             "details": "Create ErrorNotificationService using Obsidian Notice API. Define user-friendly messages for all error types: vault quota exceeded, network timeout, invalid image format, share API failures. Implement different notice types (error, warning, info) with appropriate duration and styling. Create error message mapping from technical errors to user-friendly descriptions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test all error scenarios display appropriate user messages, verify Notice API integration works correctly, ensure message clarity and actionability for users"
           },
           {
@@ -4346,7 +4346,7 @@
             "description": "Implement intelligent retry logic for network operations with exponential backoff and circuit breaker patterns",
             "dependencies": [],
             "details": "Create RetryService with exponential backoff: baseDelay * Math.pow(2, attempt) + jitter. Implement retry logic for BrightData API calls, image downloads, and share API operations. Add circuit breaker pattern to prevent cascading failures. Configure max retry attempts (3-5) and timeout thresholds. Integrate with existing error handling infrastructure.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test retry mechanisms with simulated network failures, verify exponential backoff timing, ensure circuit breaker opens after consecutive failures, validate retry limits are respected"
           },
           {
@@ -4359,7 +4359,7 @@
               3
             ],
             "details": "Create ErrorTracker service for capturing, categorizing, and logging errors. Implement structured logging with error context, stack traces, and user actions. Add error categorization by type (network, vault, validation, etc.) and severity levels. Create debug logging toggle in plugin settings. Ensure sensitive data is not logged while maintaining debugging capability.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test error logging captures all relevant context, verify sensitive data is filtered out, ensure logging toggle works correctly, validate error categorization accuracy"
           }
         ]
@@ -4494,11 +4494,113 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 81,
+        "title": "Add Share Toggle UI to Archive Modal",
+        "description": "Implement share toggle section in Archive Modal with conditional display logic based on URL validity, sharing settings, and credit availability",
+        "details": "Modify ArchiveModal.svelte to include a new share section with Toggle component. Add conditional rendering that checks: isValidUrl && settings.enableSharing && credits > 0. Include credit counter display and upgrade prompt when credits are 0. Update ArchiveModalState interface to include shareToWeb boolean property. Implement toggle state management with proper two-way binding.",
+        "testStrategy": "Unit tests for toggle state management, conditional display logic based on different combinations of URL validity/settings/credits. Visual regression tests for modal layout. Test toggle interaction and state persistence.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 82,
+        "title": "Extend Archive Service with Share Integration",
+        "description": "Modify Archive Service to accept shareToWeb option and coordinate parallel archiving and sharing operations",
+        "details": "Update ArchiveOptions interface to include shareToWeb boolean. Modify archive() method to: 1) Perform normal vault archiving first, 2) If shareToWeb enabled, trigger shareInBackground() without blocking return. Implement error isolation so share failures don't affect archive success. Add proper TypeScript types and maintain backward compatibility.",
+        "testStrategy": "Unit tests for archive with/without share option. Integration tests ensuring archive succeeds even when share fails. Test parallel execution and proper error isolation. Verify backward compatibility.",
+        "priority": "high",
+        "dependencies": [
+          81
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 83,
+        "title": "Implement Platform-Specific Media Upload Service",
+        "description": "Create media upload service with platform-specific optimizations for Instagram, TikTok, Facebook, LinkedIn, X, Threads, and YouTube",
+        "details": "Implement uploadMediaByPlatform() function with switch statement for each platform. Instagram: preserve carousel order and quality. TikTok: upload video + thumbnail. Facebook: handle mixed media, generate video thumbnails. LinkedIn: professional image optimization. X: maintain grid layout. Threads: Instagram-like handling. YouTube: embed info only, no R2 upload. Each platform function should return MediaUrl[] with proper ordering and metadata.",
+        "testStrategy": "Platform-specific unit tests for each upload function. Test media ordering preservation, quality optimization, and proper metadata handling. Integration tests with R2 bucket. Test error handling for unsupported media types.",
+        "priority": "medium",
+        "dependencies": [
+          82
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 84,
+        "title": "Develop Background Share Service",
+        "description": "Create background sharing service that handles post data parsing, media upload, share record creation, and frontmatter updates",
+        "details": "Implement shareInBackground() service with steps: 1) Parse post data from TFile, 2) Upload media using platform-specific service, 3) Create share record in KV store, 4) Update file frontmatter with share metadata. Include comprehensive error handling with user notifications. Implement proper logging and maintain operation atomicity where possible.",
+        "testStrategy": "Unit tests for each step of background sharing. Test error scenarios and rollback mechanisms. Integration tests with KV store and R2. Test frontmatter update reliability and notification timing.",
+        "priority": "high",
+        "dependencies": [
+          83
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 85,
+        "title": "Implement Enhanced Share API Endpoint",
+        "description": "Extend Worker API share endpoint to handle platform-specific media uploads with proper ordering and metadata",
+        "details": "Modify POST /api/share endpoint to accept mediaFiles array with platform, index, and contentType properties. Implement platform-aware media processing and R2 upload logic. Add proper response structure with mediaUrls array maintaining upload order. Include error handling for media upload failures and implement proper HTTP status codes.",
+        "testStrategy": "API integration tests for each platform's media upload. Test media ordering, error responses, and proper R2 integration. Load testing for concurrent uploads. Test malformed request handling.",
+        "priority": "medium",
+        "dependencies": [
+          84
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 86,
+        "title": "Implement Credit Management and Validation",
+        "description": "Add credit checking and consumption logic for archive+share operations with proper UI feedback",
+        "details": "Implement credit validation before enabling share toggle. Add credit consumption (1 credit per archive+share). Update credit display in modal with real-time remaining count. Implement credit check API integration and handle insufficient credits gracefully. Add upgrade prompt UI when credits are depleted.",
+        "testStrategy": "Unit tests for credit validation logic. Test credit consumption and rollback on failures. Integration tests with credit API. Test UI behavior with different credit levels (0, low, sufficient).",
+        "priority": "medium",
+        "dependencies": [
+          85
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 87,
+        "title": "Implement Progressive Notification System",
+        "description": "Create notification system for archive+share operations with proper sequencing and error messaging",
+        "details": "Implement progressive notifications: '✅ Archived successfully!' (immediate), '🌐 Publishing to web...' (background), '✅ Shared: [URL]' or '⚠️ Sharing failed' (completion). Use Obsidian Notice API with proper timing and non-blocking behavior. Implement notification queuing to prevent spam and ensure proper user feedback.",
+        "testStrategy": "Test notification sequence timing and content. Unit tests for different operation outcomes (archive success + share success/failure). Test notification dismissal and user interaction. Verify non-blocking behavior.",
+        "priority": "low",
+        "dependencies": [
+          86
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 88,
+        "title": "Implement Comprehensive Error Handling and Frontmatter Integration",
+        "description": "Add robust error handling for archive+share operations and proper frontmatter updates with share metadata",
+        "details": "Implement error handling strategy: archive failure stops operation, share failure allows archive to continue. Add frontmatter integration with share: true, shareUrl, and credits_used fields. Implement proper YAML frontmatter parsing and updating. Add rollback mechanisms for partial failures and ensure data consistency.",
+        "testStrategy": "Test all error scenarios: archive failure, share failure, media upload failure, network errors. Test frontmatter updates and rollback scenarios. Integration tests for data consistency. Test with various YAML frontmatter configurations.",
+        "priority": "high",
+        "dependencies": [
+          87
+        ],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-10-30T15:03:00.327Z",
-      "updated": "2025-11-01T06:18:41.553Z",
+      "updated": "2025-11-01T06:26:10.629Z",
       "description": "Tasks for master context"
     }
   }
