@@ -268,6 +268,8 @@ $effect(() => {
   .markdown-editor {
     width: 100%;
     min-height: 150px;
+    max-height: 500px;
+    overflow-y: auto;
     padding: 12px;
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-s);
@@ -276,6 +278,11 @@ $effect(() => {
     font-size: 14px;
     line-height: 1.5;
     transition: all 0.2s ease;
+  }
+
+  .markdown-editor :global(.ProseMirror) {
+    min-height: 126px; /* 150px - (12px padding * 2) */
+    max-height: 476px; /* 500px - (12px padding * 2) */
   }
 
   .markdown-editor:focus-within {
@@ -424,7 +431,13 @@ $effect(() => {
   @media (max-width: 640px) {
     .markdown-editor {
       min-height: 120px;
+      max-height: 400px;
       font-size: 1rem;
+    }
+
+    .markdown-editor :global(.ProseMirror) {
+      min-height: 96px; /* 120px - (12px padding * 2) */
+      max-height: 376px; /* 400px - (12px padding * 2) */
     }
   }
 </style>
